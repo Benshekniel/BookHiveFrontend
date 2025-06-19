@@ -1,14 +1,14 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-const AdminDashboard = () => <div><h1>Admin Dashboard</h1></div>;
+const BookstoreDashboard = () => <div><h1>Bookstore Dashboard</h1></div>;
 
-const AdminRoutes = () => (
+const BookstoreRoutes = () => (
   <DashboardLayout>
     <Routes>
-      <Route path="" element={<AdminDashboard />} />
+      <Route path="" element={<BookstoreDashboard />} />
     </Routes>
   </DashboardLayout>
 );
 
-export default AdminRoutes;
+export default BookstoreRoutes;
