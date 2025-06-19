@@ -28,8 +28,8 @@ const LoginPage = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="flex items-center text-3xl font-bold" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
-            <BookOpen className="mr-2" style={{ color: '#FFC107' }} size={32} /> {/* text-primary */}
-            <span>Book<span style={{ color: '#FFC107' }}>Hive</span></span>
+            <BookOpen className="mr-2" style={{ color: '#ffd639' }} size={32} />
+            <span>Book<span style={{ color: '#ffd639' }}>Hive</span></span>
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
@@ -37,9 +37,9 @@ const LoginPage = () => {
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to="/signup" className="font-medium" style={{ color: '#1E3A8A' }} // text-secondary
-            onMouseOver={(e) => (e.target.style.color = '#152B70')} // hover:text-secondary-dark
-            onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+          <Link to="/signup" className="font-medium" style={{ color: '#407aff' }}
+            onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+            onMouseOut={(e) => (e.target.style.color = '#407aff')}
           >
             Sign up for free
           </Link>
@@ -58,17 +58,17 @@ const LoginPage = () => {
                   id="email"
                   type="email"
                   {...register('email')}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="input"
                   style={{
-                    borderColor: '#D1D5DB', // border-gray-300
-                    boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)', // focus:ring-2 focus:ring-primary/50
+                    borderColor: '#D1D5DB',
+                    boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)',
                   }}
-                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="you@example.com"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-sm" style={{ color: '#EF4444' }}> {/* text-error */}
+                  <p className="mt-1 text-sm" style={{ color: '#EF4444' }}>
                     {errors.email.message}
                   </p>
                 )}
@@ -84,12 +84,12 @@ const LoginPage = () => {
                   id="password"
                   type="password"
                   {...register('password')}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  className="input"
                   style={{
                     borderColor: '#D1D5DB',
-                    boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)',
+                    boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)',
                   }}
-                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="••••••••"
                 />
@@ -107,12 +107,12 @@ const LoginPage = () => {
                   id="remember-me"
                   type="checkbox"
                   {...register('rememberMe')}
-                  className="h-4 w-4 border rounded"
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   style={{
-                    borderColor: '#D1D5DB', // border-gray-300
-                    backgroundColor: '#FFC107', // text-primary (when checked)
+                    borderColor: '#D1D5DB',
+                    backgroundColor: '#ffd639',
                   }}
-                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')} // focus:ring-primary
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
@@ -121,9 +121,9 @@ const LoginPage = () => {
               </div>
 
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium" style={{ color: '#1E3A8A' }}
-                  onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                  onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+                <Link to="/forgot-password" className="font-medium" style={{ color: '#407aff' }}
+                  onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                  onMouseOut={(e) => (e.target.style.color = '#407aff')}
                 >
                   Forgot your password?
                 </Link>
@@ -140,25 +140,21 @@ const LoginPage = () => {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t" style={{ borderColor: '#D1D5DB' }} /> {/* border-gray-300 */}
+                <div className="w-full border-t" style={{ borderColor: '#D1D5DB' }} />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white" style={{ color: '#6B7280' }}>Or continue with</span>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                className="w-full inline-flex justify-center py-2 px-4 border rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 transition-all duration-200"
-                style={{ borderColor: '#D1D5DB' }} // border-gray-300
-                onMouseOver={(e) => (e.target.style.backgroundColor = '#F9FAFB')} // hover:bg-gray-50
+              <button className="w-full inline-flex justify-center py-2 px-4 border rounded-lg shadow-sm bg-white text-sm font-medium" style={{ borderColor: '#D1D5DB', color: '#6B7280' }}
+                onMouseOver={(e) => (e.target.style.backgroundColor = '#F9FAFB')}
                 onMouseOut={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
                 Google
               </button>
-              <button
-                className="w-full inline-flex justify-center py-2 px-4 border rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 transition-all duration-200"
-                style={{ borderColor: '#D1D5DB' }}
+              <button className="w-full inline-flex justify-center py-2 px-4 border rounded-lg shadow-sm bg-white text-sm font-medium" style={{ borderColor: '#D1D5DB', color: '#6B7280' }}
                 onMouseOver={(e) => (e.target.style.backgroundColor = '#F9FAFB')}
                 onMouseOut={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >

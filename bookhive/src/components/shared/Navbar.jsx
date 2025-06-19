@@ -21,9 +21,9 @@ const Navbar = () => {
               <input
                 type="text"
                 placeholder="Search books, authors, genres..."
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
-                style={{ boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)' }} // focus:ring-2 focus:ring-primary/50
-                onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+                className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none"
+                style={{ borderColor: '#D1D5DB', boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)' }}
+                onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                 onBlur={(e) => (e.target.style.boxShadow = 'none')}
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -33,32 +33,28 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isLoggedIn ? (
               <>
-                <Link to="/books" className="text-gray-600" style={{ color: '#1E3A8A' }} // text-secondary
-                  onMouseOver={(e) => (e.target.style.color = '#152B70')} // hover:text-secondary
-                  onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
-                >
-                  Books
-                </Link>
-                <Link to="/circles" className="text-gray-600" style={{ color: '#1E3A8A' }}
-                  onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                  onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
-                >
-                  Book Circles
-                </Link>
+                <Link to="/books" className="text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                  onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                  onMouseOut={(e) => (e.target.style.color = '#407aff')}
+                >Books</Link>
+                <Link to="/circles" className="text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                  onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                  onMouseOut={(e) => (e.target.style.color = '#407aff')}
+                >Book Circles</Link>
                 <Link to="/notifications">
                   <div className="relative">
-                    <Bell size={20} className="text-gray-600" style={{ color: '#1E3A8A' }}
-                      onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                      onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+                    <Bell size={20} className="text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                      onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                      onMouseOut={(e) => (e.target.style.color = '#407aff')}
                     />
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
                   </div>
                 </Link>
                 <Link to="/messages">
                   <div className="relative">
-                    <MessageSquare size={20} className="text-gray-600" style={{ color: '#1E3A8A' }}
-                      onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                      onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+                    <MessageSquare size={20} className="text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                      onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                      onMouseOut={(e) => (e.target.style.color = '#407aff')}
                     />
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">2</span>
                   </div>
@@ -67,32 +63,28 @@ const Navbar = () => {
                   <img
                     src="https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"
                     alt="Profile"
-                    className="h-8 w-8 rounded-full object-cover"
-                    style={{ border: '2px solid #FFC107' }} // border-2 border-primary
+                    className="h-8 w-8 rounded-full object-cover border-2"
+                    style={{ borderColor: '#ffd639' }}
                   />
                 </div>
               </>
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="outline" size="sm">
-                    Log In
-                  </Button>
+                  <Button variant="outline" size="sm">Log In</Button>
                 </Link>
                 <Link to="/signup">
-                  <Button variant="primary" size="sm">
-                    Sign Up
-                  </Button>
+                  <Button variant="primary" size="sm">Sign Up</Button>
                 </Link>
               </>
             )}
           </div>
 
           <button
-            className="md:hidden text-gray-600"
-            style={{ color: '#1E3A8A' }}
-            onMouseOver={(e) => (e.target.style.color = '#152B70')}
-            onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+            className="md:hidden text-blue hover:text-blue-dark transition-colors"
+            style={{ color: '#407aff' }}
+            onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+            onMouseOut={(e) => (e.target.style.color = '#407aff')}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -104,9 +96,9 @@ const Navbar = () => {
             <input
               type="text"
               placeholder="Search books, authors, genres..."
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
-              style={{ boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)' }} // focus:ring-2 focus:ring-primary/50
-              onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+              className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none"
+              style={{ borderColor: '#D1D5DB', boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)' }}
+              onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
               onBlur={(e) => (e.target.style.boxShadow = 'none')}
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -117,27 +109,23 @@ const Navbar = () => {
           <div className="md:hidden mt-3 py-3 border-t border-gray-200 animate-fade-in">
             <ul className="space-y-3">
               <li>
-                <Link to="/books" className="block text-gray-600" style={{ color: '#1E3A8A' }}
-                  onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                  onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
-                >
-                  Books
-                </Link>
+                <Link to="/books" className="block text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                  onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                  onMouseOut={(e) => (e.target.style.color = '#407aff')}
+                >Books</Link>
               </li>
               <li>
-                <Link to="/circles" className="block text-gray-600" style={{ color: '#1E3A8A' }}
-                  onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                  onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
-                >
-                  Book Circles
-                </Link>
+                <Link to="/circles" className="block text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                  onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                  onMouseOut={(e) => (e.target.style.color = '#407aff')}
+                >Book Circles</Link>
               </li>
               {isLoggedIn ? (
                 <>
                   <li>
-                    <Link to="/notifications" className="flex items-center text-gray-600" style={{ color: '#1E3A8A' }}
-                      onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                      onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+                    <Link to="/notifications" className="flex items-center text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                      onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                      onMouseOut={(e) => (e.target.style.color = '#407aff')}
                     >
                       <Bell size={18} className="mr-2" />
                       Notifications
@@ -145,9 +133,9 @@ const Navbar = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link to="/messages" className="flex items-center text-gray-600" style={{ color: '#1E3A8A' }}
-                      onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                      onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+                    <Link to="/messages" className="flex items-center text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                      onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                      onMouseOut={(e) => (e.target.style.color = '#407aff')}
                     >
                       <MessageSquare size={18} className="mr-2" />
                       Messages
@@ -155,9 +143,9 @@ const Navbar = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link to="/profile" className="flex items-center text-gray-600" style={{ color: '#1E3A8A' }}
-                      onMouseOver={(e) => (e.target.style.color = '#152B70')}
-                      onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+                    <Link to="/profile" className="flex items-center text-blue hover:text-blue-dark transition-colors" style={{ color: '#407aff' }}
+                      onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                      onMouseOut={(e) => (e.target.style.color = '#407aff')}
                     >
                       <User size={18} className="mr-2" />
                       My Profile
@@ -168,16 +156,12 @@ const Navbar = () => {
                 <>
                   <li>
                     <Link to="/login">
-                      <Button variant="outline" fullWidth>
-                        Log In
-                      </Button>
+                      <Button variant="outline" fullWidth>Log In</Button>
                     </Link>
                   </li>
                   <li>
                     <Link to="/signup">
-                      <Button variant="primary" fullWidth>
-                        Sign Up
-                      </Button>
+                      <Button variant="primary" fullWidth>Sign Up</Button>
                     </Link>
                   </li>
                 </>

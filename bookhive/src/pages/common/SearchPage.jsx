@@ -31,10 +31,10 @@ const SearchPage = () => {
                   placeholder="Search books, authors, genres..."
                   className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none"
                   style={{
-                    borderColor: '#D1D5DB', // border-gray-300
-                    boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)', // focus:ring-2 focus:ring-primary/50
+                    borderColor: '#D1D5DB',
+                    boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)',
                   }}
-                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                 />
                 <Search
@@ -45,17 +45,17 @@ const SearchPage = () => {
               <button
                 type="submit"
                 className="w-full px-4 py-2 font-semibold rounded-lg transition-all duration-200"
-                style={{ backgroundColor: '#FFC107', color: '#FFFFFF' }} // bg-primary text-white
-                onMouseOver={(e) => (e.target.style.backgroundColor = '#FFA000')} // hover:bg-primary-dark
-                onMouseOut={(e) => (e.target.style.backgroundColor = '#FFC107')}
+                style={{ backgroundColor: '#ffd639', color: '#407aff' }}
+                onMouseOver={(e) => (e.target.style.backgroundColor = '#FFC107')}
+                onMouseOut={(e) => (e.target.style.backgroundColor = '#ffd639')}
               >
                 Search
               </button>
             </form>
             <div className="mt-6 text-center">
-              <Link to="/" className="text-sm font-medium" style={{ color: '#1E3A8A' }} // text-secondary
-                onMouseOver={(e) => (e.target.style.color = '#152B70')} // hover:text-secondary-dark
-                onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+              <Link to="/" className="text-sm font-medium" style={{ color: '#407aff' }}
+                onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+                onMouseOut={(e) => (e.target.style.color = '#407aff')}
               >
                 Back to Home
               </Link>

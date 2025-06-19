@@ -24,9 +24,7 @@ const Testimonials = () => {
           {testimonials.map((testimonial) => (
             <div 
               key={testimonial.id} 
-              className="bg-white rounded-lg shadow-md p-6 transition-all duration-200"
-              onMouseOver={(e) => (e.target.style.boxShadow = '0 10px 15px rgba(0,0,0,0.1)', e.target.style.transform = 'translateY(-4px)')} // hover:shadow-lg hover:-translate-y-1
-              onMouseOut={(e) => (e.target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)', e.target.style.transform = 'translateY(0)')}
+              className="bg-white rounded-lg shadow-md p-6 transition-all duration-200 transform hover:shadow-lg hover:-translate-y-2"
             >
               <div className="flex items-start mb-4">
                 <div className="relative">
@@ -34,9 +32,9 @@ const Testimonials = () => {
                     src={testimonial.avatar} 
                     alt={testimonial.name} 
                     className="w-12 h-12 rounded-full object-cover border-2" 
-                    style={{ borderColor: '#FFC107' }} // border-primary
+                    style={{ borderColor: '#ffd639' }}
                   />
-                  <div className="absolute -bottom-1 -right-1 bg-primary text-white p-1 rounded-full">
+                  <div className="absolute -bottom-1 -right-1 bg-yellow text-blue" style={{ backgroundColor: '#ffd639', color: '#407aff' }}>
                     <Quote size={12} />
                   </div>
                 </div>
@@ -52,7 +50,7 @@ const Testimonials = () => {
                     <svg 
                       key={i} 
                       className="w-4 h-4" 
-                      style={{ color: i < testimonial.rating ? '#FFC107' : '#D1D5DB' }} // text-primary or text-gray-300
+                      style={{ color: i < testimonial.rating ? '#ffd639' : '#D1D5DB' }}
                       fill="currentColor" 
                       viewBox="0 0 20 20"
                     >
@@ -69,9 +67,9 @@ const Testimonials = () => {
         <div className="mt-12 text-center">
           <button
             className="px-4 py-2 font-semibold rounded-lg transition-all duration-200 border-2"
-            style={{ borderColor: '#FFC107', color: '#FFC107', backgroundColor: 'transparent' }} // btn-outline
-            onMouseOver={(e) => (e.target.style.backgroundColor = '#FFC107', e.target.style.color = '#FFFFFF')} // hover:bg-primary hover:text-white
-            onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#FFC107')}
+            style={{ borderColor: '#ffd639', color: '#ffd639', backgroundColor: 'transparent' }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#FFC107', e.target.style.color = '#FFFFFF')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#ffd639')}
           >
             Read More Stories
           </button>

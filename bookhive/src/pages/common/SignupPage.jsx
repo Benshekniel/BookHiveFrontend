@@ -18,9 +18,9 @@ const SignupPage = () => {
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium" style={{ color: '#1E3A8A' }} // text-secondary
-            onMouseOver={(e) => (e.target.style.color = '#152B70')} // hover:text-secondary-dark
-            onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
+          <Link to="/login" className="font-medium" style={{ color: '#407aff' }}
+            onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
+            onMouseOut={(e) => (e.target.style.color = '#407aff')}
           >
             Log in
           </Link>
@@ -40,10 +40,10 @@ const SignupPage = () => {
                   {...register('name')}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                   style={{
-                    borderColor: '#D1D5DB', // border-gray-300
-                    boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)', // focus:ring-2 focus:ring-primary/50
+                    borderColor: '#D1D5DB',
+                    boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)',
                   }}
-                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="Full Name"
                 />
@@ -61,9 +61,9 @@ const SignupPage = () => {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                   style={{
                     borderColor: '#D1D5DB',
-                    boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)',
+                    boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)',
                   }}
-                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="Email"
                 />
@@ -82,9 +82,9 @@ const SignupPage = () => {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                   style={{
                     borderColor: '#D1D5DB',
-                    boxShadow: '0 0 0 2px rgba(255, 193, 7, 0.5)',
+                    boxShadow: '0 0 0 2px rgba(255, 214, 57, 0.5)',
                   }}
-                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.5)')}
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="Password"
                 />
