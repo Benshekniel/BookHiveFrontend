@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { createContext, useContext, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import HomePage from './pages/common/HomePage';
@@ -20,8 +21,8 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 const App = () => {
-  // Simulated user state (replace with your auth logic)
-  const [user, setUser] = useState(null); // e.g., { role: 'admin' } after login
+  // Simulated user state (replace with actual auth logic)
+  const [user, setUser] = useState(null); // e.g., { name: 'Alex Johnson', role: 'admin' } after login
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
 
@@ -56,52 +57,26 @@ const App = () => {
     }
   };
 
-  // Map roles to sidebar sections for navigation
-  const getActiveSection = () => {
-    const path = window.location.pathname;
-    if (path.startsWith('/admin')) return 'admin';
-    if (path.startsWith('/moderator')) return 'moderator';
-    if (path.startsWith('/bookstore')) return 'bookstore';
-    if (path.startsWith('/delivery-hub')) return 'delivery-hub';
-    if (path.startsWith('/agent')) return 'delivery-agent';
-    if (path.startsWith('/organization')) return 'organization';
-    if (path.startsWith('/dashboard')) return 'dashboard';
-    return 'home';
+  // Handle logout for Sidebar
+  const handleLogout = () => {
+    setUser(null); // Clear user state (if still using AuthContext elsewhere)
+    navigate('/');
   };
 
-  // Handle sidebar navigation
-  const handleSectionChange = (section) => {
-    const routes = {
-      home: '/',
-      dashboard: '/dashboard',
-      admin: '/admin',
-      moderator: '/moderator',
-      bookstore: '/bookstore',
-      'delivery-hub': '/delivery-hub',
-      'delivery-agent': '/agent',
-      organization: '/organization',
-    };
-    navigate(routes[section] || '/');
-  };
-
-  // Render layout only for authenticated users
+  // Render layout for authenticated routes
   const renderLayout = (children) => (
     <div className="flex h-screen bg-background">
-      <Sidebar 
-        activeSection={getActiveSection()}
-        setActiveSection={handleSectionChange}
+      <Sidebar
         collapsed={sidebarCollapsed}
         setCollapsed={setSidebarCollapsed}
+        onLogout={handleLogout}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
-          activeSection={getActiveSection()}
+        <Header
           sidebarCollapsed={sidebarCollapsed}
           setSidebarCollapsed={setSidebarCollapsed}
         />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );
@@ -109,7 +84,10 @@ const App = () => {
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
       <Routes>
-        <Route path="/" element={user ? <Navigate to={getDashboardRoute()} replace /> : <HomePage />} />
+        <Route
+          path="/"
+          element={user ? <Navigate to={getDashboardRoute()} replace /> : <HomePage />}
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard/*" element={renderLayout(<UserRoutes />)} />

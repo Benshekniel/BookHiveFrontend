@@ -1,27 +1,36 @@
+// src/components/shared/Header.jsx
 import React from 'react';
 import { Bell, Search, User, Menu } from 'lucide-react';
+import { useAuth } from '../../App'; // Import AuthContext
 
 const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
+  const { user, logout } = useAuth(); // Access user and logout function
+
+  // Map activeSection to role-based titles
   const getSectionTitle = () => {
     const titles = {
       home: 'Dashboard Overview',
-      charity: 'Charity Management',
-      bookcircle: 'Book Circle Moderation',
-      competitions: 'Competition Management',
-      support: 'Support Center',
-      compliance: 'Compliance Monitoring',
-      hub: 'Hub Management',
-      users: 'User Management'
+      dashboard: 'User Dashboard',
+      admin: 'Admin Panel',
+      moderator: 'Moderator Dashboard',
+      bookstore: 'Bookstore Management',
+      'delivery-hub': 'Delivery Hub',
+      'delivery-agent': 'Delivery Agent Portal',
+      organization: 'Organization Dashboard',
     };
     return titles[activeSection] || 'Dashboard';
   };
 
+  // Dynamic user details with fallback for unauthenticated users
+  const displayName = user?.name || 'Guest';
+  const displayRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
+
   return (
-    <header 
+    <header
       className="shadow-sm border-b px-6 py-4"
-      style={{ 
+      style={{
         backgroundColor: '#FFFFFF',
-        borderColor: '#E5E7EB'
+        borderColor: '#E5E7EB',
       }}
     >
       <div className="flex items-center justify-between">
@@ -37,26 +46,20 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
               e.target.style.backgroundColor = 'transparent';
             }}
           >
-            <Menu 
-              className="w-5 h-5"
-              style={{ color: '#0F172A' }}
-            />
+            <Menu className="w-5 h-5" style={{ color: '#0F172A' }} />
           </button>
           <div>
-            <h1 
+            <h1
               className="text-2xl font-bold"
-              style={{ 
+              style={{
                 color: '#0F172A',
-                fontFamily: 'Poppins, system-ui, sans-serif'
+                fontFamily: 'Poppins, system-ui, sans-serif',
               }}
             >
               {getSectionTitle()}
             </h1>
-            <p 
-              className="text-sm"
-              style={{ color: '#6B7280' }}
-            >
-              Welcome back, Moderator
+            <p className="text-sm" style={{ color: '#6B7280' }}>
+              Welcome back, {displayRole}
             </p>
           </div>
         </div>
@@ -64,7 +67,7 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
         <div className="flex items-center space-x-4">
           {/* Search */}
           <div className="relative hidden md:block">
-            <Search 
+            <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
               style={{ color: '#9CA3AF' }}
             />
@@ -75,7 +78,7 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
               style={{
                 borderColor: '#D1D5DB',
                 backgroundColor: '#FFFFFF',
-                color: '#0F172A'
+                color: '#0F172A',
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = 'transparent';
@@ -89,11 +92,11 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
           </div>
 
           {/* Notifications */}
-          <button 
+          <button
             className="relative p-2 rounded-lg transition-colors"
-            style={{ 
+            style={{
               color: '#6B7280',
-              backgroundColor: 'transparent'
+              backgroundColor: 'transparent',
             }}
             onMouseEnter={(e) => {
               e.target.style.color = '#0F172A';
@@ -105,7 +108,7 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
             }}
           >
             <Bell className="w-5 h-5" />
-            <span 
+            <span
               className="absolute top-1 right-1 w-2 h-2 rounded-full"
               style={{ backgroundColor: '#EF4444' }}
             ></span>
@@ -113,28 +116,33 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
 
           {/* Profile */}
           <div className="flex items-center space-x-3">
-            <div 
+            <div
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ backgroundColor: '#1E3A8A' }}
             >
               <User className="w-4 h-4 text-white" />
             </div>
             <div className="hidden md:block">
-              <p 
+              <p
                 className="text-sm font-medium"
-                style={{ 
+                style={{
                   color: '#0F172A',
-                  fontFamily: 'Open Sans, system-ui, sans-serif'
+                  fontFamily: 'Open Sans, system-ui, sans-serif',
                 }}
               >
-                Alex Johnson
+                {displayName}
               </p>
-              <p 
-                className="text-xs"
-                style={{ color: '#6B7280' }}
-              >
-                Moderator
+              <p className="text-xs" style={{ color: '#6B7280' }}>
+                {displayRole}
               </p>
+              {user && (
+                <button
+                  onClick={logout}
+                  className="text-xs text-red-500 hover:text-red-700"
+                >
+                  Logout
+                </button>
+              )}
             </div>
           </div>
         </div>
