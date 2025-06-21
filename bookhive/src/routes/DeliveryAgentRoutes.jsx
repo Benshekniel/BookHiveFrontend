@@ -1,14 +1,16 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-const DeliveryAgentDashboard = () => <div><h1>Delivery Agent Dashboard</h1></div>;
+import AgentDashboard from '../pages/agent/AgentDashboard';
+import OrderTracking from '../pages/agent/OrderTracking';
 
-const DeliveryAgentRoutes = () => (
+const AdminRoutes = () => (
   <DashboardLayout>
     <Routes>
-      <Route path="" element={<DeliveryAgentDashboard />} />
+      <Route path="/" element={<AgentDashboard />} />
+      <Route path="tracking" element={<OrderTracking />} />
     </Routes>
   </DashboardLayout>
 );
 
-export default DeliveryAgentRoutes;
+export default AdminRoutes;
