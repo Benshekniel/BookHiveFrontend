@@ -1,10 +1,16 @@
 // src/config/menuConfig.js
-import { Home, LifeBuoy, Bell, MapPin, User, Settings, BookOpen, Truck, Building, ShieldCheck } from 'lucide-react';
+import { Home, LifeBuoy, Bell, MapPin, User, Settings, BookOpen, Truck, Building, ShieldCheck, Calendar, FileText, BarChart2 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
   admin: [
-    { label: 'Dashboard', icon: Home, path: '/admin' },
+    { label: 'Dashboard', icon: Home, path: '/admin/dashboard' },
     { label: 'Manage Users', icon: User, path: '/admin/users' },
+    { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
+    { label: 'Events', icon: Calendar, path: '/admin/events' },
+    { label: 'Contents', icon: FileText, path: '/admin/content' },
+    { label: 'Analytics', icon: BarChart2, path: '/admin/analytics' },
+    { label: 'Notification', icon: Bell, path: '/admin/notification' },
+    { label: 'Security', icon: ShieldCheck, path: '/admin/security' },
     { label: 'Settings', icon: Settings, path: '/admin/settings' },
   ],
   moderator: [
