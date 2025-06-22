@@ -1,5 +1,5 @@
 // src/config/menuConfig.js
-import { Home, User, Settings, BookOpen, Truck, Building, ShieldCheck } from 'lucide-react';
+import { Home, LifeBuoy, Bell, MapPin, User, Settings, BookOpen, Truck, Building, ShieldCheck } from 'lucide-react';
 
 export const sidebarMenuConfig = {
   admin: [
@@ -22,7 +22,10 @@ export const sidebarMenuConfig = {
   ],
   'delivery-agent': [
     { label: 'Dashboard', icon: Home, path: '/agent' },
-    { label: 'Deliveries', icon: Truck, path: '/agent/deliveries' },
+    { label: 'Delivery', icon: BookOpen, path: '/agent/delivery' },
+    { label: 'Hub', icon: MapPin, path: '/agent/hub' },
+    { label: 'Notification', icon: Bell, path: '/agent/notification' },
+    { label: 'Support', icon: LifeBuoy, path: '/agent/support' },
   ],
   organization: [
     { label: 'Dashboard', icon: Home, path: '/organization' },
