@@ -1,8 +1,7 @@
-// src/components/shared/Sidebar.jsx
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sidebarMenuConfig } from '../../config/menuConfig';
-import { BookOpen, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, LogOut } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
   const navigate = useNavigate();
@@ -32,7 +31,7 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
     navigate(path);
   };
 
-  // Handle logout (use prop or redirect to '/')
+  // Handle logout
   const handleLogout = () => {
     if (onLogout) onLogout();
     else navigate('/');
@@ -40,8 +39,14 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
 
   return (
     <div
-      className={`bg-blue-900 text-white transition-all duration-300 flex flex-col ${collapsed ? 'w-16' : 'w-64'}`}
-      style={{ backgroundColor: '#1E3A8A' }}
+      onMouseEnter={() => setCollapsed(false)}
+      onMouseLeave={() => setCollapsed(true)}
+      className={`bg-blue-900 text-white transition-all flex flex-col ${collapsed ? 'w-16' : 'w-64'}`}
+      style={{
+        transitionDuration: collapsed ? '500ms' : '300ms', 
+        backgroundColor: '#1E3A8A',
+      }}
+
     >
       {/* Header */}
       <div
@@ -55,13 +60,7 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
               <h1 className="text-xl font-bold">BookHive</h1>
             </div>
           )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded transition-colors hover:bg-amber-200 hover:text-gray-800"
-            style={{ backgroundColor: 'transparent' }}
-          >
-            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-          </button>
+          {/* Toggle button removed */}
         </div>
         {!collapsed && (
           <p className="text-sm mt-1" style={{ color: '#BFDBFE' }}>
