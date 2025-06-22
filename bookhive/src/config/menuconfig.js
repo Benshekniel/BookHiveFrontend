@@ -2,7 +2,7 @@
 import { 
   Home, User, Settings, BookOpen, 
   Truck, Building, HeartHandshake ,
-  BookHeart,Trophy,UsersRound,Headset,MessageCircleMore
+  BookHeart,Trophy,UsersRound,Headset,MessageCircleMore,MapPin,Bell
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
@@ -32,7 +32,10 @@ export const sidebarMenuConfig = {
   ],
   'delivery-agent': [
     { label: 'Dashboard', icon: Home, path: '/agent' },
-    { label: 'Deliveries', icon: Truck, path: '/agent/deliveries' },
+    { label: 'Delivery', icon: BookOpen, path: '/agent/delivery' },
+    { label: 'Hub', icon: MapPin, path: '/agent/hub' },
+    { label: 'Notification', icon: Bell, path: '/agent/notification' },
+    { label: 'Support', icon: Headset, path: '/agent/support' },
   ],
   organization: [
     { label: 'Dashboard', icon: Home, path: '/organization' },
