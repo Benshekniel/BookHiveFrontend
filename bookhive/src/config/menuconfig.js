@@ -1,15 +1,21 @@
 // src/config/menuConfig.js
-import { 
-  Home, User, Settings, BookOpen, Users,
-  Warehouse, MessageSquare, Calendar, Headphones,
-  Truck, Building, HeartHandshake ,
-  BookHeart,Trophy,UsersRound,Headset,MessageCircleMore,MapPin,Bell
+import {
+  Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
+  Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
+  ShieldCheck, FileText, BarChart2
+
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
   admin: [
-    { label: 'Dashboard', icon: Home, path: '/admin' },
+    { label: 'Dashboard', icon: Home, path: '/admin/dashboard' },
     { label: 'Manage Users', icon: User, path: '/admin/users' },
+    { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
+    { label: 'Events', icon: Calendar, path: '/admin/events' },
+    { label: 'Contents', icon: FileText, path: '/admin/content' },
+    { label: 'Analytics', icon: BarChart2, path: '/admin/analytics' },
+    { label: 'Notification', icon: Bell, path: '/admin/notification' },
+    { label: 'Security', icon: ShieldCheck, path: '/admin/security' },
     { label: 'Settings', icon: Settings, path: '/admin/settings' },
   ],
   moderator: [
@@ -20,7 +26,7 @@ export const sidebarMenuConfig = {
     { label: 'Users', icon: UsersRound, path: '/moderator/users' },
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
     { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
-    { label: 'Support', icon:Headset , path: '/moderator/support' },
+    { label: 'Support', icon: Headset, path: '/moderator/support' },
   ],
   bookstore: [
     { label: 'Dashboard', icon: Home, path: '/bookstore' },
