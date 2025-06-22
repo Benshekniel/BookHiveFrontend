@@ -27,7 +27,7 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
 
   return (
     <header
-      className="shadow-sm border-b px-6 py-4"
+      className="shadow-sm border-b px-6 py-2"
       style={{
         backgroundColor: '#FFFFFF',
         borderColor: '#E5E7EB',
