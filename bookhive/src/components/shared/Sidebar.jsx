@@ -13,7 +13,7 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
     if (path.startsWith('/admin')) return 'admin';
     if (path.startsWith('/moderator')) return 'moderator';
     if (path.startsWith('/bookstore')) return 'bookstore';
-    if (path.startsWith('/delivery-hub')) return 'delivery-hub';
+    if (path.startsWith('/manager')) return 'delivery-manager';
     if (path.startsWith('/agent')) return 'delivery-agent';
     if (path.startsWith('/organization')) return 'organization';
     if (path.startsWith('/dashboard')) return 'user';

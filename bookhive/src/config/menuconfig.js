@@ -1,6 +1,7 @@
 // src/config/menuConfig.js
 import { 
-  Home, User, Settings, BookOpen, 
+  Home, User, Settings, BookOpen, Users,
+  Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake ,
   BookHeart,Trophy,UsersRound,Headset,MessageCircleMore,MapPin,Bell
 } from 'lucide-react';
@@ -26,9 +27,14 @@ export const sidebarMenuConfig = {
     { label: 'Inventory', icon: BookOpen, path: '/bookstore/inventory' },
     { label: 'Orders', icon: Truck, path: '/bookstore/orders' },
   ],
-  'delivery-hub': [
-    { label: 'Dashboard', icon: Home, path: '/delivery-hub' },
-    { label: 'Shipments', icon: Truck, path: '/delivery-hub/shipments' },
+  'delivery-manager': [
+    { label: 'Dashboard', icon: Home, path: '/manager' },
+    { label: 'Agents', icon: Users, path: '/manager/Agents' },
+    { label: 'Delivery', icon: Truck, path: '/manager/Delivery' },
+    { label: 'Hubs', icon: Warehouse, path: '/manager/Hubs' },
+    { label: 'Messages', icon: MessageSquare, path: '/manager/Messages' },
+    { label: 'Schedule', icon: Calendar, path: '/manager/Schedule' },
+    { label: 'Support', icon: Headphones, path: '/manager/Support' },
   ],
   'delivery-agent': [
     { label: 'Dashboard', icon: Home, path: '/agent' },
