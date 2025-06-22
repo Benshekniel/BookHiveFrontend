@@ -1,7 +1,7 @@
 // src/config/menuConfig.js
-import { Home, User, ShieldCheck, Calendar, FileText, BarChart2 , Settings, BookOpen, 
-  Truck, Building, HeartHandshake ,
-  BookHeart,Trophy,UsersRound,Headset,MessageCircleMore,MapPin,Bell
+import {
+  Home, User, ShieldCheck, Calendar, FileText, BarChart2, Settings, BookOpen,
+  Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
@@ -24,7 +24,7 @@ export const sidebarMenuConfig = {
     { label: 'Users', icon: UsersRound, path: '/moderator/users' },
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
     { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
-    { label: 'Support', icon:Headset , path: '/moderator/support' },
+    { label: 'Support', icon: Headset, path: '/moderator/support' },
   ],
   bookstore: [
     { label: 'Dashboard', icon: Home, path: '/bookstore' },
