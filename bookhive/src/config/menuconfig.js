@@ -1,5 +1,8 @@
 // src/config/menuConfig.js
-import { Home, LifeBuoy, Bell, MapPin, User, Settings, BookOpen, Truck, Building, ShieldCheck, Calendar, FileText, BarChart2 } from 'lucide-react';
+import { Home, User, ShieldCheck, Calendar, FileText, BarChart2 , Settings, BookOpen, 
+  Truck, Building, HeartHandshake ,
+  BookHeart,Trophy,UsersRound,Headset,MessageCircleMore,MapPin,Bell
+} from 'lucide-react';
 
 export const sidebarMenuConfig = {
   admin: [
@@ -15,7 +18,13 @@ export const sidebarMenuConfig = {
   ],
   moderator: [
     { label: 'Dashboard', icon: Home, path: '/moderator' },
-    { label: 'Content Review', icon: ShieldCheck, path: '/moderator/review' },
+    { label: 'Charity', icon: HeartHandshake, path: '/moderator/charity' },
+    { label: 'BookCircle', icon: BookHeart, path: '/moderator/bookcircle' },
+    { label: 'Competitions', icon: Trophy, path: '/moderator/competitions' },
+    { label: 'Users', icon: UsersRound, path: '/moderator/users' },
+    { label: 'Hub', icon: Truck, path: '/moderator/hub' },
+    { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
+    { label: 'Support', icon:Headset , path: '/moderator/support' },
   ],
   bookstore: [
     { label: 'Dashboard', icon: Home, path: '/bookstore' },
@@ -31,7 +40,7 @@ export const sidebarMenuConfig = {
     { label: 'Delivery', icon: BookOpen, path: '/agent/delivery' },
     { label: 'Hub', icon: MapPin, path: '/agent/hub' },
     { label: 'Notification', icon: Bell, path: '/agent/notification' },
-    { label: 'Support', icon: LifeBuoy, path: '/agent/support' },
+    { label: 'Support', icon: Headset, path: '/agent/support' },
   ],
   organization: [
     { label: 'Dashboard', icon: Home, path: '/organization' },

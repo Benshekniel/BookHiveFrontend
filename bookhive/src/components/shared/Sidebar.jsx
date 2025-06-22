@@ -1,8 +1,7 @@
-// src/components/shared/Sidebar.jsx
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sidebarMenuConfig } from '../../config/menuConfig';
-import { BookOpen, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
   const navigate = useNavigate();
@@ -32,7 +31,7 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
     navigate(path);
   };
 
-  // Handle logout (use prop or redirect to '/')
+  // Handle logout
   const handleLogout = () => {
     if (onLogout) onLogout();
     else navigate('/');
@@ -40,34 +39,34 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
 
   return (
     <div
-      className={`bg-blue-900 text-white transition-all duration-300 flex flex-col ${collapsed ? 'w-16' : 'w-64'}`}
-      style={{ backgroundColor: '#1E3A8A' }}
+      onMouseEnter={() => setCollapsed(false)}
+      onMouseLeave={() => setCollapsed(true)}
+      className={`bg-blue-900 text-white transition-all flex flex-col ${collapsed ? 'w-16' : 'w-64'}`}
+      style={{
+        transitionDuration: collapsed ? '500ms' : '300ms',
+        backgroundColor: '#1E3A8A',
+      }}
     >
       {/* Header */}
       <div
-        className="p-4 border-b"
-        style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}
+        className="p-4 border-b flex items-center"
+        style={{ 
+          borderColor: 'rgba(59, 130, 246, 0.3)',
+          minHeight: '65px', // Fixed height to prevent vertical shift
+        }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <img
+            src="/images/logo.png"
+            alt="BookHive Logo"
+            className="w-9 h-9 object-contain"
+          />
           {!collapsed && (
-            <div className="flex items-center space-x-2">
-              <BookOpen className="w-8 h-8" style={{ color: '#FBBF24' }} />
-              <h1 className="text-xl font-bold">BookHive</h1>
-            </div>
+            <h1 className="text-xl font-bold">
+              Book<span style={{ color: '#FBBF24' }}>Hive</span>
+            </h1>
           )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded transition-colors hover:bg-amber-200 hover:text-gray-800"
-            style={{ backgroundColor: 'transparent' }}
-          >
-            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-          </button>
         </div>
-        {!collapsed && (
-          <p className="text-sm mt-1" style={{ color: '#BFDBFE' }}>
-            {displayRole} Dashboard
-          </p>
-        )}
       </div>
 
       {/* Navigation */}
@@ -81,15 +80,17 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
               <li key={item.path}>
                 <button
                   onClick={() => handleNavigation(item.path)}
-                  className={`w-full flex items-center rounded-lg transition-colors ${
-                    collapsed ? 'justify-center py-3' : 'px-3 py-2'
-                  } ${
-                    isActive ? 'bg-amber-400 text-gray-800' : 'text-white hover:bg-amber-200 hover:text-gray-800'
+                  className={`w-full flex items-center rounded-lg transition-colors px-3 py-3 min-h-[48px] ${
+                    isActive
+                      ? 'bg-amber-400 text-gray-800'
+                      : 'text-white hover:bg-amber-200 hover:text-gray-800'
                   }`}
                   title={collapsed ? item.label : ''}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${collapsed ? '' : 'mr-3'}`} />
-                  {!collapsed && <span className="ml-3 font-medium">{item.label}</span>}
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ml-3 font-medium whitespace-nowrap">{item.label}</span>
+                  )}
                 </button>
               </li>
             );
@@ -101,13 +102,11 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
       <div className="p-2 border-t" style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}>
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center rounded-lg transition-colors hover:bg-red-600 ${
-            collapsed ? 'justify-center py-3' : 'px-3 py-2'
-          }`}
+          className={`w-full flex items-center rounded-lg transition-colors px-3 py-3 min-h-[48px] hover:bg-red-600`}
           title={collapsed ? 'Logout' : ''}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="ml-3 font-medium">Logout</span>}
+          {!collapsed && <span className="ml-3 font-medium whitespace-nowrap">Logout</span>}
         </button>
       </div>
     </div>

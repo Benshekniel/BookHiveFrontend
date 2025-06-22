@@ -1,12 +1,29 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-const ModeratorDashboard = () => <div><h1>Moderator Dashboard</h1></div>;
+
+import ModeratorDashboard from '../pages/moderator/Home';
+import Charity from '../pages/moderator/tabs/Charity';
+import BookCircle from '../pages/moderator/tabs/BookCircle';
+import Competitions from '../pages/moderator/tabs/Competitions';
+import Users from '../pages/moderator/tabs/Users';
+import Hub from '../pages/moderator/tabs/Hub';
+import Compliance from '../pages/moderator/tabs/Compliance';
+import Support from '../pages/moderator/tabs/Support';
+
 
 const ModeratorRoutes = () => (
   <DashboardLayout>
     <Routes>
-      <Route path="" element={<ModeratorDashboard />} />
+          <Route path="" element={<ModeratorDashboard />} />
+          <Route path="home" element={<ModeratorDashboard />} />
+          <Route path="charity" element={<Charity />} />
+          <Route path="bookcircle" element={<BookCircle />} />
+          <Route path="competitions" element={<Competitions />} />
+          <Route path="users" element={<Users />} />
+          <Route path="hub" element={<Hub />} />
+          <Route path="compliance" element={<Compliance />} />
+          <Route path="support" element={<Support />} />
     </Routes>
   </DashboardLayout>
 );
