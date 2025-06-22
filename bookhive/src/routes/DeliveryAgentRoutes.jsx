@@ -2,13 +2,19 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import AgentDashboard from '../pages/agent/AgentDashboard';
-import OrderTracking from '../pages/agent/OrderTracking';
+import Delivery from '../pages/agent/Delivery';
+import Hub from '../pages/agent/Hub';
+import Notification from '../pages/agent/Notification';
+import Support from '../pages/agent/Support';
 
 const AdminRoutes = () => (
   <DashboardLayout>
     <Routes>
       <Route path="/" element={<AgentDashboard />} />
-      <Route path="tracking" element={<OrderTracking />} />
+      <Route path="delivery" element={<Delivery />} />
+      <Route path="hub" element={<Hub />} />
+      <Route path="notification" element={<Notification />} />
+      <Route path="support" element={<Support />} />
     </Routes>
   </DashboardLayout>
 );
