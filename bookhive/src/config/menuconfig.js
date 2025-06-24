@@ -2,7 +2,7 @@
 import {
   Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
-  ShieldCheck, FileText, BarChart2
+  ShieldCheck, FileText, BarChart2, LineChart, LayoutDashboard, ClipboardList
 
 } from 'lucide-react';
 
@@ -43,14 +43,15 @@ export const sidebarMenuConfig = {
     { label: 'Support', icon: Headphones, path: '/manager/Support' },
   ],
   'delivery-agent': [
-    { label: 'Dashboard', icon: Home, path: '/agent' },
-    { label: 'Tasks', icon: Home, path: '/agent/tasks' },
-    { label: 'Active Delivery', icon: BookOpen, path: '/agent/delivery' },
-    { label: 'Hub', icon: MapPin, path: '/agent/hub' },
-    { label: 'Notification', icon: Bell, path: '/agent/notification' },
-    { label: 'Performance', icon: Bell, path: '/agent/performance' },
-    { label: 'Support', icon: Headset, path: '/agent/support' },
-  ],
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/agent' },
+  { label: 'Tasks', icon: ClipboardList, path: '/agent/tasks' },
+  { label: 'Active Delivery', icon: Truck, path: '/agent/delivery' },
+  { label: 'Hub', icon: MapPin, path: '/agent/hub' },
+  { label: 'Notification', icon: Bell, path: '/agent/notification' },
+  { label: 'Performance', icon: LineChart, path: '/agent/performance' },
+  { label: 'Support', icon: Headset, path: '/agent/support' },
+]
+,
   organization: [
     { label: 'Dashboard', icon: Home, path: '/organization' },
     { label: 'Reports', icon: Building, path: '/organization/reports' },
