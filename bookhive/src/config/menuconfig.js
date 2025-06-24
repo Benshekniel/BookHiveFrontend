@@ -44,9 +44,11 @@ export const sidebarMenuConfig = {
   ],
   'delivery-agent': [
     { label: 'Dashboard', icon: Home, path: '/agent' },
-    { label: 'Delivery', icon: BookOpen, path: '/agent/delivery' },
+    { label: 'Tasks', icon: Home, path: '/agent/tasks' },
+    { label: 'Active Delivery', icon: BookOpen, path: '/agent/delivery' },
     { label: 'Hub', icon: MapPin, path: '/agent/hub' },
     { label: 'Notification', icon: Bell, path: '/agent/notification' },
+    { label: 'Performance', icon: Bell, path: '/agent/performance' },
     { label: 'Support', icon: Headset, path: '/agent/support' },
   ],
   organization: [
