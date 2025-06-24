@@ -2,10 +2,7 @@
 import {
   Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
-  ShieldCheck, FileText, BarChart2,
-  ArrowRightLeft,
-  DollarSign
-
+  ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
