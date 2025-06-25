@@ -2,7 +2,8 @@
 import {
   Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
-  ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign
+  ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign,
+  Box
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
@@ -29,15 +30,11 @@ export const sidebarMenuConfig = {
   ],
   bookstore: [
     { label: 'Dashboard', icon: Home, path: '/bookstore/dashboard' },
-    { label: 'Inventory', icon: BookOpen, path: '/bookstore/inventory' },
+    { label: 'Inventory', icon: Box, path: '/bookstore/inventory' },
     { label: 'Listings', icon: FileText, path: '/bookstore/listings' },
-    { label: 'Orders', icon: Truck, path: '/bookstore/orders' },
-    { label: 'Exchanges', icon: ArrowRightLeft, path: '/bookstore/exchanges' },
-    { label: 'Analytics', icon: BarChart2, path: '/bookstore/analytics' },
+    { label: 'Transactions', icon: ArrowRightLeft, path: '/bookstore/transactions' },
     { label: 'Finances', icon: DollarSign, path: '/bookstore/finances' },
-    { label: 'Notifications', icon: Bell, path: '/bookstore/notifications' },
-    { label: 'Support', icon: Headset, path: '/bookstore/support' },
-    { label: 'Profile', icon: User, path: '/bookstore/profile' },
+    { label: 'Support', icon: Headset, path: '/bookstore/support' }
   ],
   'delivery-manager': [
     { label: 'Dashboard', icon: Home, path: '/manager' },
