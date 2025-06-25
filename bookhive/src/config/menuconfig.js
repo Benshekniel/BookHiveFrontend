@@ -27,6 +27,8 @@ export const sidebarMenuConfig = {
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
     { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
     { label: 'Support', icon: Headset, path: '/moderator/support' },
+    { label: 'Testing', icon: Headset, path: '/moderator/test' },
+
   ],
   bookstore: [
     { label: 'Dashboard', icon: Home, path: '/bookstore' },
