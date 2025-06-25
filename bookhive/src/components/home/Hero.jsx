@@ -10,7 +10,7 @@ const Hero = () => {
   };
 
   return (
-    <div className="relative overflow-hidden" style={{ backgroundColor: '#407aff' }}>
+    <div className="relative overflow-hidden" style={{ backgroundColor: '#1d5ed8' }}>
       <div className="absolute inset-0 opacity-10" style={honeycombBgStyle}></div>
       
       <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
@@ -19,7 +19,7 @@ const Hero = () => {
             <h1 className="text-4xl md:text-5xl leading-tight mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif", fontWeight: 'bold' }}>
               Connect with Book Lovers Across Sri Lanka
             </h1>
-            <p className="text-lg mb-8 max-w-lg" style={{ color: '#1A3AFF' }}>
+            <p className="text-lg mb-8 max-w-lg" style={{ color: '#DBEAFE' }}>
               Borrow, lend, buy, or sell books through a trusted community platform. 
               Join BookHive today and be part of Sri Lanka's largest book sharing network.
             </p>
@@ -43,29 +43,29 @@ const Hero = () => {
             <div className="mt-10 grid grid-cols-2 gap-6 max-w-md">
               <div className="flex items-start">
                 <div className="p-2 rounded-full mr-3" style={{ backgroundColor: '#ffd639' }}>
-                  <BookOpen className="text-blue" style={{ color: '#407aff' }} size={18} />
+                  <BookOpen className="text-blue" style={{ color: '#1d4ed8' }} size={18} />
                 </div>
                 <div>
                   <h3 className="font-semibold">1000+ Books</h3>
-                  <p className="text-sm" style={{ color: '#1A3AFF' }}>Available for lending & sale</p>
+                  <p className="text-sm" style={{ color: '#DBEAFE' }}>Available for lending & sale</p>
                 </div>
               </div>
               <div className="flex items-start">
                 <div className="p-2 rounded-full mr-3" style={{ backgroundColor: '#ffd639' }}>
-                  <Users className="text-blue" style={{ color: '#407aff' }} size={18} />
+                  <Users className="text-blue" style={{ color: '#1d4ed8' }} size={18} />
                 </div>
                 <div>
                   <h3 className="font-semibold">500+ Users</h3>
-                  <p className="text-sm" style={{ color: '#1A3AFF' }}>Growing community</p>
+                  <p className="text-sm" style={{ color: '#DBEAFE' }}>Growing community</p>
                 </div>
               </div>
               <div className="flex items-start">
                 <div className="p-2 rounded-full mr-3" style={{ backgroundColor: '#ffd639' }}>
-                  <MapPin className="text-blue" style={{ color: '#407aff' }} size={18} />
+                  <MapPin className="text-blue" style={{ color: '#1d4ed8' }} size={18} />
                 </div>
                 <div>
                   <h3 className="font-semibold">25 Districts</h3>
-                  <p className="text-sm" style={{ color: '#1A3AFF' }}>Nationwide coverage</p>
+                  <p className="text-sm" style={{ color: '#DBEAFE' }}>Nationwide coverage</p>
                 </div>
               </div>
             </div>

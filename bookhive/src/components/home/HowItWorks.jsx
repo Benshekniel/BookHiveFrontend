@@ -56,7 +56,7 @@ const HowItWorks = () => {
         <div className="mt-12 text-center">
           <button
             className="px-4 py-2 font-semibold rounded-lg transition-all duration-200"
-            style={{ backgroundColor: '#ffd639', color: '#407aff' }}
+            style={{ backgroundColor: '#ffd639', color: '#FFFFFF' }}
             onMouseOver={(e) => (e.target.style.backgroundColor = '#FFC107')}
             onMouseOut={(e) => (e.target.style.backgroundColor = '#ffd639')}
           >

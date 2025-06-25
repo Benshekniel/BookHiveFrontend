@@ -19,7 +19,7 @@ const Button = ({
   };
 
   const variantStyles = {
-    primary: { backgroundColor: '#ffd639', color: '#407aff' }, // Updated to yellow, blue
+    primary: { backgroundColor: '#ffd639', color: '#FFFFFF' }, // Updated to yellow, blue
     secondary: { backgroundColor: '#407aff', color: '#FFFFFF' }, // Updated to blue
     outline: { border: '2px solid #ffd639', color: '#ffd639', backgroundColor: 'transparent' }, // Updated to yellow
     ghost: { color: '#407aff', backgroundColor: 'transparent' }, // Updated to blue
