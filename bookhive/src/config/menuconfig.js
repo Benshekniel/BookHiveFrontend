@@ -3,7 +3,7 @@ import {
   Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
   ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign, Box,
-  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route
+  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route,FlaskConical
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
@@ -27,7 +27,7 @@ export const sidebarMenuConfig = {
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
     { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
     { label: 'Support', icon: Headset, path: '/moderator/support' },
-    { label: 'Testing', icon: Headset, path: '/moderator/test' },
+    { label: 'Testing', icon: FlaskConical, path: '/moderator/test' },
 
   ],
   bookstore: [

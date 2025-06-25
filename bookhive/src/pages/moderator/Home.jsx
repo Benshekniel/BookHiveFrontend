@@ -1,5 +1,7 @@
 import React from 'react';
 import StatsCard from '../../components/shared/StatsCard';
+import InfoCard from '../../components/shared/InfoCard';
+
 import { 
   Users, 
   BookOpen, 
@@ -8,7 +10,15 @@ import {
   CheckCircle, 
   Clock,
   TrendingUp,
-  Flag
+  Flag,
+  BookUser,
+  BookHeart,
+  BookMarked,
+  Shield,
+  Bell,
+  Trophy,
+  BadgeDollarSign,
+  ShoppingCart
 } from 'lucide-react';
 
 const Home = () => {
@@ -21,10 +31,10 @@ const Home = () => {
       changeType: 'positive'
     },
     {
-      title: 'Active Book Circles',
-      value: '156',
-      icon: BookOpen,
-      change: '+5 new this week',
+      title: 'Revenue (2025)',
+      value: '$24,680',
+      icon: BadgeDollarSign,
+      change: '+15% from last month',
       changeType: 'positive'
     },
     {
@@ -40,7 +50,101 @@ const Home = () => {
       icon: Flag,
       change: 'Needs attention',
       changeType: 'negative'
-    }
+    },
+    {
+      title: 'Active Borrows',
+      value: '1,247',
+      icon: BookHeart,
+      change: '+200 new'
+    },
+    {
+      title: 'Active Bids',
+      value: '897',
+      icon: BookMarked,
+      change: '+50 new'
+    },
+    {
+      title: 'Active Book Circles',
+      value: '156',
+      icon: BookOpen,
+      change: '+5 new this week',
+      changeType: 'positive'
+    },
+    {
+      title: 'Book purchases',
+      value: '143',
+      icon: ShoppingCart,
+      change: '+15 new this week',
+      changeType: 'positive'
+    },
+    
+  ];
+
+  const cardData = [
+    {
+      title: "Charity Book Requests",
+      icon: Heart,
+      items: [
+        {
+          title: "Children's Education Foundation",
+          subtitle: 'Requesting 50 educational books',
+          status: 'Pending',
+        },
+        {
+          title: 'Local Library Initiative',
+          subtitle: 'Requesting 30 fiction books',
+          status: 'Approved',
+        },
+      ],
+    },
+    {
+      title: "Book Circle Updates",
+      icon: Bell,
+      items: [
+        {
+          title: 'Mystery Lovers Circle',
+          subtitle: 'New discussion: "Best thriller of 2025"',
+          status: null,
+        },
+        {
+          title: 'Sci-Fi Enthusiasts',
+          subtitle: 'Book review posted for "Future Worlds"',
+          status: null,
+        },
+      ],
+    },
+    {
+      title: "Writing Competitions",
+      icon: Trophy,
+      items: [
+        {
+          title: 'Summer Short Story Contest',
+          subtitle: '47 submissions received',
+          status: 'Active',
+        },
+        {
+          title: 'Poetry Challenge 2025',
+          subtitle: 'Judging in progress',
+          status: 'Judging',
+        },
+      ],
+    },
+    {
+      title: "Compliance Tasks",
+      icon: Shield,
+      items: [
+        {
+          title: 'Content Review',
+          subtitle: '12 flagged items pending',
+          status: 'Urgent',
+        },
+        {
+          title: 'User Reports',
+          subtitle: '3 new reports to review',
+          status: 'New',
+        },
+      ],
+    },
   ];
 
   const recentActivities = [
@@ -99,12 +203,22 @@ const Home = () => {
 
   return (
     <div className="space-y-6">
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
       </div>
+
+      {/* Centered Last Two */}
+      {/* <div className="flex justify-center gap-6 flex-wrap">
+        {stats.slice(0,4).map((stat, index) => (
+          <div key={index + 4} className="w-[300px]"> 
+            <StatsCard {...stat} />
+          </div>
+        ))}
+      </div> */}
 
       {/* Quick Actions */}
       <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
@@ -150,6 +264,13 @@ const Home = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {cardData.map((card, index) => (
+          <InfoCard key={index} {...card} />
+        ))}
       </div>
 
       {/* Platform Health */}
@@ -201,6 +322,8 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+
     </div>
   );
 };
