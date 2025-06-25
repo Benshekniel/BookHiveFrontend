@@ -6,7 +6,7 @@ import {
 
 export const sidebarMenuConfig = {
   admin: [
-    { label: 'Dashboard', icon: Home, path: '/admin/dashboard' },
+    { label: 'Dashboard', icon: Home, path: '/admin' },
     { label: 'Manage Users', icon: User, path: '/admin/users' },
     { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
     { label: 'Events', icon: Calendar, path: '/admin/events' },
