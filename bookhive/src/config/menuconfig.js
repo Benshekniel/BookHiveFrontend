@@ -2,7 +2,7 @@
 import {
   Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
-  ShieldCheck, FileText, BarChart2, LineChart, LayoutDashboard, ClipboardList
+  ShieldCheck, FileText, BarChart2, LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route
 
 } from 'lucide-react';
 
@@ -43,15 +43,26 @@ export const sidebarMenuConfig = {
     { label: 'Support', icon: Headphones, path: '/manager/Support' },
   ],
   'delivery-agent': [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/agent' },
-  { label: 'Tasks', icon: ClipboardList, path: '/agent/tasks' },
-  { label: 'Active Delivery', icon: Truck, path: '/agent/delivery' },
-  { label: 'Hub', icon: MapPin, path: '/agent/hub' },
-  { label: 'Notification', icon: Bell, path: '/agent/notification' },
-  { label: 'Performance', icon: LineChart, path: '/agent/performance' },
-  { label: 'Support', icon: Headset, path: '/agent/support' },
-]
-,
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/agent' },
+    { label: 'Tasks', icon: ClipboardList, path: '/agent/tasks' },
+    { label: 'Active Delivery', icon: Truck, path: '/agent/delivery' },
+    { label: 'Hub', icon: MapPin, path: '/agent/hub' },
+    { label: 'Notification', icon: Bell, path: '/agent/notification' },
+    { label: 'Performance', icon: LineChart, path: '/agent/performance' },
+    { label: 'Support', icon: Headset, path: '/agent/support' },
+  ],
+  'hub-manager': [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/hubmanager' },
+    { label: 'Agents', icon: Users, path: '/hubmanager/agents' },
+    { label: 'Delivery', icon: Truck, path: '/hubmanager/deliveries' },
+    { label: 'Hub Settings', icon: Settings, path: '/hubmanager/settings' },
+    { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
+    { label: 'Routes', icon: Route, path: '/hubmanager/routes' },
+    { label: 'Schedules', icon: CalendarCheck2, path: '/hubmanager/schedules' },
+    { label: 'Performance', icon: LineChart, path: '/hubmanager/performance' },
+    { label: 'Support', icon: Headset, path: '/hubmanager/support' },
+  ]
+  ,
   organization: [
     { label: 'Dashboard', icon: Home, path: '/organization' },
     { label: 'Reports', icon: Building, path: '/organization/reports' },
