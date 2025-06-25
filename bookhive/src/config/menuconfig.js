@@ -1,7 +1,9 @@
 // src/config/menuConfig.js
 import {
-  Home, User, ShieldCheck, Calendar, FileText, BarChart2, Settings, BookOpen,
-  Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell
+  Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
+  Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
+  ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign, Box,
+  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
@@ -28,20 +30,41 @@ export const sidebarMenuConfig = {
   ],
   bookstore: [
     { label: 'Dashboard', icon: Home, path: '/bookstore' },
-    { label: 'Inventory', icon: BookOpen, path: '/bookstore/inventory' },
-    { label: 'Orders', icon: Truck, path: '/bookstore/orders' },
+    { label: 'Inventory', icon: Box, path: '/bookstore/inventory' },
+    { label: 'Listings', icon: FileText, path: '/bookstore/listings' },
+    { label: 'Transactions', icon: ArrowRightLeft, path: '/bookstore/transactions' },
+    { label: 'Finances', icon: DollarSign, path: '/bookstore/finances' },
+    { label: 'Support', icon: Headset, path: '/bookstore/support' }
   ],
-  'delivery-hub': [
-    { label: 'Dashboard', icon: Home, path: '/delivery-hub' },
-    { label: 'Shipments', icon: Truck, path: '/delivery-hub/shipments' },
+  'delivery-manager': [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/manager' },
+    { label: 'Agents', icon: Users, path: '/manager/Agents' },
+    { label: 'Delivery', icon: Truck, path: '/manager/Delivery' },
+    { label: 'Hubs', icon: Warehouse, path: '/manager/Hubs' },
+    { label: 'Messages', icon: MessageSquare, path: '/manager/Messages' },
+    { label: 'Schedule', icon: Calendar, path: '/manager/Schedule' },
+    { label: 'Support', icon: Headphones, path: '/manager/Support' },
   ],
   'delivery-agent': [
-    { label: 'Dashboard', icon: Home, path: '/agent' },
-    { label: 'Delivery', icon: BookOpen, path: '/agent/delivery' },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/agent' },
+    { label: 'Tasks', icon: ClipboardList, path: '/agent/tasks' },
+    { label: 'Active Delivery', icon: Truck, path: '/agent/delivery' },
     { label: 'Hub', icon: MapPin, path: '/agent/hub' },
     { label: 'Notification', icon: Bell, path: '/agent/notification' },
+    { label: 'Performance', icon: LineChart, path: '/agent/performance' },
     { label: 'Support', icon: Headset, path: '/agent/support' },
   ],
+  'hub-manager': [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/hubmanager' },
+    { label: 'Delivery', icon: Truck, path: '/hubmanager/deliveries' },
+    { label: 'Agents', icon: Users, path: '/hubmanager/agents' },
+    { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
+    { label: 'Routes', icon: Route, path: '/hubmanager/routes' },
+    { label: 'Performance', icon: LineChart, path: '/hubmanager/performance' },
+    { label: 'Support', icon: Headset, path: '/hubmanager/support' },
+    { label: 'Hub Settings', icon: Settings, path: '/hubmanager/settings' },
+  ]
+  ,
   organization: [
     { label: 'Dashboard', icon: Home, path: '/organization' },
     { label: 'Reports', icon: Building, path: '/organization/reports' },

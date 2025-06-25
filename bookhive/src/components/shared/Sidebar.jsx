@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { sidebarMenuConfig } from '../../config/menuConfig';
+import { sidebarMenuConfig } from '../../config/menuconfig';
 import { LogOut } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
@@ -13,10 +13,11 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
     if (path.startsWith('/admin')) return 'admin';
     if (path.startsWith('/moderator')) return 'moderator';
     if (path.startsWith('/bookstore')) return 'bookstore';
-    if (path.startsWith('/delivery-hub')) return 'delivery-hub';
+    if (path.startsWith('/manager')) return 'delivery-manager';
     if (path.startsWith('/agent')) return 'delivery-agent';
     if (path.startsWith('/organization')) return 'organization';
     if (path.startsWith('/dashboard')) return 'user';
+    if (path.startsWith('/hubmanager')) return 'hub-manager';
     return 'guest'; // Fallback for public routes (e.g., '/', '/login')
   };
 
