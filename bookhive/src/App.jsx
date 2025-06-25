@@ -11,6 +11,7 @@ import BookstoreRoutes from './routes/BookstoreRoutes';
 import DeliveryManagerRoutes from './routes/DeliveryManager';
 import DeliveryAgentRoutes from './routes/DeliveryAgentRoutes';
 import OrganizationRoutes from './routes/OrganizationRoutes';
+import HubManagerRouters from './routes/HubManagerRoutes';
 import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
 import './index.css';
@@ -93,6 +94,7 @@ const App = () => {
         <Route path="/dashboard/*" element={renderLayout(<UserRoutes />)} />
         <Route path="/admin/*" element={renderLayout(<AdminRoutes />)} />
         <Route path="/moderator/*" element={renderLayout(<ModeratorRoutes />)} />
+        <Route path="/hubmanager/*" element={renderLayout(<HubManagerRouters />)} />
         <Route path="/bookstore/*" element={renderLayout(<BookstoreRoutes />)} />
         <Route path="/manager/*" element={renderLayout(<DeliveryManagerRoutes />)} />
         <Route path="/agent/*" element={renderLayout(<DeliveryAgentRoutes />)} />
