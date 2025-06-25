@@ -12,7 +12,7 @@ import Support from "../pages/bookstore/Support";
 const BookstoreRoutes = () => (
   <DashboardLayout>
     <Routes>
-      <Route path="" element={<BookstoreDashboard />} />
+      <Route path="/" element={<BookstoreDashboard />} />
       <Route path="dashboard" element={<BookstoreDashboard />} />
       <Route path="inventory" element={<Inventory />} />
       <Route path="listings" element={<Listings />} />

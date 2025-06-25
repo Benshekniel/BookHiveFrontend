@@ -8,7 +8,7 @@ import {
 
 export const sidebarMenuConfig = {
   admin: [
-    { label: 'Dashboard', icon: Home, path: '/admin/dashboard' },
+    { label: 'Dashboard', icon: Home, path: '/admin' },
     { label: 'Manage Users', icon: User, path: '/admin/users' },
     { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
     { label: 'Events', icon: Calendar, path: '/admin/events' },
@@ -29,7 +29,7 @@ export const sidebarMenuConfig = {
     { label: 'Support', icon: Headset, path: '/moderator/support' },
   ],
   bookstore: [
-    { label: 'Dashboard', icon: Home, path: '/bookstore/dashboard' },
+    { label: 'Dashboard', icon: Home, path: '/bookstore' },
     { label: 'Inventory', icon: Box, path: '/bookstore/inventory' },
     { label: 'Listings', icon: FileText, path: '/bookstore/listings' },
     { label: 'Transactions', icon: ArrowRightLeft, path: '/bookstore/transactions' },
