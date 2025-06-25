@@ -34,7 +34,7 @@ export const sidebarMenuConfig = {
     { label: 'Orders', icon: Truck, path: '/bookstore/orders' },
   ],
   'delivery-manager': [
-    { label: 'Dashboard', icon: Home, path: '/manager' },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/manager' },
     { label: 'Agents', icon: Users, path: '/manager/Agents' },
     { label: 'Delivery', icon: Truck, path: '/manager/Delivery' },
     { label: 'Hubs', icon: Warehouse, path: '/manager/Hubs' },
@@ -53,14 +53,13 @@ export const sidebarMenuConfig = {
   ],
   'hub-manager': [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/hubmanager' },
-    { label: 'Agents', icon: Users, path: '/hubmanager/agents' },
     { label: 'Delivery', icon: Truck, path: '/hubmanager/deliveries' },
-    { label: 'Hub Settings', icon: Settings, path: '/hubmanager/settings' },
+    { label: 'Agents', icon: Users, path: '/hubmanager/agents' },
     { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
     { label: 'Routes', icon: Route, path: '/hubmanager/routes' },
-    { label: 'Schedules', icon: CalendarCheck2, path: '/hubmanager/schedules' },
     { label: 'Performance', icon: LineChart, path: '/hubmanager/performance' },
     { label: 'Support', icon: Headset, path: '/hubmanager/support' },
+    { label: 'Hub Settings', icon: Settings, path: '/hubmanager/settings' },
   ]
   ,
   organization: [

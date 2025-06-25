@@ -8,7 +8,6 @@ import HubSettings from '../pages/hubManager/HubSettings';
 import Messages from '../pages/hubManager/Messages';
 import Performance from '../pages/hubManager/Performance';
 import HubRoutes from '../pages/hubManager/Routes';
-import Schedules from '../pages/hubManager/Schedules';
 import Support from '../pages/hubManager/Support';
 
 const AdminRoutes = () => (
@@ -21,7 +20,6 @@ const AdminRoutes = () => (
       <Route path="messages" element={<Messages />} />
       <Route path="performance" element={<Performance />} />
       <Route path="routes" element={<HubRoutes />} />
-      <Route path="schedules" element={<Schedules />} />
       <Route path="support" element={<Support />} />      
     </Routes>
   </DashboardLayout>
