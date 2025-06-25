@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { sidebarMenuConfig } from '../../config/menuConfig';
+import { sidebarMenuConfig } from '../../config/menuconfig';
 import { BookOpen, LogOut } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
