@@ -8,7 +8,7 @@ import UserRoutes from './routes/UserRoutes';
 import AdminRoutes from './routes/AdminRoutes';
 import ModeratorRoutes from './routes/ModeratorRoutes';
 import BookstoreRoutes from './routes/BookstoreRoutes';
-import DeliveryHubRoutes from './routes/DeliveryHubRoutes';
+import DeliveryManagerRoutes from './routes/DeliveryManager';
 import DeliveryAgentRoutes from './routes/DeliveryAgentRoutes';
 import OrganizationRoutes from './routes/OrganizationRoutes';
 import Sidebar from './components/shared/Sidebar';
@@ -94,7 +94,7 @@ const App = () => {
         <Route path="/admin/*" element={renderLayout(<AdminRoutes />)} />
         <Route path="/moderator/*" element={renderLayout(<ModeratorRoutes />)} />
         <Route path="/bookstore/*" element={renderLayout(<BookstoreRoutes />)} />
-        <Route path="/delivery-hub/*" element={renderLayout(<DeliveryHubRoutes />)} />
+        <Route path="/manager/*" element={renderLayout(<DeliveryManagerRoutes />)} />
         <Route path="/agent/*" element={renderLayout(<DeliveryAgentRoutes />)} />
         <Route path="/organization/*" element={renderLayout(<OrganizationRoutes />)} />
         <Route path="*" element={<div>404: Page Not Found</div>} />
