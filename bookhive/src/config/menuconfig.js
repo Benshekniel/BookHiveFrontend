@@ -2,8 +2,8 @@
 import {
   Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
-  ShieldCheck, FileText, BarChart2, LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route
-
+  ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign, Box,
+  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
@@ -29,9 +29,12 @@ export const sidebarMenuConfig = {
     { label: 'Support', icon: Headset, path: '/moderator/support' },
   ],
   bookstore: [
-    { label: 'Dashboard', icon: Home, path: '/bookstore' },
-    { label: 'Inventory', icon: BookOpen, path: '/bookstore/inventory' },
-    { label: 'Orders', icon: Truck, path: '/bookstore/orders' },
+    { label: 'Dashboard', icon: Home, path: '/bookstore/dashboard' },
+    { label: 'Inventory', icon: Box, path: '/bookstore/inventory' },
+    { label: 'Listings', icon: FileText, path: '/bookstore/listings' },
+    { label: 'Transactions', icon: ArrowRightLeft, path: '/bookstore/transactions' },
+    { label: 'Finances', icon: DollarSign, path: '/bookstore/finances' },
+    { label: 'Support', icon: Headset, path: '/bookstore/support' }
   ],
   'delivery-manager': [
     { label: 'Dashboard', icon: Home, path: '/manager' },
