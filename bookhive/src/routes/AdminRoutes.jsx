@@ -16,7 +16,7 @@ const AdminRoutes = () => (
     <Routes>
       
       <Route path="user-management" element={<UserManagement />} />
-      <Route path="dashboard" element={<Dashboard />} />
+      <Route path="/" element={<Dashboard />} />
       <Route path="analytics" element={<Analytics />} />
       <Route path="content" element={<ContentModeration />} />
       <Route path="users" element={<Users />} />
