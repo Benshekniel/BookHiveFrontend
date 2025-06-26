@@ -71,13 +71,16 @@ export const sidebarMenuConfig = {
     { label: 'Reports', icon: Building, path: '/organization/reports' },
   ],
   user: [
-    { label: 'Dashboard', icon: Home, path: '/dashboard' },
-    { label: 'Profile', icon: User, path: '/dashboard/profile' },
-    { label: 'Orders', icon: Truck, path: '/dashboard/orders' },
+    { label: 'Dashboard', icon: Home, path: '/user' },
+    { label: 'Browse Books', icon: BookOpen, path: '/user/browse-books' },
+    { label: 'Orders', icon: Truck, path: '/user/orders' },
+    { label: 'Competitions', icon: Trophy, path: '/user/competitions' },
+    { label: 'Messages', icon: MessageSquare, path: '/user/messages' },
+    { label: 'Profile Settings', icon: User, path: '/user/profile-settings' },
   ],
-  guest: [
-    { label: 'Home', icon: Home, path: '/' },
-    { label: 'Login', icon: User, path: '/login' },
-    { label: 'Signup', icon: User, path: '/signup' },
-  ],
+  // guest: [
+  //   { label: 'Home', icon: Home, path: '/' },
+  //   { label: 'Login', icon: User, path: '/login' },
+  //   { label: 'Signup', icon: User, path: '/signup' },
+  // ],
 };

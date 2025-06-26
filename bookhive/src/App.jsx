@@ -91,7 +91,7 @@ const App = () => {
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard/*" element={renderLayout(<UserRoutes />)} />
+        <Route path="/user/*" element={renderLayout(<UserRoutes />)} />
         <Route path="/admin/*" element={renderLayout(<AdminRoutes />)} />
         <Route path="/moderator/*" element={renderLayout(<ModeratorRoutes />)} />
         <Route path="/hubmanager/*" element={renderLayout(<HubManagerRouters />)} />
