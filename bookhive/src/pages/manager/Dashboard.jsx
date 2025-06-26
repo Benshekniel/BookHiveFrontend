@@ -97,7 +97,7 @@ const Dashboard = () => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
+            <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1 font-medium">{stat.title}</p>
@@ -115,7 +115,7 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Deliveries */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Recent Delivery Updates
           </h3>
@@ -139,7 +139,7 @@ const Dashboard = () => {
         </div>
 
         {/* Hub Performance Graph */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Hub Performance Comparison
           </h3>
@@ -158,7 +158,7 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue by Hub */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Revenue by Hub
           </h3>
@@ -174,7 +174,7 @@ const Dashboard = () => {
         </div>
 
         {/* Deliveries by Hub */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Deliveries by Hub
           </h3>

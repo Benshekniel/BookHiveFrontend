@@ -191,7 +191,7 @@ const Delivery = () => {
             <div 
               key={hub.id} 
               onClick={() => setSelectedHub(hub)}
-              className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow cursor-pointer hover:border-blue-900"
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer hover:border-blue-900"
             >
               <div className="flex items-center justify-between mb-4">
                 <Building2 className="text-blue-600" size={32} />
@@ -250,7 +250,7 @@ const Delivery = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total</p>
@@ -259,7 +259,7 @@ const Delivery = () => {
             <Truck className="text-gray-400" size={24} />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">In Transit</p>
@@ -268,7 +268,7 @@ const Delivery = () => {
             <Truck className="text-blue-600" size={24} />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Delivered</p>
@@ -277,7 +277,7 @@ const Delivery = () => {
             <CheckCircle className="text-green-600" size={24} />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pickup</p>
@@ -286,7 +286,7 @@ const Delivery = () => {
             <RotateCcw className="text-yellow-400" size={24} />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Delayed</p>
@@ -328,7 +328,7 @@ const Delivery = () => {
       {/* Deliveries List */}
       <div className="space-y-4">
         {filteredDeliveries.map((delivery) => (
-          <div key={delivery.id} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
+          <div key={delivery.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center space-x-4 mb-4">

@@ -10,3 +10,12 @@
   }
 }
 
+@theme{
+  --color-primary: #1E3A8A;
+  --color-secondary: #FBBF24;
+  --color-accent: #3B82F6;
+  --color-card: #FFFFFF;
+  --color-textPrimary: #0F172A;
+  --color-success: #22C55E; 
+  --color-error: #EF4444; 
+}

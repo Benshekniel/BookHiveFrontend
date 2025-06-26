@@ -157,7 +157,7 @@ const Hubs = () => {
 
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Capacity</p>
@@ -167,7 +167,7 @@ const Hubs = () => {
             <Package className="text-blue-600" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Today's Deliveries</p>
@@ -177,7 +177,7 @@ const Hubs = () => {
             <TrendingUp className="text-green-600" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Avg Efficiency</p>
@@ -187,7 +187,7 @@ const Hubs = () => {
             <CheckCircle className="text-green-600" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Active Hubs</p>
@@ -200,7 +200,7 @@ const Hubs = () => {
       </div>
 
       {/* Map View */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 font-heading">Hub Locations</h3>
           <div className="flex space-x-2">
@@ -289,7 +289,7 @@ const Hubs = () => {
           const capacityPercentage = Math.round((hub.currentLoad / hub.capacity) * 100);
           
           return (
-            <div key={hub.id} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
+            <div key={hub.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               {/* Hub Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>

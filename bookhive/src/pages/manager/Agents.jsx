@@ -159,28 +159,28 @@ const Agents = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center space-x-2 mb-2">
             <Users className="text-blue-600" size={20} />
             <span className="font-medium text-sm">Total Agents</span>
           </div>
           <p className="text-2xl font-bold text-slate-900">{totalAgents}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center space-x-2 mb-2">
             <CheckCircle className="text-green-600" size={20} />
             <span className="font-medium text-sm">Active Agents</span>
           </div>
           <p className="text-2xl font-bold text-slate-900">{activeAgents}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center space-x-2 mb-2">
             <Clock className="text-yellow-400" size={20} />
             <span className="font-medium text-sm">Pending Verification</span>
           </div>
           <p className="text-2xl font-bold text-slate-900">{pendingVerification}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center space-x-2 mb-2">
             <UserCheck className="text-blue-600" size={20} />
             <span className="font-medium text-sm">Online Now</span>
@@ -190,7 +190,7 @@ const Agents = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="border-b">
           <nav className="flex space-x-8 px-6">
             <button
@@ -265,7 +265,7 @@ const Agents = () => {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b text-left">
+                    <tr className="border-b text-left bg-white rounded-lg border-gray-200" >
                       <th className="pb-3 text-sm font-medium text-gray-600">AGENT</th>
                       <th className="pb-3 text-sm font-medium text-gray-600">CONTACT</th>
                       <th className="pb-3 text-sm font-medium text-gray-600">VEHICLE</th>
@@ -277,7 +277,7 @@ const Agents = () => {
                   </thead>
                   <tbody>
                     {filteredAgents.map((agent) => (
-                      <tr key={agent.id} className="border-b hover:bg-gray-50">
+                      <tr key={agent.id} className="border-b hover:bg-gray-50 bg-white rounded-lg border-gray-200">
                         <td className="py-4">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-blue-900 text-white rounded-full flex items-center justify-center font-semibold text-sm">
@@ -354,8 +354,8 @@ const Agents = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Pending Agent Applications</h3>
               {pendingApplications.map((application) => (
-                <div key={application.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
+                <div key={application.id} className="border rounded-lg p-4 hover:bg-gray-50 bg-white rounded-lg border-gray-200">
+                  <div className="flex items-center justify-between ">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4 mb-2">
                         <h4 className="font-medium text-slate-900">{application.name}</h4>

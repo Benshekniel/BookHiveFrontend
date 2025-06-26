@@ -150,28 +150,28 @@ const Messages = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2">
             <MessageSquare className="text-blue-600" size={20} />
             <span className="font-medium">Total</span>
           </div>
           <p className="text-2xl font-bold text-slate-900 mt-1">{messages.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2">
             <AlertCircle className="text-red-600" size={20} />
             <span className="font-medium">Unread</span>
           </div>
           <p className="text-2xl font-bold text-slate-900 mt-1">{unreadCount}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2">
             <User className="text-blue-600" size={20} />
             <span className="font-medium">Agents</span>
           </div>
           <p className="text-2xl font-bold text-slate-900 mt-1">{messages.filter(m => m.type === 'Agent').length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2">
             <CheckCircle className="text-green-600" size={20} />
             <span className="font-medium">System</span>
@@ -185,7 +185,7 @@ const Messages = () => {
         {filteredMessages.map((message) => (
           <div 
             key={message.id} 
-            className={`bg-white rounded-lg p-4 border-l-4 cursor-pointer hover:shadow-md transition-shadow ${getPriorityColor(message.priority)} ${
+            className={`bg-white rounded-lg p-4 border-l-4 border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow ${getPriorityColor(message.priority)} ${
               message.status === 'unread' ? 'bg-blue-50 border-l-blue-600' : ''
             }`}
           >

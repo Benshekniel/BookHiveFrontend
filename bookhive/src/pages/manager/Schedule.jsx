@@ -153,7 +153,7 @@ const Schedule = () => {
 
       {/* Variables Panel */}
       {showVariables && (
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Delivery Variables & Cost Factors
           </h3>
@@ -234,7 +234,7 @@ const Schedule = () => {
       )}
 
       {/* Main Routes */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
           Main Vehicle Routes
         </h3>
@@ -293,7 +293,7 @@ const Schedule = () => {
       {/* Schedule List */}
       <div className="space-y-4">
         {filteredSchedules.map((schedule) => (
-          <div key={schedule.id} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
+          <div key={schedule.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center space-x-4 mb-3">

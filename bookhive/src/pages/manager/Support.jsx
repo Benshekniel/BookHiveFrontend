@@ -135,7 +135,7 @@ const Support = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Open Tickets</p>
@@ -146,7 +146,7 @@ const Support = () => {
             <AlertCircle className="text-red-600" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">In Progress</p>
@@ -157,7 +157,7 @@ const Support = () => {
             <Clock className="text-yellow-400" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Resolved</p>
@@ -172,7 +172,7 @@ const Support = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Support Tickets */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Support Tickets
           </h3>
@@ -211,7 +211,7 @@ const Support = () => {
         </div>
 
         {/* Ticket Details / Conversation */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           {selectedTicket ? (
             <div className="h-full flex flex-col">
               <div className="border-b pb-4 mb-4">
@@ -276,7 +276,7 @@ const Support = () => {
       </div>
 
       {/* Quick Contact */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
           Quick Contact
         </h3>
