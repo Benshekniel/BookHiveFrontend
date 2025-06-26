@@ -105,23 +105,23 @@ const SecurityCompliance = () => {
 
   const getSeverityColor = (severity) => {
     const colors = {
-      high: 'text-red-600 bg-red-100',
-      medium: 'text-yellow-600 bg-yellow-100',
-      low: 'text-green-600 bg-green-100'
+      high: 'bg-red-500 text-white',
+      medium: 'bg-yellow-400 text-white',
+      low: 'bg-green-500 text-white'
     };
     return colors[severity] || colors.low;
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      passed: 'text-green-600 bg-green-100',
-      warning: 'text-yellow-600 bg-yellow-100',
-      failed: 'text-red-600 bg-red-100',
-      blocked: 'text-red-600 bg-red-100',
-      monitoring: 'text-yellow-600 bg-yellow-100',
-      resolved: 'text-green-600 bg-green-100',
-      active: 'text-blue-600 bg-blue-100',
-      pending: 'text-yellow-600 bg-yellow-100'
+      passed: 'bg-green-500 text-white',
+      warning: 'bg-yellow-400 text-white',
+      failed: 'bg-red-500 text-white',
+      blocked: 'bg-red-500 text-white',
+      monitoring: 'bg-yellow-400 text-white',
+      resolved: 'bg-green-500 text-white',
+      active: 'bg-blue-500 text-white',
+      pending: 'bg-yellow-400 text-white'
     };
     return colors[status] || colors.pending;
   };
@@ -133,7 +133,7 @@ const SecurityCompliance = () => {
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+        return <AlertTriangle className="h-4 w-4 text-yellow-400" />;
       default:
         return <Shield className="h-4 w-4 text-blue-500" />;
     }
@@ -146,71 +146,71 @@ const SecurityCompliance = () => {
   ];
 
   return (
-    <div>
+    <div className="p-6 bg-slate-50 min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-blue-900">Security & Compliance</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-slate-900">Security & Compliance</h1>
+        <p className="mt-2 text-sm text-slate-600">
           Monitor platform security, manage disputes, and ensure regulatory compliance.
         </p>
       </div>
 
       {/* Security Overview Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="bg-white overflow-hidden shadow-lg rounded-lg border-l-4 border-green-500">
+        <div className="bg-white overflow-hidden shadow-lg rounded-lg border border-slate-200">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Shield className="h-8 w-8 text-green-600" />
+                <Shield className="h-8 w-8 text-green-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Security Score</dt>
-                  <dd className="text-2xl font-bold text-blue-900">85/100</dd>
+                  <dt className="text-sm font-medium text-slate-500 truncate">Security Score</dt>
+                  <dd className="text-2xl font-bold text-slate-900">85/100</dd>
                 </dl>
               </div>
             </div>
           </div>
         </div>
-        <div className="bg-white overflow-hidden shadow-lg rounded-lg border-l-4 border-yellow-500">
+        <div className="bg-white overflow-hidden shadow-lg rounded-lg border border-slate-200">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <AlertTriangle className="h-8 w-8 text-yellow-600" />
+                <AlertTriangle className="h-8 w-8 text-yellow-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Active Threats</dt>
-                  <dd className="text-2xl font-bold text-blue-900">3</dd>
+                  <dt className="text-sm font-medium text-slate-500 truncate">Active Threats</dt>
+                  <dd className="text-2xl font-bold text-slate-900">3</dd>
                 </dl>
               </div>
             </div>
           </div>
         </div>
-        <div className="bg-white overflow-hidden shadow-lg rounded-lg border-l-4 border-blue-500">
+        <div className="bg-white overflow-hidden shadow-lg rounded-lg border border-slate-200">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-blue-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Open Disputes</dt>
-                  <dd className="text-2xl font-bold text-blue-900">2</dd>
+                  <dt className="text-sm font-medium text-slate-500 truncate">Open Disputes</dt>
+                  <dd className="text-2xl font-bold text-slate-900">2</dd>
                 </dl>
               </div>
             </div>
           </div>
         </div>
-        <div className="bg-white overflow-hidden shadow-lg rounded-lg border-l-4 border-purple-500">
+        <div className="bg-white overflow-hidden shadow-lg rounded-lg border border-slate-200">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Globe className="h-8 w-8 text-purple-600" />
+                <Globe className="h-8 w-8 text-blue-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Compliance</dt>
-                  <dd className="text-2xl font-bold text-blue-900">92%</dd>
+                  <dt className="text-sm font-medium text-slate-500 truncate">Compliance</dt>
+                  <dd className="text-2xl font-bold text-slate-900">92%</dd>
                 </dl>
               </div>
             </div>
@@ -219,7 +219,7 @@ const SecurityCompliance = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-slate-200 mb-6">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -229,8 +229,8 @@ const SecurityCompliance = () => {
                 onClick={() => setSelectedTab(tab.id)}
                 className={`${
                   selectedTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'
+                    ? 'border-blue-500 text-blue-500'
+                    : 'border-transparent text-slate-500 hover:text-blue-500 hover:border-blue-200'
                 } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center transition-colors duration-200`}
               >
                 <Icon className="h-4 w-4 mr-2" />
@@ -243,55 +243,55 @@ const SecurityCompliance = () => {
 
       {/* Tab Content */}
       {selectedTab === 'audit' && (
-        <div className="bg-white shadow-lg rounded-lg">
+        <div className="bg-white shadow-lg rounded-lg border border-slate-200">
           <div className="px-4 py-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg leading-6 font-bold text-blue-900">Security Audit Log</h3>
+              <h3 className="text-lg leading-6 font-bold text-slate-900">Security Audit Log</h3>
               <div className="flex space-x-2">
-                <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-yellow-50 transition-colors duration-200">
+                <button className="inline-flex items-center px-3 py-2 border border-slate-200 shadow-sm text-sm leading-4 font-medium rounded-md text-slate-900 bg-white hover:bg-yellow-400 transition-colors duration-200">
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </button>
-                <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-blue-50 transition-colors duration-200">
+                <button className="inline-flex items-center px-3 py-2 border border-slate-200 shadow-sm text-sm leading-4 font-medium rounded-md text-slate-900 bg-white hover:bg-blue-100 transition-colors duration-200">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </button>
               </div>
             </div>
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-yellow-50">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                       Type & Message
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                       User/IP
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                       Severity
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                       Timestamp
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-slate-200">
                   {securityLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
+                    <tr key={log.id} className="hover:bg-blue-100">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-blue-900">{log.type.replace('_', ' ').toUpperCase()}</div>
-                        <div className="text-sm text-gray-500">{log.message}</div>
+                        <div className="text-sm font-medium text-slate-900">{log.type.replace('_', ' ').toUpperCase()}</div>
+                        <div className="text-sm text-slate-500">{log.message}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-blue-900">{log.user}</div>
-                        <div className="text-sm text-gray-500">{log.ip}</div>
+                        <div className="text-sm text-slate-900">{log.user}</div>
+                        <div className="text-sm text-slate-500">{log.ip}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(log.severity)}`}>
@@ -303,11 +303,11 @@ const SecurityCompliance = () => {
                           {log.status.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                         {log.timestamp}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 transition-colors duration-200">
+                        <button className="text-blue-500 hover:text-blue-700 transition-colors duration-200">
                           <Eye className="h-4 w-4" />
                         </button>
                       </td>
@@ -323,12 +323,12 @@ const SecurityCompliance = () => {
       {selectedTab === 'disputes' && (
         <div className="space-y-6">
           {disputes.map((dispute) => (
-            <div key={dispute.id} className="bg-white shadow-lg rounded-lg hover:shadow-xl transition-shadow duration-200">
+            <div key={dispute.id} className="bg-white shadow-lg rounded-lg hover:shadow-xl transition-shadow duration-200 border border-slate-200">
               <div className="px-4 py-5 sm:p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-bold text-blue-900">
+                      <h3 className="text-lg font-bold text-slate-900">
                         {dispute.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </h3>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(dispute.status)}`}>
@@ -340,31 +340,31 @@ const SecurityCompliance = () => {
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
                       <div>
-                        <dt className="text-sm font-medium text-blue-900">Reporter</dt>
-                        <dd className="mt-1 text-sm text-gray-700">{dispute.reporter}</dd>
+                        <dt className="text-sm font-medium text-slate-900">Reporter</dt>
+                        <dd className="mt-1 text-sm text-slate-600">{dispute.reporter}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-blue-900">Reportee</dt>
-                        <dd className="mt-1 text-sm text-gray-700">{dispute.reportee}</dd>
+                        <dt className="text-sm font-medium text-slate-900">Reportee</dt>
+                        <dd className="mt-1 text-sm text-slate-600">{dispute.reportee}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-blue-900">Book</dt>
-                        <dd className="mt-1 text-sm text-gray-700">{dispute.bookTitle}</dd>
+                        <dt className="text-sm font-medium text-slate-900">Book</dt>
+                        <dd className="mt-1 text-sm text-slate-600">{dispute.bookTitle}</dd>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">{dispute.description}</p>
-                    <p className="text-xs text-gray-500">Created: {dispute.createdAt}</p>
+                    <p className="text-sm text-slate-600 mb-4">{dispute.description}</p>
+                    <p className="text-xs text-slate-500">Created: {dispute.createdAt}</p>
                   </div>
                   <div className="flex space-x-2">
-                    <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-yellow-50 transition-colors duration-200">
+                    <button className="inline-flex items-center px-3 py-2 border border-slate-200 shadow-sm text-sm leading-4 font-medium rounded-md text-slate-900 bg-white hover:bg-yellow-400 transition-colors duration-200">
                       View Details
                     </button>
                     {dispute.status === 'active' && (
                       <>
-                        <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-200">
+                        <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-500 hover:bg-green-600 transition-colors duration-200">
                           Resolve
                         </button>
-                        <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
+                        <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-900 hover:bg-blue-950 transition-colors duration-200">
                           Mediate
                         </button>
                       </>
@@ -380,23 +380,23 @@ const SecurityCompliance = () => {
       {selectedTab === 'compliance' && (
         <div className="space-y-6">
           {complianceChecks.map((category) => (
-            <div key={category.category} className="bg-white shadow-lg rounded-lg">
+            <div key={category.category} className="bg-white shadow-lg rounded-lg border border-slate-200">
               <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-bold text-blue-900 mb-4">{category.category}</h3>
+                <h3 className="text-lg leading-6 font-bold text-slate-900 mb-4">{category.category}</h3>
                 <div className="space-y-3">
                   {category.checks.map((check, index) => (
-                    <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-yellow-50 transition-colors duration-200">
+                    <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                       <div className="flex-shrink-0">
                         {getStatusIcon(check.status)}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-blue-900">{check.name}</p>
+                          <p className="text-sm font-medium text-slate-900">{check.name}</p>
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(check.status)}`}>
                             {check.status.toUpperCase()}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600">{check.description}</p>
+                        <p className="text-sm text-slate-600">{check.description}</p>
                       </div>
                     </div>
                   ))}

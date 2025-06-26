@@ -12,7 +12,7 @@ const Dashboard = () => {
       change: '+12.5%',
       changeType: 'positive',
       icon: Users,
-      color: 'blue'
+      color: 'bg-blue-900'
     },
     {
       title: 'Active Listings',
@@ -20,7 +20,7 @@ const Dashboard = () => {
       change: '+8.2%',
       changeType: 'positive',
       icon: BookOpen,
-      color: 'yellow'
+      color: 'bg-yellow-400'
     },
     {
       title: 'Pending Approvals',
@@ -28,7 +28,7 @@ const Dashboard = () => {
       change: '-15.3%',
       changeType: 'positive',
       icon: AlertTriangle,
-      color: 'amber'
+      color: 'bg-blue-500'
     },
     {
       title: 'Monthly Revenue',
@@ -36,7 +36,7 @@ const Dashboard = () => {
       change: '+24.1%',
       changeType: 'positive',
       icon: TrendingUp,
-      color: 'blue'
+      color: 'bg-blue-900'
     },
     {
       title: 'Active Events',
@@ -44,7 +44,7 @@ const Dashboard = () => {
       change: '+2',
       changeType: 'positive',
       icon: Calendar,
-      color: 'yellow'
+      color: 'bg-yellow-400'
     },
     {
       title: 'Avg Trust Score',
@@ -52,20 +52,20 @@ const Dashboard = () => {
       change: '+0.2',
       changeType: 'positive',
       icon: Star,
-      color: 'amber'
+      color: 'bg-blue-500'
     }
   ];
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2 text-lg">Welcome back! Here's what's happening on BookHive today.</p>
+          <h1 className="text-4xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-600 mt-2 text-lg">Welcome back! Here's what's happening on BookHive today.</p>
         </div>
-        <div className="text-right bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <p className="text-sm text-gray-500">Last updated</p>
-          <p className="text-sm font-semibold text-gray-900">{new Date().toLocaleString()}</p>
+        <div className="text-right bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+          <p className="text-sm text-slate-500">Last updated</p>
+          <p className="text-sm font-semibold text-slate-900">{new Date().toLocaleString()}</p>
         </div>
       </div>
 
