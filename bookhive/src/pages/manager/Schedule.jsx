@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Filter,
-  RefreshCw,
-  DollarSign,
-  Fuel
-} from 'lucide-react';
+import { Calendar, Clock, MapPin, Filter, RefreshCw, DollarSign, Fuel, Settings, Router as Route, Truck } from 'lucide-react';
 
 const Schedule = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [showVariables, setShowVariables] = useState(false);
+
+  const [variables, setVariables] = useState({
+    fuelRate: 3.45,
+    baseCost: 15.00,
+    peakHourMultiplier: 1.5,
+    distanceRate: 2.50,
+    deliveryTimeBuffer: 15
+  });
 
   const schedules = [
     {
@@ -22,8 +23,10 @@ const Schedule = () => {
       priority: 'High',
       cost: 25.50,
       distance: '5.2 km',
+      estimatedTime: '35 mins',
       assignedAgent: null,
-      status: 'Available'
+      status: 'Available',
+      productType: 'Electronics'
     },
     {
       id: 'S002',
@@ -33,8 +36,10 @@ const Schedule = () => {
       priority: 'Medium',
       cost: 18.75,
       distance: '3.8 km',
+      estimatedTime: '25 mins',
       assignedAgent: 'John Smith',
-      status: 'Assigned'
+      status: 'Assigned',
+      productType: 'Documents'
     },
     {
       id: 'S003',
@@ -44,8 +49,10 @@ const Schedule = () => {
       priority: 'Low',
       cost: 32.00,
       distance: '7.1 km',
+      estimatedTime: '45 mins',
       assignedAgent: null,
-      status: 'Available'
+      status: 'Available',
+      productType: 'Food'
     },
     {
       id: 'S004',
@@ -55,9 +62,17 @@ const Schedule = () => {
       priority: 'High',
       cost: 28.25,
       distance: '6.3 km',
+      estimatedTime: '40 mins',
       assignedAgent: 'Sarah Johnson',
-      status: 'In Progress'
+      status: 'In Progress',
+      productType: 'Medical'
     },
+  ];
+
+  const mainRoutes = [
+    { name: 'Route A', path: 'Downtown → North Hub', vehicles: 3, status: 'Active' },
+    { name: 'Route B', path: 'South Hub → West Hub', vehicles: 2, status: 'Active' },
+    { name: 'Route C', path: 'East Hub → Downtown', vehicles: 4, status: 'Optimizing' },
   ];
 
   const getPriorityColor = (priority) => {
@@ -86,6 +101,24 @@ const Schedule = () => {
     }
   };
 
+  const calculateCost = (distance, priority, time, productType) => {
+    let cost = variables.baseCost;
+    const distanceNum = parseFloat(distance);
+    cost += distanceNum * variables.distanceRate;
+    
+    // Peak hour multiplier (9-11 AM)
+    const hour = parseInt(time.split(':')[0]);
+    if (hour >= 9 && hour <= 11) {
+      cost *= variables.peakHourMultiplier;
+    }
+    
+    // Priority multiplier
+    if (priority === 'High') cost *= 1.3;
+    if (priority === 'Medium') cost *= 1.1;
+    
+    return cost.toFixed(2);
+  };
+
   const filteredSchedules = schedules.filter(schedule => {
     if (selectedFilter === 'all') return true;
     return schedule.status.toLowerCase() === selectedFilter.toLowerCase().replace(' ', '');
@@ -97,17 +130,137 @@ const Schedule = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 font-heading">Schedule Management</h2>
-          <p className="text-gray-600">Manage delivery schedules and assignments</p>
+          <p className="text-gray-600">Manage delivery schedules and optimize routes</p>
         </div>
         <div className="flex space-x-2">
+          <button 
+            onClick={() => setShowVariables(!showVariables)}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+          >
+            <Settings size={20} />
+            <span>Variables</span>
+          </button>
           <button className="bg-yellow-400 text-white px-4 py-2 rounded-lg hover:bg-yellow-500 transition-colors flex items-center space-x-2">
             <RefreshCw size={20} />
             <span>Auto-Pick</span>
           </button>
           <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
-            <Fuel size={20} />
+            <Route size={20} />
             <span>Optimize Routes</span>
           </button>
+        </div>
+      </div>
+
+      {/* Variables Panel */}
+      {showVariables && (
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
+            Delivery Variables & Cost Factors
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fuel Rate (per liter)
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="number"
+                  value={variables.fuelRate}
+                  onChange={(e) => setVariables({...variables, fuelRate: parseFloat(e.target.value)})}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Base Delivery Cost
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="number"
+                  value={variables.baseCost}
+                  onChange={(e) => setVariables({...variables, baseCost: parseFloat(e.target.value)})}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Distance Rate (per km)
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="number"
+                  value={variables.distanceRate}
+                  onChange={(e) => setVariables({...variables, distanceRate: parseFloat(e.target.value)})}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Peak Hour Multiplier
+              </label>
+              <input
+                type="number"
+                value={variables.peakHourMultiplier}
+                onChange={(e) => setVariables({...variables, peakHourMultiplier: parseFloat(e.target.value)})}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                step="0.1"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Time Buffer (minutes)
+              </label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="number"
+                  value={variables.deliveryTimeBuffer}
+                  onChange={(e) => setVariables({...variables, deliveryTimeBuffer: parseInt(e.target.value)})}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Routes */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
+          Main Vehicle Routes
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {mainRoutes.map((route, index) => (
+            <div key={index} className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-slate-900">{route.name}</h4>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  route.status === 'Active' ? 'bg-green-600 text-white' : 'bg-yellow-400 text-white'
+                }`}>
+                  {route.status}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">{route.path}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1">
+                  <Truck size={14} className="text-gray-400" />
+                  <span className="text-sm">{route.vehicles} vehicles</span>
+                </div>
+                <button className="text-blue-600 text-sm hover:underline">
+                  Adjust Path
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -137,39 +290,6 @@ const Schedule = () => {
         </div>
       </div>
 
-      {/* Cost Factors Panel */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
-          Cost Factors & Optimization
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <Fuel className="text-yellow-400" size={20} />
-              <span className="font-medium">Fuel Price</span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">$3.45/L</p>
-            <p className="text-sm text-gray-600">Updated 2 hours ago</p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <Clock className="text-blue-600" size={20} />
-              <span className="font-medium">Peak Hours</span>
-            </div>
-            <p className="text-lg font-bold text-slate-900">9AM - 11AM</p>
-            <p className="text-sm text-gray-600">Higher rates apply</p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <MapPin className="text-green-600" size={20} />
-              <span className="font-medium">Main Routes</span>
-            </div>
-            <p className="text-lg font-bold text-slate-900">5 Active</p>
-            <p className="text-sm text-gray-600">Optimized paths</p>
-          </div>
-        </div>
-      </div>
-
       {/* Schedule List */}
       <div className="space-y-4">
         {filteredSchedules.map((schedule) => (
@@ -183,6 +303,9 @@ const Schedule = () => {
                   </span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
                     {schedule.status}
+                  </span>
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {schedule.productType}
                   </span>
                 </div>
                 
@@ -208,6 +331,7 @@ const Schedule = () => {
                     <div className="flex items-center space-x-2">
                       <Clock className="text-gray-400" size={16} />
                       <span className="text-sm font-medium">{schedule.time}</span>
+                      <span className="text-sm text-gray-600">({schedule.estimatedTime})</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <DollarSign className="text-gray-400" size={16} />
@@ -228,7 +352,7 @@ const Schedule = () => {
                 {schedule.status === 'Available' ? (
                   <>
                     <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors">
-                      Assign Agent
+                      Auto-Assign
                     </button>
                     <button className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
                       Edit

@@ -8,17 +8,22 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  Settings
+  Settings,
+  Map,
+  Navigation,
+  Maximize2
 } from 'lucide-react';
 
 const Hubs = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showMap, setShowMap] = useState(false);
 
   const hubs = [
     {
       id: 'H001',
       name: 'Downtown Hub',
       location: '123 Business District, Downtown',
+      coordinates: { lat: 40.7128, lng: -74.0060 },
       capacity: 500,
       currentLoad: 470,
       supervisor: 'David Miller',
@@ -31,6 +36,7 @@ const Hubs = () => {
       id: 'H002',
       name: 'North Hub',
       location: '456 Industrial Park, North Zone',
+      coordinates: { lat: 40.7589, lng: -73.9851 },
       capacity: 350,
       currentLoad: 285,
       supervisor: 'Jennifer Adams',
@@ -43,6 +49,7 @@ const Hubs = () => {
       id: 'H003',
       name: 'South Hub',
       location: '789 Commerce St, South District',
+      coordinates: { lat: 40.6892, lng: -74.0445 },
       capacity: 400,
       currentLoad: 384,
       supervisor: 'Robert Chen',
@@ -55,6 +62,7 @@ const Hubs = () => {
       id: 'H004',
       name: 'West Hub',
       location: '321 Logistics Ave, West Side',
+      coordinates: { lat: 40.7282, lng: -74.0776 },
       capacity: 300,
       currentLoad: 150,
       supervisor: null,
@@ -63,6 +71,32 @@ const Hubs = () => {
       todayDeliveries: 31,
       efficiency: 88
     },
+    {
+      id: 'H005',
+      name: 'East Hub',
+      location: '654 Distribution Center, East End',
+      coordinates: { lat: 40.7505, lng: -73.9934 },
+      capacity: 450,
+      currentLoad: 320,
+      supervisor: 'Maria Rodriguez',
+      agents: 9,
+      status: 'Operational',
+      todayDeliveries: 52,
+      efficiency: 93
+    },
+    {
+      id: 'H006',
+      name: 'Central Hub',
+      location: '987 Main Plaza, Central District',
+      coordinates: { lat: 40.7411, lng: -74.0018 },
+      capacity: 600,
+      currentLoad: 480,
+      supervisor: 'James Wilson',
+      agents: 12,
+      status: 'Operational',
+      todayDeliveries: 67,
+      efficiency: 97
+    }
   ];
 
   const getStatusIcon = (status) => {
@@ -165,6 +199,78 @@ const Hubs = () => {
         </div>
       </div>
 
+      {/* Map View */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 font-heading">Hub Locations</h3>
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => setShowMap(!showMap)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <Map size={16} />
+              <span>{showMap ? 'Hide Map' : 'Show Map'}</span>
+            </button>
+            <button className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2">
+              <Navigation size={16} />
+              <span>Optimize Routes</span>
+            </button>
+            <button className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2">
+              <Maximize2 size={16} />
+              <span>Full Screen</span>
+            </button>
+          </div>
+        </div>
+        
+        {showMap ? (
+          <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center relative">
+            <div className="text-center">
+              <Map className="mx-auto mb-4 text-gray-400" size={48} />
+              <p className="text-gray-500 mb-4">Interactive Map View</p>
+              <p className="text-sm text-gray-400">Map integration would show hub locations with real-time status</p>
+            </div>
+            
+            {/* Simulated Hub Markers */}
+            <div className="absolute top-4 left-4 bg-white p-2 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-2 text-sm">
+                <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                <span>Operational</span>
+              </div>
+            </div>
+            <div className="absolute top-4 left-32 bg-white p-2 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-2 text-sm">
+                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                <span>Near Capacity</span>
+              </div>
+            </div>
+            <div className="absolute top-4 left-60 bg-white p-2 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-2 text-sm">
+                <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                <span>Needs Attention</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {hubs.slice(0, 6).map((hub) => (
+              <div key={hub.id} className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-slate-900">{hub.name}</h4>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hub.status)}`}>
+                    {hub.status}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{hub.location}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Efficiency: {hub.efficiency}%</span>
+                  <span className="text-gray-600">{hub.agents} agents</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -177,8 +283,8 @@ const Hubs = () => {
         />
       </div>
 
-      {/* Hubs Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Hubs Grid - 3 per row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {filteredHubs.map((hub) => {
           const capacityPercentage = Math.round((hub.currentLoad / hub.capacity) * 100);
           

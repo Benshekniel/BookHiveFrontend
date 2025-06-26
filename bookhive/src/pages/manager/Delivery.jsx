@@ -8,16 +8,55 @@ import {
   CheckCircle,
   AlertTriangle,
   RotateCcw,
-  Eye
+  Eye,
+  Building2,
+  ArrowLeft
 } from 'lucide-react';
 
 const Delivery = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedHub, setSelectedHub] = useState(null);
+
+  const hubs = [
+    {
+      id: 'H001',
+      name: 'Downtown Hub',
+      location: 'Business District',
+      activeDeliveries: 12,
+      completedToday: 45,
+      totalDeliveries: 156
+    },
+    {
+      id: 'H002',
+      name: 'North Hub',
+      location: 'Industrial Park',
+      activeDeliveries: 8,
+      completedToday: 38,
+      totalDeliveries: 124
+    },
+    {
+      id: 'H003',
+      name: 'South Hub',
+      location: 'Commerce District',
+      activeDeliveries: 15,
+      completedToday: 42,
+      totalDeliveries: 189
+    },
+    {
+      id: 'H004',
+      name: 'West Hub',
+      location: 'Logistics Avenue',
+      activeDeliveries: 6,
+      completedToday: 31,
+      totalDeliveries: 98
+    },
+  ];
 
   const deliveries = [
     {
       id: 'D001',
+      hubId: 'H001',
       agent: 'John Smith',
       pickup: '123 Main St',
       dropoff: '456 Oak Ave',
@@ -30,6 +69,7 @@ const Delivery = () => {
     },
     {
       id: 'D002',
+      hubId: 'H001',
       agent: 'Sarah Johnson',
       pickup: '789 Pine Rd',
       dropoff: '321 Elm St',
@@ -42,6 +82,7 @@ const Delivery = () => {
     },
     {
       id: 'D003',
+      hubId: 'H002',
       agent: 'Mike Wilson',
       pickup: '654 Cedar Ln',
       dropoff: '987 Birch Dr',
@@ -54,6 +95,7 @@ const Delivery = () => {
     },
     {
       id: 'D004',
+      hubId: 'H003',
       agent: 'Lisa Brown',
       pickup: '147 Maple St',
       dropoff: '258 Willow Ave',
@@ -109,7 +151,11 @@ const Delivery = () => {
     }
   };
 
-  const filteredDeliveries = deliveries.filter(delivery => {
+  const hubDeliveries = selectedHub 
+    ? deliveries.filter(d => d.hubId === selectedHub.id)
+    : deliveries;
+
+  const filteredDeliveries = hubDeliveries.filter(delivery => {
     const matchesSearch = delivery.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          delivery.agent.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = selectedFilter === 'all' || delivery.status.toLowerCase().replace(' ', '') === selectedFilter.toLowerCase();
@@ -117,20 +163,84 @@ const Delivery = () => {
   });
 
   const statusCounts = {
-    all: deliveries.length,
-    intransit: deliveries.filter(d => d.status === 'In Transit').length,
-    delivered: deliveries.filter(d => d.status === 'Delivered').length,
-    pickup: deliveries.filter(d => d.status === 'Pickup').length,
-    delayed: deliveries.filter(d => d.status === 'Delayed').length,
+    all: hubDeliveries.length,
+    intransit: hubDeliveries.filter(d => d.status === 'In Transit').length,
+    delivered: hubDeliveries.filter(d => d.status === 'Delivered').length,
+    pickup: hubDeliveries.filter(d => d.status === 'Pickup').length,
+    delayed: hubDeliveries.filter(d => d.status === 'Delayed').length,
   };
+
+  if (!selectedHub) {
+    return (
+      <div className="space-y-6 font-sans">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 font-heading">Delivery Tracking</h2>
+            <p className="text-gray-600">Select a hub to monitor deliveries</p>
+          </div>
+          <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
+            <Eye size={20} />
+            <span>Analytics</span>
+          </button>
+        </div>
+
+        {/* Hubs Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {hubs.map((hub) => (
+            <div 
+              key={hub.id} 
+              onClick={() => setSelectedHub(hub)}
+              className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow cursor-pointer hover:border-blue-900"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <Building2 className="text-blue-600" size={32} />
+                <span className="text-sm text-gray-500">{hub.id}</span>
+              </div>
+              
+              <h3 className="text-lg font-semibold text-slate-900 mb-1 font-heading">{hub.name}</h3>
+              <p className="text-sm text-gray-600 mb-4">{hub.location}</p>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Active</span>
+                  <span className="text-sm font-medium text-blue-600">{hub.activeDeliveries}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Completed Today</span>
+                  <span className="text-sm font-medium text-green-600">{hub.completedToday}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Total</span>
+                  <span className="text-sm font-medium text-slate-900">{hub.totalDeliveries}</span>
+                </div>
+              </div>
+              
+              <button className="w-full mt-4 bg-blue-900 text-white py-2 rounded-lg hover:bg-blue-800 transition-colors">
+                View Deliveries
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-heading">Delivery Tracking</h2>
-          <p className="text-gray-600">Monitor all active deliveries in real-time</p>
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={() => setSelectedHub(null)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft size={20} className="text-gray-600" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 font-heading">{selectedHub.name} Deliveries</h2>
+            <p className="text-gray-600">Monitor deliveries from {selectedHub.location}</p>
+          </div>
         </div>
         <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
           <Eye size={20} />
