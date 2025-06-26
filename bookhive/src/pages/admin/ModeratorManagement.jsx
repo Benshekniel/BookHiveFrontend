@@ -105,9 +105,9 @@ const ModeratorManagement = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      active: 'bg-green-100 text-green-800',
-      inactive: 'bg-gray-100 text-gray-800',
-      suspended: 'bg-red-100 text-red-800'
+      active: 'bg-green-500 text-white',
+      inactive: 'bg-slate-200 text-slate-800',
+      suspended: 'bg-red-500 text-white'
     };
     return colors[status] || colors.active;
   };
@@ -139,18 +139,18 @@ const ModeratorManagement = () => {
   };
 
   return (
-    <div>
+    <div className="bg-slate-50 p-6 min-h-screen">
       <div className="sm:flex sm:items-center mb-8">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Moderator Management</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-2xl font-semibold text-slate-900">Moderator Management</h1>
+          <p className="mt-2 text-sm text-slate-700">
             Manage moderator accounts, permissions, and monitor their activities.
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Moderator
@@ -159,28 +159,28 @@ const ModeratorManagement = () => {
       </div>
 
       {/* Search and Filter */}
-      <div className="bg-white shadow rounded-lg mb-6">
+      <div className="bg-white shadow rounded-lg mb-6 border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search Moderators</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Search Moderators</label>
               <div className="relative">
-                <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+                <Search className="h-4 w-4 absolute left-3 top-3 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="pl-10 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Filter by Status</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -193,46 +193,46 @@ const ModeratorManagement = () => {
       </div>
 
       {/* Moderators Table */}
-      <div className="bg-white shadow rounded-lg mb-8">
+      <div className="bg-white shadow rounded-lg mb-8 border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Current Moderators</h3>
+          <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Current Moderators</h3>
           <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Moderator
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Permissions
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Activity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Last Active
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-200">
                 {filteredModerators.map((moderator) => (
                   <tr key={moderator.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-blue-900 flex items-center justify-center">
                             <User className="h-5 w-5 text-white" />
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{moderator.name}</div>
-                          <div className="text-sm text-gray-500">{moderator.email}</div>
+                          <div className="text-sm font-medium text-slate-900">{moderator.name}</div>
+                          <div className="text-sm text-slate-500">{moderator.email}</div>
                         </div>
                       </div>
                     </td>
@@ -242,8 +242,8 @@ const ModeratorManagement = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{moderator.permissions.length} permissions</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-slate-900">{moderator.permissions.length} permissions</div>
+                      <div className="text-sm text-slate-500">
                         {moderator.permissions.slice(0, 2).map(p => 
                           permissions.find(perm => perm.id === p)?.name
                         ).join(', ')}
@@ -251,29 +251,29 @@ const ModeratorManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{moderator.actionsCount} actions</div>
-                      <div className="text-sm text-gray-500">{moderator.warningsIssued} warnings</div>
+                      <div className="text-sm text-slate-900">{moderator.actionsCount} actions</div>
+                      <div className="text-sm text-slate-500">{moderator.warningsIssued} warnings</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                       {moderator.lastActivity}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-2">
                         <button 
                           onClick={() => console.log('View details:', moderator.id)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-500 hover:text-blue-700"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => handleEditModerator(moderator)}
-                          className="text-green-600 hover:text-green-900"
+                          className="text-green-500 hover:text-green-700"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => console.log('Delete moderator:', moderator.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -288,31 +288,31 @@ const ModeratorManagement = () => {
       </div>
 
       {/* Activity Log */}
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-white shadow rounded-lg border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Moderator Activity</h3>
+          <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Recent Moderator Activity</h3>
           <div className="flow-root">
             <ul className="-mb-8">
               {activityLog.map((activity, activityIdx) => (
                 <li key={activity.id}>
                   <div className="relative pb-8">
                     {activityIdx !== activityLog.length - 1 ? (
-                      <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" />
+                      <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200" />
                     ) : null}
                     <div className="relative flex space-x-3">
                       <div>
-                        <span className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white">
+                        <span className="h-8 w-8 rounded-full bg-blue-900 flex items-center justify-center ring-8 ring-white">
                           <Shield className="h-4 w-4 text-white" />
                         </span>
                       </div>
                       <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                         <div>
-                          <p className="text-sm text-gray-500">
-                            <span className="font-medium text-gray-900">{activity.moderatorName}</span> {activity.action.toLowerCase()}
+                          <p className="text-sm text-slate-500">
+                            <span className="font-medium text-slate-900">{activity.moderatorName}</span> {activity.action.toLowerCase()}
                           </p>
-                          <p className="text-sm text-gray-400">{activity.details}</p>
+                          <p className="text-sm text-slate-400">{activity.details}</p>
                         </div>
-                        <div className="text-right text-sm whitespace-nowrap text-gray-500">
+                        <div className="text-right text-sm whitespace-nowrap text-slate-500">
                           {activity.timestamp}
                         </div>
                       </div>
@@ -325,38 +325,38 @@ const ModeratorManagement = () => {
         </div>
       </div>
 
-      {/* Create Moderator Modal */}
+      {/* Create Moderator Modal repay */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <div className="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
             <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
               <form onSubmit={handleCreateModerator}>
                 <div>
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Add New Moderator</h3>
+                  <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Add New Moderator</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                      <label className="block text-sm font-medium text-slate-700">Full Name</label>
                       <input
                         type="text"
                         required
                         value={newModerator.name}
                         onChange={(e) => setNewModerator({...newModerator, name: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Email Address</label>
+                      <label className="block text-sm font-medium text-slate-700">Email Address</label>
                       <input
                         type="email"
                         required
                         value={newModerator.email}
                         onChange={(e) => setNewModerator({...newModerator, email: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Permissions</label>
                       <div className="space-y-2">
                         {permissions.map((permission) => (
                           <div key={permission.id} className="flex items-start">
@@ -365,12 +365,12 @@ const ModeratorManagement = () => {
                                 type="checkbox"
                                 checked={newModerator.permissions.includes(permission.id)}
                                 onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
-                                className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                className="focus:ring-blue-500 h-4 w-4 text-blue-900 border-slate-200 rounded"
                               />
                             </div>
                             <div className="ml-3 text-sm">
-                              <label className="font-medium text-gray-700">{permission.name}</label>
-                              <p className="text-gray-500">{permission.description}</p>
+                              <label className="font-medium text-slate-700">{permission.name}</label>
+                              <p className="text-slate-500">{permission.description}</p>
                             </div>
                           </div>
                         ))}
@@ -381,14 +381,14 @@ const ModeratorManagement = () => {
                 <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
                   <button
                     type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-900 text-base font-medium text-white hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm"
                   >
                     Add Moderator
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-slate-200 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-900 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm"
                   >
                     Cancel
                   </button>
