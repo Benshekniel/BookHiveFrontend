@@ -10,6 +10,8 @@ import Users from '../pages/moderator/tabs/Users';
 import Hub from '../pages/moderator/tabs/Hub';
 import Compliance from '../pages/moderator/tabs/Compliance';
 import Support from '../pages/moderator/tabs/Support';
+import Testing from '../pages/moderator/tabs/Testing';
+
 
 
 const ModeratorRoutes = () => (
@@ -24,6 +26,8 @@ const ModeratorRoutes = () => (
           <Route path="hub" element={<Hub />} />
           <Route path="compliance" element={<Compliance />} />
           <Route path="support" element={<Support />} />
+          <Route path="test" element={<Testing />} />
+
     </Routes>
   </DashboardLayout>
 );

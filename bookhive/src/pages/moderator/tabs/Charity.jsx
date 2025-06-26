@@ -97,7 +97,7 @@ const Charity = () => {
           <h1 className="text-2xl font-bold text-textPrimary">Charity Management</h1>
           <p className="text-gray-600 mt-1">Manage donation requests and charity events</p>
         </div>
-        <button className="bg-secondary hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+        <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
           <Plus className="w-4 h-4" />
           <span>Create Event</span>
         </button>
