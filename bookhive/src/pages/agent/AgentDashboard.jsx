@@ -1,4 +1,28 @@
-import { Bell, Package, MapPin, Clock, TrendingUp, Car, DollarSign, CloudRain, AlertTriangle } from 'lucide-react'
+import {
+  Bell,
+  Package,
+  MapPin,
+  Clock,
+  TrendingUp,
+  Car,
+  DollarSign,
+  CloudRain,
+  AlertTriangle
+} from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts'
 
 export default function AgentDashboard() {
   const stats = [
@@ -57,104 +81,15 @@ export default function AgentDashboard() {
     { type: 'alert', message: 'Strong winds after 8 PM', icon: AlertTriangle },
   ]
 
-  // Simple chart components using CSS
-  const SimpleBarChart = ({ data, dataKey, color = '#3B82F6' }) => {
-    const maxValue = Math.max(...data.map(item => item[dataKey]))
+  const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+    const RADIAN = Math.PI / 180
+    const radius = 25 + innerRadius + (outerRadius - innerRadius)
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
     return (
-      <div className="flex items-end justify-between h-32 px-4">
-        {data.map((item, index) => (
-          <div key={index} className="flex flex-col items-center space-y-2">
-            <div 
-              className="w-8 rounded-t"
-              style={{ 
-                height: `${(item[dataKey] / maxValue) * 100}px`,
-                backgroundColor: color,
-                minHeight: '10px'
-              }}
-            />
-            <span className="text-xs text-gray-600">{item.day || item.month}</span>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  const SimpleLineChart = ({ data, dataKey1, dataKey2 }) => {
-    const maxValue1 = Math.max(...data.map(item => item[dataKey1]))
-    const maxValue2 = Math.max(...data.map(item => item[dataKey2]))
-    
-    return (
-      <div className="h-32 relative">
-        <div className="flex justify-between items-end h-full px-4">
-          {data.map((item, index) => (
-            <div key={index} className="flex flex-col items-center space-y-2 relative">
-              <div className="flex flex-col space-y-1">
-                <div 
-                  className="w-2 h-2 rounded-full bg-blue-500"
-                  style={{ marginBottom: `${(item[dataKey1] / maxValue1) * 80}px` }}
-                />
-                <div 
-                  className="w-2 h-2 rounded-full bg-green-500"
-                  style={{ marginBottom: `${(item[dataKey2] / maxValue2) * 80}px` }}
-                />
-              </div>
-              <span className="text-xs text-gray-600">{item.day}</span>
-            </div>
-          ))}
-        </div>
-        <div className="absolute top-0 right-0 flex space-x-4 text-xs">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-            <span>Deliveries</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span>Distance (km)</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const SimplePieChart = ({ data }) => {
-    const total = data.reduce((sum, item) => sum + item.value, 0)
-    let cumulativePercentage = 0
-    
-    return (
-      <div className="flex items-center justify-center h-32">
-        <div className="relative w-24 h-24">
-          <svg className="w-24 h-24 transform -rotate-90">
-            <circle
-              cx="48"
-              cy="48"
-              r="40"
-              fill="none"
-              stroke="#f3f4f6"
-              strokeWidth="8"
-            />
-            {data.map((item, index) => {
-              const percentage = (item.value / total) * 100
-              const strokeDasharray = `${percentage * 2.51} 251.2`
-              const strokeDashoffset = -cumulativePercentage * 2.51
-              cumulativePercentage += percentage
-              
-              return (
-                <circle
-                  key={index}
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  fill="none"
-                  stroke={item.color}
-                  strokeWidth="8"
-                  strokeDasharray={strokeDasharray}
-                  strokeDashoffset={strokeDashoffset}
-                />
-              )
-            })}
-          </svg>
-        </div>
-      </div>
+      <text x={x} y={y} fill="#0F172A" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+        {`${paymentBreakdown[index].name} (${(percent * 100).toFixed(0)}%)`}
+      </text>
     )
   }
 
@@ -198,11 +133,16 @@ export default function AgentDashboard() {
           <h2 className="text-lg font-semibold text-[#0F172A] mb-4">
             Weekly Performance
           </h2>
-          <SimpleLineChart 
-            data={weeklyPerformance} 
-            dataKey1="deliveries" 
-            dataKey2="distance" 
-          />
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={weeklyPerformance}>
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="deliveries" stroke="#3B82F6" name="Deliveries" />
+              <Line type="monotone" dataKey="distance" stroke="#22C55E" name="Distance (km)" />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Weather Widget */}
@@ -339,21 +279,16 @@ export default function AgentDashboard() {
           <h2 className="text-lg font-semibold text-[#0F172A] mb-4">
             Monthly Report
           </h2>
-          <SimpleBarChart 
-            data={monthlyData} 
-            dataKey="deliveries" 
-            color="#3B82F6" 
-          />
-          <div className="mt-4 flex justify-between text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded" />
-              <span>Deliveries</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded" />
-              <span>Earnings ($)</span>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={monthlyData}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="deliveries" fill="#3B82F6" name="Deliveries" />
+              <Bar dataKey="earnings" fill="#22C55E" name="Earnings ($)" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Payment Details */}
@@ -362,19 +297,25 @@ export default function AgentDashboard() {
             <DollarSign className="mr-2 text-green-500" size={20} />
             Payment Details
           </h2>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <div className="text-2xl font-bold text-[#0F172A]">$2,000</div>
-              <div className="text-sm text-[#0F172A]/60">This Month</div>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-semibold text-green-500">+12%</div>
-              <div className="text-sm text-[#0F172A]/60">vs Last Month</div>
-            </div>
+          <div className="flex items-center justify-center">
+            <ResponsiveContainer width={250} height={250}>
+              <PieChart>
+                <Pie
+                  data={paymentBreakdown}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={CustomPieLabel}
+                  labelLine={false}
+                >
+                  {paymentBreakdown.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          
-          <SimplePieChart data={paymentBreakdown} />
-          
           <div className="space-y-2 mt-4">
             {paymentBreakdown.map((item) => (
               <div key={item.name} className="flex items-center justify-between text-sm">
