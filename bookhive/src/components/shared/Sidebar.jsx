@@ -16,7 +16,7 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout }) => {
     if (path.startsWith('/manager')) return 'delivery-manager';
     if (path.startsWith('/agent')) return 'delivery-agent';
     if (path.startsWith('/organization')) return 'organization';
-    if (path.startsWith('/dashboard')) return 'user';
+    if (path.startsWith('/user')) return 'user';
     if (path.startsWith('/hubmanager')) return 'hub-manager';
     return 'guest'; // Fallback for public routes (e.g., '/', '/login')
   };
