@@ -34,6 +34,16 @@ const BookCircle = () => {
       lastActivity: '30 minutes ago',
       status: 'monitored',
       reports: 5
+    },
+      {
+      id: 4,
+      name: 'Romantic Reads Circle',
+      members: 777,
+      posts: 141,
+      moderationLevel: 'low',
+      lastActivity: '12 minutes ago',
+      status: 'active',
+      reports: 3
     }
   ];
 
