@@ -1,18 +1,15 @@
 import { useState } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Calendar, Download, Filter } from 'lucide-react';
-import StatCard from '../../components/hubmanager/StatCard';
 import Card from '../../components/hubmanager/Card';
-
 
 const Performance = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('week');
-  const [selectedMetric, setSelectedMetric] = useState('deliveries');
 
   const performanceStats = [
-    { title: 'Total Deliveries', value: '1,247', icon: BarChart3, color: '#3b82f6', change: '+12%', trend: 'up' },
-    { title: 'Success Rate', value: '94.2%', icon: TrendingUp, color: '#22c55e', change: '+2.1%', trend: 'up' },
-    { title: 'Avg Delivery Time', value: '28 min', icon: Calendar, color: '#fbbf24', change: '-3 min', trend: 'up' },
-    { title: 'Customer Rating', value: '4.8/5', icon: TrendingUp, color: '#22c55e', change: '+0.2', trend: 'up' },
+    { title: 'Total Deliveries', value: '1,247', icon: BarChart3, color: 'text-blue-500', change: '+12%', trend: 'up' },
+    { title: 'Success Rate', value: '94.2%', icon: TrendingUp, color: 'text-green-500', change: '+2.1%', trend: 'up' },
+    { title: 'Avg Delivery Time', value: '28 min', icon: Calendar, color: 'text-yellow-400', change: '-3 min', trend: 'up' },
+    { title: 'Customer Rating', value: '4.8/5', icon: TrendingUp, color: 'text-green-500', change: '+0.2', trend: 'up' },
   ];
 
   const riderPerformance = [
@@ -38,519 +35,86 @@ const Performance = () => {
     { day: 'Sun', deliveries: 32, success: 30 },
   ];
 
-  const containerStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px'
+  const getEfficiencyBadgeClasses = (efficiency) => {
+    if (efficiency >= 90) return 'bg-green-100 text-green-800';
+    if (efficiency >= 85) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-600';
   };
 
-  const headerStyles = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+  const getSuccessRateBadgeClasses = (rate) => {
+    if (rate >= 95) return 'bg-green-100 text-green-800';
+    if (rate >= 90) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-600';
   };
-
-  const titleStyles = {
-    fontSize: '30px',
-    fontFamily: 'Poppins, system-ui, sans-serif',
-    fontWeight: 'bold',
-    color: '#0f172a',
-    margin: 0
-  };
-
-  const subtitleStyles = {
-    color: '#6b7280',
-    marginTop: '8px',
-    margin: 0
-  };
-
-  const headerActionsStyles = {
-    display: 'flex',
-    gap: '12px'
-  };
-
-  const selectStyles = {
-    padding: '8px 12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '14px',
-    outline: 'none'
-  };
-
-  const exportButtonStyles = {
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    transition: 'background-color 0.2s ease'
-  };
-
-  const statsGridStyles = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '24px'
-  };
-
-  const statCardStyles = {
-    padding: '24px'
-  };
-
-  const statHeaderStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  };
-
-  const statContentStyles = {
-    display: 'flex',
-    flexDirection: 'column'
-  };
-
-  const statTitleStyles = {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#6b7280',
-    margin: 0
-  };
-
-  const statValueStyles = {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginTop: '4px',
-    margin: 0
-  };
-
-  const statChangeStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    marginTop: '8px'
-  };
-
-  const statChangeTextStyles = {
-    fontSize: '14px',
-    fontWeight: '500',
-    marginLeft: '4px'
-  };
-
-  const statChangeSubtextStyles = {
-    fontSize: '14px',
-    color: '#9ca3af',
-    marginLeft: '4px'
-  };
-
-  const statIconContainerStyles = {
-    padding: '12px',
-    borderRadius: '50%',
-    backgroundColor: '#f3f4f6'
-  };
-
-  const contentGridStyles = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-    gap: '24px'
-  };
-
-  const chartCardStyles = {
-    padding: '24px'
-  };
-
-  const chartHeaderStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '24px'
-  };
-
-  const chartTitleStyles = {
-    fontSize: '20px',
-    fontFamily: 'Poppins, system-ui, sans-serif',
-    fontWeight: '600',
-    color: '#0f172a',
-    margin: 0
-  };
-
-  const legendStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    fontSize: '14px'
-  };
-
-  const legendItemStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  };
-
-  const legendDotStyles = {
-    width: '12px',
-    height: '12px',
-    borderRadius: '50%'
-  };
-
-  const chartContentStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px'
-  };
-
-  const chartRowStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px'
-  };
-
-  const dayLabelStyles = {
-    width: '48px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#6b7280'
-  };
-
-  const barContainerStyles = {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  };
-
-  const barBackgroundStyles = {
-    flex: 1,
-    backgroundColor: '#e5e7eb',
-    borderRadius: '9999px',
-    height: '24px',
-    position: 'relative'
-  };
-
-  const getBarStyles = (value, max, color) => ({
-    backgroundColor: color,
-    height: '24px',
-    borderRadius: '9999px',
-    width: `${(value / max) * 100}%`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingRight: '8px'
-  });
-
-  const barValueStyles = {
-    color: 'white',
-    fontSize: '12px',
-    fontWeight: '500'
-  };
-
-  const routeCardStyles = {
-    padding: '24px'
-  };
-
-  const routeListStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px'
-  };
-
-  const routeItemStyles = {
-    padding: '16px',
-    backgroundColor: '#f8fafc',
-    borderRadius: '8px'
-  };
-
-  const routeHeaderStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '8px'
-  };
-
-  const routeNameStyles = {
-    fontWeight: '500',
-    color: '#0f172a',
-    fontSize: '16px',
-    margin: 0
-  };
-
-  const getEfficiencyBadgeStyles = (efficiency) => {
-    let bgColor, textColor;
-    if (efficiency >= 90) {
-      bgColor = '#dcfce7';
-      textColor = '#166534';
-    } else if (efficiency >= 85) {
-      bgColor = '#fef3c7';
-      textColor = '#92400e';
-    } else {
-      bgColor = '#fef2f2';
-      textColor = '#dc2626';
-    }
-    
-    return {
-      padding: '4px 8px',
-      borderRadius: '9999px',
-      fontSize: '12px',
-      fontWeight: '500',
-      backgroundColor: bgColor,
-      color: textColor
-    };
-  };
-
-  const routeStatsStyles = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '16px',
-    fontSize: '14px'
-  };
-
-  const routeStatStyles = {
-    display: 'flex',
-    justifyContent: 'space-between'
-  };
-
-  const routeStatLabelStyles = {
-    color: '#6b7280'
-  };
-
-  const routeStatValueStyles = {
-    fontWeight: '500',
-    color: '#0f172a'
-  };
-
-  const tableCardStyles = {
-    padding: '24px'
-  };
-
-  const tableHeaderStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '24px'
-  };
-
-  const filterButtonStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    color: '#3b82f6',
-    fontSize: '14px',
-    fontWeight: '500',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'color 0.2s ease'
-  };
-
-  const tableStyles = {
-    width: '100%',
-    borderCollapse: 'collapse'
-  };
-
-  const tableHeadStyles = {
-    borderBottom: '1px solid #e5e7eb'
-  };
-
-  const thStyles = {
-    textAlign: 'left',
-    padding: '12px 16px',
-    fontWeight: '500',
-    color: '#374151',
-    fontSize: '14px'
-  };
-
-  const tbodyStyles = {
-    
-  };
-
-  const trStyles = {
-    borderBottom: '1px solid #f3f4f6',
-    transition: 'background-color 0.2s ease'
-  };
-
-  const tdStyles = {
-    padding: '12px 16px',
-    fontSize: '14px'
-  };
-
-  const riderCellStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px'
-  };
-
-  const riderAvatarStyles = {
-    width: '32px',
-    height: '32px',
-    backgroundColor: '#fbbf24',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  };
-
-  const riderAvatarTextStyles = {
-    color: '#0f172a',
-    fontWeight: '500',
-    fontSize: '14px'
-  };
-
-  const riderNameStyles = {
-    fontWeight: '500',
-    color: '#0f172a'
-  };
-
-  const getSuccessRateBadgeStyles = (rate) => {
-    let bgColor, textColor;
-    if (rate >= 95) {
-      bgColor = '#dcfce7';
-      textColor = '#166534';
-    } else if (rate >= 90) {
-      bgColor = '#fef3c7';
-      textColor = '#92400e';
-    } else {
-      bgColor = '#fef2f2';
-      textColor = '#dc2626';
-    }
-    
-    return {
-      padding: '4px 8px',
-      borderRadius: '9999px',
-      fontSize: '12px',
-      fontWeight: '500',
-      backgroundColor: bgColor,
-      color: textColor
-    };
-  };
-
-  const ratingStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px'
-  };
-
-  const ratingValueStyles = {
-    color: '#0f172a',
-    fontWeight: '500'
-  };
-
-  const starStyles = {
-    color: '#fbbf24'
-  };
-
-  const progressBarContainerStyles = {
-    width: '100%',
-    backgroundColor: '#e5e7eb',
-    borderRadius: '9999px',
-    height: '8px'
-  };
-
-  const getProgressBarStyles = (rate, color) => ({
-    height: '8px',
-    borderRadius: '9999px',
-    width: `${rate}%`,
-    backgroundColor: color
-  });
 
   const getProgressBarColor = (rate) => {
-    if (rate >= 95) return '#22c55e';
-    if (rate >= 90) return '#fbbf24';
-    return '#ef4444';
+    if (rate >= 95) return 'bg-green-500';
+    if (rate >= 90) return 'bg-yellow-400';
+    return 'bg-red-500';
   };
 
   return (
-    <div style={containerStyles}>
-      <div style={headerStyles}>
-        <div>
-          <h1 style={titleStyles}>Performance Analytics</h1>
-          <p style={subtitleStyles}>Track and analyze your hub's operational performance</p>
-        </div>
-        <div style={headerActionsStyles}>
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            style={selectStyles}
-            onFocus={(e) => e.target.style.outline = '2px solid #3b82f6'}
-            onBlur={(e) => e.target.style.outline = 'none'}
-          >
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="quarter">This Quarter</option>
-            <option value="year">This Year</option>
-          </select>
-          <button 
-            style={exportButtonStyles}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#2563eb'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#3b82f6'}
-          >
-            <Download style={{ width: '16px', height: '16px' }} />
-            Export Report
-          </button>
-        </div>
-      </div>
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
 
       {/* Performance Stats */}
-      <div style={statsGridStyles}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {performanceStats.map((stat, index) => (
-          <Card key={index}>
-            <div style={statCardStyles}>
-              <div style={statHeaderStyles}>
-                <div style={statContentStyles}>
-                  <p style={statTitleStyles}>{stat.title}</p>
-                  <p style={statValueStyles}>{stat.value}</p>
-                  <div style={statChangeStyles}>
-                    {stat.trend === 'up' ? (
-                      <TrendingUp style={{ width: '16px', height: '16px', color: '#22c55e' }} />
-                    ) : (
-                      <TrendingDown style={{ width: '16px', height: '16px', color: '#ef4444' }} />
-                    )}
-                    <span style={{
-                      ...statChangeTextStyles,
-                      color: stat.trend === 'up' ? '#22c55e' : '#ef4444'
-                    }}>
-                      {stat.change}
-                    </span>
-                    <span style={statChangeSubtextStyles}>vs last period</span>
-                  </div>
+          <Card key={index} className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <p className="text-sm font-medium text-gray-500 m-0">{stat.title}</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1 m-0">{stat.value}</p>
+                <div className="flex items-center mt-2">
+                  {stat.trend === 'up' ? (
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-500" />
+                  )}
+                  <span className={`text-sm font-medium ml-1 ${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                    {stat.change}
+                  </span>
+                  <span className="text-sm text-gray-400 ml-1">vs last period</span>
                 </div>
-                <div style={statIconContainerStyles}>
-                  <stat.icon style={{ width: '24px', height: '24px', color: stat.color }} />
-                </div>
+              </div>
+              <div className="p-3 rounded-full bg-gray-100">
+                <stat.icon className={`w-6 h-6 ${stat.color}`} />
               </div>
             </div>
           </Card>
         ))}
       </div>
 
-      <div style={contentGridStyles}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Weekly Performance Chart */}
         <Card>
-          <div style={chartCardStyles}>
-            <div style={chartHeaderStyles}>
-              <h2 style={chartTitleStyles}>Weekly Performance</h2>
-              <div style={legendStyles}>
-                <div style={legendItemStyles}>
-                  <div style={{ ...legendDotStyles, backgroundColor: '#3b82f6' }}></div>
-                  <span style={{ color: '#6b7280' }}>Total Deliveries</span>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-900 font-poppins m-0">Weekly Performance</h2>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="text-gray-500">Total Deliveries</span>
                 </div>
-                <div style={legendItemStyles}>
-                  <div style={{ ...legendDotStyles, backgroundColor: '#22c55e' }}></div>
-                  <span style={{ color: '#6b7280' }}>Successful</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="text-gray-500">Successful</span>
                 </div>
               </div>
             </div>
-            
-            <div style={chartContentStyles}>
+            <div className="flex flex-col gap-4">
               {weeklyData.map((data, index) => (
-                <div key={index} style={chartRowStyles}>
-                  <div style={dayLabelStyles}>{data.day}</div>
-                  <div style={barContainerStyles}>
-                    <div style={barBackgroundStyles}>
-                      <div style={getBarStyles(data.deliveries, 70, '#3b82f6')}>
-                        <span style={barValueStyles}>{data.deliveries}</span>
+                <div key={index} className="flex items-center gap-4">
+                  <div className="w-12 text-sm font-medium text-gray-500">{data.day}</div>
+                  <div className="flex-1 flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                      <div
+                        className="flex items-center justify-end h-6 rounded-full pr-2"
+                        style={{
+                          width: `${(data.deliveries / 70) * 100}%`,
+                          backgroundColor: '#3b82f6',
+                        }}
+                      >
+                        <span className="text-white text-xs font-medium">{data.deliveries}</span>
                       </div>
                     </div>
                   </div>
@@ -562,25 +126,25 @@ const Performance = () => {
 
         {/* Route Performance */}
         <Card>
-          <div style={routeCardStyles}>
-            <h2 style={chartTitleStyles}>Route Performance</h2>
-            <div style={routeListStyles}>
+          <div className="p-6">
+            <h2 className="text-xl font-semibold text-slate-900 font-poppins m-0">Route Performance</h2>
+            <div className="flex flex-col gap-4 mt-4">
               {routePerformance.map((route, index) => (
-                <div key={index} style={routeItemStyles}>
-                  <div style={routeHeaderStyles}>
-                    <h3 style={routeNameStyles}>{route.route}</h3>
-                    <span style={getEfficiencyBadgeStyles(route.efficiency)}>
+                <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium text-slate-900 text-base m-0">{route.route}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEfficiencyBadgeClasses(route.efficiency)}`}>
                       {route.efficiency}% Efficient
                     </span>
                   </div>
-                  <div style={routeStatsStyles}>
-                    <div style={routeStatStyles}>
-                      <span style={routeStatLabelStyles}>Deliveries:</span>
-                      <span style={routeStatValueStyles}>{route.deliveries}</span>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Deliveries:</span>
+                      <span className="font-medium text-slate-900">{route.deliveries}</span>
                     </div>
-                    <div style={routeStatStyles}>
-                      <span style={routeStatLabelStyles}>Avg Time:</span>
-                      <span style={routeStatValueStyles}>{route.avgTime} min</span>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Avg Time:</span>
+                      <span className="font-medium text-slate-900">{route.avgTime} min</span>
                     </div>
                   </div>
                 </div>
@@ -592,69 +156,69 @@ const Performance = () => {
 
       {/* Rider Performance Table */}
       <Card>
-        <div style={tableCardStyles}>
-          <div style={tableHeaderStyles}>
-            <h2 style={chartTitleStyles}>Rider Performance</h2>
-            <button 
-              style={filterButtonStyles}
-              onMouseEnter={(e) => e.target.style.color = '#1e40af'}
-              onMouseLeave={(e) => e.target.style.color = '#3b82f6'}
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-slate-900 font-poppins m-0">Rider Performance</h2>
+            <button
+              className="flex items-center gap-2 text-blue-500 font-medium text-sm hover:text-blue-900 transition-colors"
             >
-              <Filter style={{ width: '16px', height: '16px' }} />
+              <Filter className="w-4 h-4" />
               Filter
             </button>
           </div>
-          
-          <div style={{ overflowX: 'auto' }}>
-            <table style={tableStyles}>
-              <thead style={tableHeadStyles}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead className="border-b border-gray-200">
                 <tr>
-                  <th style={thStyles}>Rider</th>
-                  <th style={thStyles}>Deliveries</th>
-                  <th style={thStyles}>Success Rate</th>
-                  <th style={thStyles}>Avg Time</th>
-                  <th style={thStyles}>Rating</th>
-                  <th style={thStyles}>Performance</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 text-sm">Rider</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 text-sm">Deliveries</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 text-sm">Success Rate</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 text-sm">Avg Time</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 text-sm">Rating</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 text-sm">Performance</th>
                 </tr>
               </thead>
-              <tbody style={tbodyStyles}>
-                {riderPerformance.map((rider, index) => (
-                  <tr 
-                    key={index} 
-                    style={trStyles}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f8fafc'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    <td style={tdStyles}>
-                      <div style={riderCellStyles}>
-                        <div style={riderAvatarStyles}>
-                          <span style={riderAvatarTextStyles}>
-                            {rider.name.split(' ').map(n => n[0]).join('')}
-                          </span>
+              <tbody>
+                {
+                  riderPerformance.map((rider, index) => (
+                    <tr
+                      key={index}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                            <span className="text-slate-900 font-medium text-sm">
+                              {rider.name.split(' ').map(n => n[0]).join('')}
+                            </span>
+                          </div>
+                          <span className="font-medium text-slate-900">{rider.name}</span>
                         </div>
-                        <span style={riderNameStyles}>{rider.name}</span>
-                      </div>
-                    </td>
-                    <td style={tdStyles}>{rider.deliveries}</td>
-                    <td style={tdStyles}>
-                      <span style={getSuccessRateBadgeStyles(rider.successRate)}>
-                        {rider.successRate}%
-                      </span>
-                    </td>
-                    <td style={tdStyles}>{rider.avgTime} min</td>
-                    <td style={tdStyles}>
-                      <div style={ratingStyles}>
-                        <span style={ratingValueStyles}>{rider.rating}</span>
-                        <span style={starStyles}>★</span>
-                      </div>
-                    </td>
-                    <td style={tdStyles}>
-                      <div style={progressBarContainerStyles}>
-                        <div style={getProgressBarStyles(rider.successRate, getProgressBarColor(rider.successRate))}></div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3 text-sm">{rider.deliveries}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSuccessRateBadgeClasses(rider.successRate)}`}>
+                          {rider.successRate}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">{rider.avgTime} min</td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center gap-1">
+                          <span className="text-slate-900 font-medium">{rider.rating}</span>
+                          <span className="text-yellow-400">★</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${getProgressBarColor(rider.successRate)}`}
+                            style={{ width: `${rider.successRate}%` }}
+                          ></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                }
               </tbody>
             </table>
           </div>

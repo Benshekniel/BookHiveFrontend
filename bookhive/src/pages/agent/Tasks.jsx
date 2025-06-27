@@ -104,24 +104,7 @@ export default function Tasks() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-[#0F172A]">
-          Today's Book Deliveries
-        </h1>
-        <div className="flex items-center space-x-2">
-          <Calendar className="text-[#3B82F6]" size={20} />
-          <span className="text-sm text-[#0F172A]">
-            {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              month: 'long', 
-              day: 'numeric',
-              year: 'numeric'
-            })}
-          </span>
-        </div>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Hub Information */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between">

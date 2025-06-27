@@ -69,18 +69,7 @@ const HubSettings = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Hub Settings</h1>
-        <button
-          onClick={handleSave}
-          className="bg-yellow-400 text-blue-900 px-4 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors flex items-center space-x-2"
-        >
-          <Save className="w-4 h-4" />
-          <span>Save Changes</span>
-        </button>
-      </div>
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hub Information */}
@@ -323,6 +312,12 @@ const HubSettings = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="flex justify-end">
+        <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors flex items-center space-x-2">
+          <Save size={20} />
+          <span>Save</span>
+        </button>
       </div>
     </div>
   );

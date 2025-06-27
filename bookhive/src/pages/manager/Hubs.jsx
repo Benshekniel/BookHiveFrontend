@@ -142,19 +142,7 @@ const Hubs = () => {
   const avgEfficiency = Math.round(hubs.reduce((sum, hub) => sum + hub.efficiency, 0) / hubs.length);
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-heading">Hub Management</h2>
-          <p className="text-gray-600">Monitor and manage all delivery hubs</p>
-        </div>
-        <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
-          <Plus size={20} />
-          <span>Add Hub</span>
-        </button>
-      </div>
-
+    <div className="spspace-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

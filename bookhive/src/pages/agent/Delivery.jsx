@@ -96,17 +96,7 @@ export default function Delivery() {
 
   if (deliveryTasks.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-[#0F172A]">Delivery Route</h1>
-          <button
-            onClick={() => navigate('/agent/tasks')}
-            className="flex items-center space-x-2 text-[#3B82F6] hover:text-[#1E3A8A] transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span>Back to Tasks</span>
-          </button>
-        </div>
+      <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
         
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

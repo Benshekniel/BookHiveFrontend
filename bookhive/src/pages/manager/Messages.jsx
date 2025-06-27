@@ -106,20 +106,7 @@ const Messages = () => {
   const unreadCount = messages.filter(m => m.status === 'unread').length;
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-heading">Messages</h2>
-          <p className="text-gray-600">Communication center for agents and system alerts</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-            {unreadCount} Unread
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">

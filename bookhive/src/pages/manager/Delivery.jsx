@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  MapPin, 
+import {
+  Search,
+  Filter,
+  MapPin,
   Clock,
   Truck,
   CheckCircle,
@@ -151,13 +151,13 @@ const Delivery = () => {
     }
   };
 
-  const hubDeliveries = selectedHub 
+  const hubDeliveries = selectedHub
     ? deliveries.filter(d => d.hubId === selectedHub.id)
     : deliveries;
 
   const filteredDeliveries = hubDeliveries.filter(delivery => {
     const matchesSearch = delivery.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         delivery.agent.toLowerCase().includes(searchTerm.toLowerCase());
+      delivery.agent.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = selectedFilter === 'all' || delivery.status.toLowerCase().replace(' ', '') === selectedFilter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
@@ -172,68 +172,56 @@ const Delivery = () => {
 
   if (!selectedHub) {
     return (
-      <div className="space-y-6 font-sans">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 font-heading">Delivery Tracking</h2>
-            <p className="text-gray-600">Select a hub to monitor deliveries</p>
-          </div>
-          <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
-            <Eye size={20} />
-            <span>Analytics</span>
-          </button>
-        </div>
-
-        {/* Search */}
+      <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
         <input
-          type="text"
-          placeholder="Search hubs by name or location..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+        type="text"
+        placeholder="Search hubs by name or location..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
         />
       </div>
 
-        {/* Hubs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {hubs.map((hub) => (
-            <div 
-              key={hub.id} 
-              onClick={() => setSelectedHub(hub)}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer hover:border-blue-900"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <Building2 className="text-blue-600" size={32} />
-                <span className="text-sm text-gray-500">{hub.id}</span>
-              </div>
-              
-              <h3 className="text-lg font-semibold text-slate-900 mb-1 font-heading">{hub.name}</h3>
-              <p className="text-sm text-gray-600 mb-4">{hub.location}</p>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Active</span>
-                  <span className="text-sm font-medium text-blue-600">{hub.activeDeliveries}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Completed Today</span>
-                  <span className="text-sm font-medium text-green-600">{hub.completedToday}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total</span>
-                  <span className="text-sm font-medium text-slate-900">{hub.totalDeliveries}</span>
-                </div>
-              </div>
-              
-              <button className="w-full mt-4 bg-blue-900 text-white py-2 rounded-lg hover:bg-blue-800 transition-colors">
-                View Deliveries
-              </button>
-            </div>
-          ))}
+      {/* Hubs Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {hubs.map((hub) => (
+        <div
+          key={hub.id}
+          onClick={() => setSelectedHub(hub)}
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer hover:border-blue-900"
+        >
+          <div className="flex items-center justify-between mb-4">
+          <Building2 className="text-blue-600" size={32} />
+          <span className="text-sm text-gray-500">{hub.id}</span>
+          </div>
+
+          <h3 className="text-lg font-semibold text-slate-900 mb-1 font-heading">{hub.name}</h3>
+          <p className="text-sm text-gray-600 mb-4">{hub.location}</p>
+
+          <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Active</span>
+            <span className="text-sm font-medium text-blue-600">{hub.activeDeliveries}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Completed Today</span>
+            <span className="text-sm font-medium text-green-600">{hub.completedToday}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Total</span>
+            <span className="text-sm font-medium text-slate-900">{hub.totalDeliveries}</span>
+          </div>
+          </div>
+
+          <button className="w-full mt-4 bg-blue-900 text-white py-2 rounded-lg hover:bg-blue-800 transition-colors">
+          View Deliveries
+          </button>
         </div>
+        ))}
+      </div>
       </div>
     );
   }
@@ -243,7 +231,7 @@ const Delivery = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <button 
+          <button
             onClick={() => setSelectedHub(null)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -353,7 +341,7 @@ const Delivery = () => {
                     {delivery.priority}
                   </span>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
@@ -371,7 +359,7 @@ const Delivery = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div>
                       <p className="text-sm font-medium text-slate-900">Agent</p>
@@ -397,18 +385,17 @@ const Delivery = () => {
                     <span className="text-gray-600">{delivery.progress}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        delivery.status === 'Delivered' ? 'bg-green-600' :
-                        delivery.status === 'Delayed' ? 'bg-red-600' :
-                        'bg-blue-600'
-                      }`}
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${delivery.status === 'Delivered' ? 'bg-green-600' :
+                          delivery.status === 'Delayed' ? 'bg-red-600' :
+                            'bg-blue-600'
+                        }`}
                       style={{ width: `${delivery.progress}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-2">
                 <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
                   <MapPin size={16} />

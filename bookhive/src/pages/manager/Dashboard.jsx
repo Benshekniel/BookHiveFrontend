@@ -91,7 +91,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => {

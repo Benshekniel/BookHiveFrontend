@@ -94,21 +94,7 @@ export default function AgentDashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-[#0F172A]">
-          Welcome back, John!
-        </h1>
-        <div className="text-sm text-[#0F172A]/60">
-          {new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </div>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (

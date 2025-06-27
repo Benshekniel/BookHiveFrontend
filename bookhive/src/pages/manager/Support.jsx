@@ -117,22 +117,7 @@ const Support = () => {
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-heading">Support Center</h2>
-          <p className="text-gray-600">Get help and communicate with moderators</p>
-        </div>
-        <button 
-          onClick={handleCreateTicket}
-          className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2"
-        >
-          <Plus size={20} />
-          <span>New Ticket</span>
-        </button>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">

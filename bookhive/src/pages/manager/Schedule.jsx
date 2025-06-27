@@ -34,19 +34,8 @@ const Schedule = () => {
   });
 
   return (
-    <div className="space-y-6 font-sans">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-[#1E3A8A] font-heading">Schedule Management</h2>
-            <p className="text-[#0F172A]">Manage delivery schedules and optimize routes</p>
-          </div>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors flex items-center space-x-2">
-            <Save size={20} />
-            <span>Save</span>
-          </button>
-        </div>
-
-        {/* Travel Plan */}
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Travel Plan */}
       <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4 flex items-center gap-2">
           <Calendar size={20} color="#3B82F6" /> Travel Plan
@@ -252,6 +241,12 @@ const Schedule = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="flex justify-end">
+        <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors flex items-center space-x-2">
+          <Save size={20} />
+          <span>Save</span>
+        </button>
       </div>
     </div>
   );

@@ -205,19 +205,7 @@ const Agents = () => {
   const onlineNowSuper = superAgents.filter(a => a.status === 'Active').length;
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-heading">Agents Management</h2>
-          <p className="text-gray-600">Manage delivery agents and their performance</p>
-        </div>
-        <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
-          <Plus size={20} />
-          <span>Add Agent</span>
-        </button>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

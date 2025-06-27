@@ -2,10 +2,10 @@ import { Package, Users, Clock, AlertTriangle, MapPin, TrendingUp } from 'lucide
 
 const Dashboard = () => {
   const stats = [
-    { title: 'Active Deliveries', value: '24', icon: Package, color: '#3b82f6' },
-    { title: 'Available Riders', value: '12', icon: Users, color: '#22c55e' },
-    { title: 'Pending Tasks', value: '8', icon: Clock, color: '#fbbf24' },
-    { title: 'Urgent Alerts', value: '3', icon: AlertTriangle, color: '#ef4444' },
+    { title: 'Active Deliveries', value: '24', icon: Package, color: 'text-blue-500' },
+    { title: 'Available Riders', value: '12', icon: Users, color: 'text-green-500' },
+    { title: 'Pending Tasks', value: '8', icon: Clock, color: 'text-yellow-400' },
+    { title: 'Urgent Alerts', value: '3', icon: AlertTriangle, color: 'text-red-500' },
   ];
 
   const recentDeliveries = [
@@ -20,7 +20,6 @@ const Dashboard = () => {
     { type: 'info', message: 'New rider registration pending approval', time: '15 min ago' },
   ];
 
-  // Delivery locations data for the map
   const deliveryLocations = [
     { area: 'Downtown', deliveries: 45, lat: 40.7589, lng: -73.9851 },
     { area: 'Northside', deliveries: 32, lat: 40.7831, lng: -73.9712 },
@@ -32,12 +31,11 @@ const Dashboard = () => {
     { area: 'Harbor', deliveries: 15, lat: 40.7061, lng: -74.0087 }
   ];
 
-  // Routes data for visual representation
   const routes = [
     { 
       id: 'A', 
       name: 'Route A - Downtown', 
-      color: '#3b82f6', 
+      color: 'bg-blue-500', 
       points: [
         { lat: 40.7589, lng: -73.9851 },
         { lat: 40.7614, lng: -73.9776 },
@@ -49,7 +47,7 @@ const Dashboard = () => {
     { 
       id: 'B', 
       name: 'Route B - Residential', 
-      color: '#22c55e', 
+      color: 'bg-green-500', 
       points: [
         { lat: 40.7831, lng: -73.9712 },
         { lat: 40.7505, lng: -74.0087 },
@@ -61,7 +59,7 @@ const Dashboard = () => {
     { 
       id: 'C', 
       name: 'Route C - Industrial', 
-      color: '#fbbf24', 
+      color: 'bg-yellow-400', 
       points: [
         { lat: 40.7505, lng: -74.0134 },
         { lat: 40.7282, lng: -73.9942 },
@@ -72,159 +70,57 @@ const Dashboard = () => {
     }
   ];
 
-  const StatCard = ({ title, value, icon: Icon, color = '#3b82f6' }) => (
-    <div style={{
-      backgroundColor: '#ffffff',
-      borderRadius: '8px',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      padding: '24px'
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <p style={{
-            fontSize: '14px',
-            fontWeight: '500',
-            color: '#6b7280',
-            margin: 0
-          }}>{title}</p>
-          <p style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: '#0f172a',
-            marginTop: '4px',
-            margin: 0
-          }}>{value}</p>
+  const StatCard = ({ title, value, icon: Icon, color }) => (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col">
+          <p className="text-sm font-medium text-gray-500 m-0">{title}</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1 m-0">{value}</p>
         </div>
-        <div style={{
-          padding: '12px',
-          borderRadius: '50%',
-          backgroundColor: '#f3f4f6'
-        }}>
-          <Icon style={{
-            width: '24px',
-            height: '24px',
-            color: color
-          }} />
+        <div className="p-3 rounded-full bg-gray-100">
+          <Icon className={`w-6 h-6 ${color}`} />
         </div>
       </div>
     </div>
   );
 
-  const Card = ({ children, style = {} }) => (
-    <div style={{
-      backgroundColor: '#ffffff',
-      borderRadius: '8px',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      ...style
-    }}>
+  const Card = ({ children, className = "" }) => (
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
       {children}
     </div>
   );
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '24px'
-    }}>
-      <div style={{ marginBottom: '8px' }}>
-        <h1 style={{
-          fontSize: '30px',
-          fontFamily: 'Poppins, system-ui, sans-serif',
-          fontWeight: 'bold',
-          color: '#0f172a',
-          margin: 0
-        }}>Dashboard</h1>
-        <p style={{
-          color: '#6b7280',
-          marginTop: '8px',
-          margin: 0
-        }}>Welcome back! Here's what's happening at your hub today.</p>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '24px'
-      }}>
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-        gap: '24px'
-      }}>
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Recent Deliveries */}
         <Card>
-          <div style={{ padding: '24px' }}>
-            <h2 style={{
-              fontSize: '20px',
-              fontFamily: 'Poppins, system-ui, sans-serif',
-              fontWeight: '600',
-              color: '#0f172a',
-              marginBottom: '16px',
-              margin: 0
-            }}>Recent Deliveries</h2>
+          <div className="p-6">
+            <h2 className="text-xl font-poppins font-semibold text-slate-900 mb-4 m-0">Recent Deliveries</h2>
             <div>
               {recentDeliveries.map((delivery) => (
-                <div key={delivery.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '8px',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}>
-                    <p style={{
-                      fontWeight: '500',
-                      color: '#0f172a',
-                      margin: 0
-                    }}>{delivery.id}</p>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#6b7280',
-                      margin: 0
-                    }}>{delivery.customer} • {delivery.rider}</p>
+                <div key={delivery.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-4">
+                  <div className="flex flex-col">
+                    <p className="font-medium text-slate-900 m-0">{delivery.id}</p>
+                    <p className="text-sm text-gray-500 m-0">{delivery.customer} • {delivery.rider}</p>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end'
-                  }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '9999px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      backgroundColor: delivery.status === 'Delivered' ? '#dcfce7' : delivery.status === 'In Transit' ? '#dbeafe' : '#fef3c7',
-                      color: delivery.status === 'Delivered' ? '#166534' : delivery.status === 'In Transit' ? '#1e40af' : '#92400e'
-                    }}>
+                  <div className="flex flex-col items-end">
+                    <span className={
+                      `px-2 py-1 rounded-full text-xs font-medium
+                      ${delivery.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                        delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                        'bg-yellow-100 text-yellow-800'}`
+                    }>
                       {delivery.status}
                     </span>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#6b7280',
-                      marginTop: '4px',
-                      margin: 0
-                    }}>{delivery.time}</p>
+                    <p className="text-sm text-gray-500 mt-1 m-0">{delivery.time}</p>
                   </div>
                 </div>
               ))}
@@ -234,36 +130,21 @@ const Dashboard = () => {
 
         {/* Alerts */}
         <Card>
-          <div style={{ padding: '24px' }}>
-            <h2 style={{
-              fontSize: '20px',
-              fontFamily: 'Poppins, system-ui, sans-serif',
-              fontWeight: '600',
-              color: '#0f172a',
-              marginBottom: '16px',
-              margin: 0
-            }}>Alerts & Notifications</h2>
+          <div className="p-6">
+            <h2 className="text-xl font-poppins font-semibold text-slate-900 mb-4 m-0">Alerts & Notifications</h2>
             <div>
               {alerts.map((alert, index) => (
-                <div key={index} style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  borderLeft: '4px solid',
-                  marginBottom: '16px',
-                  backgroundColor: alert.type === 'error' ? '#fef2f2' : alert.type === 'warning' ? '#fffbeb' : '#eff6ff',
-                  borderLeftColor: alert.type === 'error' ? '#f87171' : alert.type === 'warning' ? '#fbbf24' : '#60a5fa'
-                }}>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#0f172a',
-                    margin: 0
-                  }}>{alert.message}</p>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#6b7280',
-                    marginTop: '4px',
-                    margin: 0
-                  }}>{alert.time}</p>
+                <div
+                  key={index}
+                  className={`
+                    p-3 rounded-lg border-l-4 mb-4
+                    ${alert.type === 'error' ? 'bg-red-50 border-red-400' :
+                      alert.type === 'warning' ? 'bg-yellow-50 border-yellow-400' :
+                      'bg-blue-50 border-blue-400'}
+                  `}
+                >
+                  <p className="text-sm text-slate-900 m-0">{alert.message}</p>
+                  <p className="text-xs text-gray-500 mt-1 m-0">{alert.time}</p>
                 </div>
               ))}
             </div>
@@ -272,82 +153,35 @@ const Dashboard = () => {
       </div>
 
       {/* Maps Section */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
-        gap: '24px',
-        marginTop: '5px'
-      }}>
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-2 mt-1">
         {/* Delivery Locations Map */}
         <Card>
-          <div style={{ padding: '24px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginBottom: '16px'
-            }}>
-              <MapPin style={{ width: '20px', height: '20px', color: '#3b82f6' }} />
-              <h2 style={{
-                fontSize: '20px',
-                fontFamily: 'Poppins, system-ui, sans-serif',
-                fontWeight: '600',
-                color: '#0f172a',
-                margin: 0
-              }}>Delivery Locations Map</h2>
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin className="w-5 h-5 text-blue-500" />
+              <h2 className="text-xl font-poppins font-semibold text-slate-900 m-0">Delivery Locations Map</h2>
             </div>
-            <div style={{
-              position: 'relative',
-              width: '100%',
-              height: '400px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-              overflow: 'hidden'
-            }}>
+            <div className="relative w-full h-[400px] bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d193595.15830869428!2d-74.119763973046!3d40.69766374874431!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c24fa5d33f083b%3A0xc80b8f06e177fe62!2sNew%20York%2C%20NY%2C%20USA!5e0!3m2!1sen!2sus!4v1642678901234!5m2!1sen!2sus"
                 width="100%"
                 height="100%"
-                style={{ border: 0 }}
+                className="border-0 w-full h-full"
                 allowFullScreen=""
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
+                title="Delivery Locations Map"
               />
-              
               {/* Overlay with delivery markers */}
-              <div style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                backgroundColor: 'white',
-                padding: '12px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                fontSize: '12px'
-              }}>
-                <div style={{ fontWeight: '600', marginBottom: '8px' }}>Delivery Areas</div>
+              <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow text-xs">
+                <div className="font-semibold mb-2">Delivery Areas</div>
                 {deliveryLocations.slice(0, 4).map((location, index) => (
-                  <div key={index} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '4px'
-                  }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      backgroundColor: '#ef4444',
-                      borderRadius: '50%'
-                    }}></div>
+                  <div key={index} className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                     <span>{location.area}: {location.deliveries}</span>
                   </div>
                 ))}
-                <div style={{
-                  fontSize: '10px',
-                  color: '#6b7280',
-                  marginTop: '8px'
-                }}>
+                <div className="text-[10px] text-gray-500 mt-2">
                   Total: {deliveryLocations.reduce((sum, loc) => sum + loc.deliveries, 0)} deliveries
                 </div>
               </div>
@@ -357,76 +191,36 @@ const Dashboard = () => {
 
         {/* Routes Overview */}
         <Card>
-          <div style={{ padding: '12px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginBottom: '16px'
-            }}>
-              <TrendingUp style={{ width: '20px', height: '20px', color: '#22c55e' }} />
-              <h2 style={{
-                fontSize: '20px',
-                fontFamily: 'Poppins, system-ui, sans-serif',
-                fontWeight: '600',
-                color: '#0f172a',
-                margin: 0
-              }}>Routes Overview</h2>
+          <div className="p-3">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              <h2 className="text-xl font-poppins font-semibold text-slate-900 m-0">Routes Overview</h2>
             </div>
-            <div style={{
-              position: 'relative',
-              width: '100%',
-              height: '400px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-              overflow: 'hidden'
-            }}>
+            <div className="relative w-full h-[400px] bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d96797.57915830869!2d-74.119763973046!3d40.69766374874431!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c24fa5d33f083b%3A0xc80b8f06e177fe62!2sNew%20York%2C%20NY%2C%20USA!5e0!3m2!1sen!2sus!4v1642678901234!5m2!1sen!2sus"
                 width="100%"
                 height="100%"
-                style={{ border: 0 }}
+                className="border-0 w-full h-full"
                 allowFullScreen=""
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
+                title="Routes Overview Map"
               />
-              
               {/* Routes Legend */}
-              <div style={{
-                position: 'absolute',
-                bottom: '16px',
-                left: '16px',
-                backgroundColor: 'white',
-                padding: '12px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                fontSize: '12px'
-              }}>
-                <div style={{ fontWeight: '600', marginBottom: '8px' }}>Active Routes</div>
+              <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow text-xs">
+                <div className="font-semibold mb-2">Active Routes</div>
                 {routes.map((route, index) => (
-                  <div key={index} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '8px'
-                  }}>
-                    <div style={{
-                      width: '16px',
-                      height: '3px',
-                      backgroundColor: route.color,
-                      borderRadius: '2px'
-                    }}></div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontWeight: '500' }}>{route.id}</span>
-                      <span style={{
-                        padding: '2px 6px',
-                        borderRadius: '9999px',
-                        fontSize: '10px',
-                        fontWeight: '500',
-                        backgroundColor: route.efficiency >= 90 ? '#dcfce7' : route.efficiency >= 85 ? '#fef3c7' : '#fef2f2',
-                        color: route.efficiency >= 90 ? '#166534' : route.efficiency >= 85 ? '#92400e' : '#dc2626'
-                      }}>
+                  <div key={index} className="flex items-center gap-2 mb-2">
+                    <div className={`w-4 h-[3px] ${route.color} rounded`}></div>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{route.id}</span>
+                      <span className={
+                        `px-2 py-[2px] rounded-full text-[10px] font-medium
+                        ${route.efficiency >= 90 ? 'bg-green-100 text-green-800' :
+                          route.efficiency >= 85 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-50 text-red-600'}`
+                      }>
                         {route.efficiency}%
                       </span>
                     </div>
