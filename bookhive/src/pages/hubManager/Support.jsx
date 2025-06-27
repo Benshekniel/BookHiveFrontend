@@ -67,6 +67,16 @@ const Support = () => {
       question: 'How do I approve new rider registrations?',
       answer: 'Go to the Agents page where pending registration requests are displayed at the top. Review the documents and click approve or reject.',
       category: 'Agents'
+    },
+    {
+      question: 'How can I optimize route efficiency?',
+      answer: 'Use the Routes page map view to analyze performance. Look for routes with low efficiency scores and consider redistributing deliveries or adjusting coverage areas.',
+      category: 'Routes'
+    },
+    {
+      question: 'What do the different delivery statuses mean?',
+      answer: 'Pending: Order received but not assigned. Picked Up: Rider has collected the item. In Transit: On the way to destination. Delivered: Successfully completed. Delayed: Behind schedule.',
+      category: 'Deliveries'
     }
   ];
 
@@ -94,6 +104,18 @@ const Support = () => {
       description: 'Solutions to frequently encountered problems',
       type: 'document',
       icon: FileText
+    },
+    {
+      title: 'Performance Analytics Guide',
+      description: 'Understanding and using performance metrics',
+      type: 'document',
+      icon: FileText
+    },
+    {
+      title: 'Video Tutorial: Map-Based Route Optimization',
+      description: 'How to use the visual map for route improvements',
+      type: 'video',
+      icon: Video
     }
   ];
 
@@ -242,34 +264,6 @@ const Support = () => {
                 </div>
               );
             })}
-          </div>
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-semibold text-slate-900 mb-4" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>System Status</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center space-x-3">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            <div>
-              <p className="font-medium text-slate-900">Delivery Tracking</p>
-              <p className="text-sm text-green-500">Operational</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            <div>
-              <p className="font-medium text-slate-900">Messaging System</p>
-              <p className="text-sm text-green-500">Operational</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-500" />
-            <div>
-              <p className="font-medium text-slate-900">Analytics Dashboard</p>
-              <p className="text-sm text-yellow-500">Maintenance</p>
-            </div>
           </div>
         </div>
       </div>

@@ -7,7 +7,11 @@ import {
   BarChart3, 
   Edit, 
   Trash2, 
-  Eye
+  Eye,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Package
 } from 'lucide-react';
 
 const Routes = () => {
@@ -24,7 +28,9 @@ const Routes = () => {
       efficiency: 92,
       status: 'active',
       coverage: '15.2 km²',
-      dailyDeliveries: 45
+      dailyDeliveries: 45,
+      coordinates: { lat: 40.7589, lng: -73.9851 },
+      performance: { trend: 'up', change: '+5.2%' }
     },
     {
       id: 2,
@@ -36,7 +42,9 @@ const Routes = () => {
       efficiency: 88,
       status: 'active',
       coverage: '28.7 km²',
-      dailyDeliveries: 32
+      dailyDeliveries: 32,
+      coordinates: { lat: 40.7282, lng: -73.7949 },
+      performance: { trend: 'up', change: '+2.1%' }
     },
     {
       id: 3,
@@ -48,7 +56,9 @@ const Routes = () => {
       efficiency: 85,
       status: 'active',
       coverage: '22.1 km²',
-      dailyDeliveries: 28
+      dailyDeliveries: 28,
+      coordinates: { lat: 40.6892, lng: -74.0445 },
+      performance: { trend: 'down', change: '-1.3%' }
     },
     {
       id: 4,
@@ -60,13 +70,97 @@ const Routes = () => {
       efficiency: 95,
       status: 'active',
       coverage: '8.5 km²',
-      dailyDeliveries: 38
+      dailyDeliveries: 38,
+      coordinates: { lat: 40.8075, lng: -73.9626 },
+      performance: { trend: 'up', change: '+8.7%' }
     }
   ];
 
   const filteredRoutes = routes.filter(route =>
     route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     route.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const MapView = () => (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+      <h2 className="text-xl font-semibold text-slate-900 mb-4" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Route Performance Map</h2>
+      
+      {/* Map Container */}
+      <div className="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg h-96 mb-4 overflow-hidden">
+        {/* Map Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-blue-50 to-green-50"></div>
+        
+        {/* Route Markers */}
+        {routes.map((route) => (
+          <div
+            key={route.id}
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+            style={{
+              left: `${20 + (route.id * 18)}%`,
+              top: `${30 + (route.id * 15)}%`
+            }}
+          >
+            {/* Route Marker */}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg transition-all duration-300 group-hover:scale-110 ${
+              route.efficiency >= 90 ? 'bg-green-500' :
+              route.efficiency >= 85 ? 'bg-yellow-500' : 'bg-red-500'
+            }`}>
+              {route.id}
+            </div>
+            
+            {/* Route Info Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              <div className="bg-slate-900 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
+                <div className="font-semibold">{route.name}</div>
+                <div className="text-xs">Efficiency: {route.efficiency}%</div>
+                <div className="text-xs">Deliveries: {route.dailyDeliveries}/day</div>
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900"></div>
+            </div>
+            
+            {/* Performance Indicator */}
+            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ${
+              route.performance.trend === 'up' ? 'bg-green-500' : 'bg-red-500'
+            }`}>
+              {route.performance.trend === 'up' ? (
+                <TrendingUp className="w-2 h-2 text-white" />
+              ) : (
+                <TrendingDown className="w-2 h-2 text-white" />
+              )}
+            </div>
+          </div>
+        ))}
+        
+        {/* Map Grid Lines */}
+        <div className="absolute inset-0 opacity-20">
+          {[...Array(10)].map((_, i) => (
+            <div key={`v-${i}`} className="absolute bg-blue-300" style={{ left: `${i * 10}%`, width: '1px', height: '100%' }}></div>
+          ))}
+          {[...Array(8)].map((_, i) => (
+            <div key={`h-${i}`} className="absolute bg-blue-300" style={{ top: `${i * 12.5}%`, height: '1px', width: '100%' }}></div>
+          ))}
+        </div>
+        
+        {/* Map Legend */}
+        <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg">
+          <h4 className="font-semibold text-slate-900 text-sm mb-2">Performance Legend</h4>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span>Excellent (90%+)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span>Good (85-89%)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span>Needs Improvement (&lt;85%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 
   return (
@@ -79,6 +173,9 @@ const Routes = () => {
           <span>Create Route</span>
         </button>
       </div>
+
+      {/* Map View */}
+      <MapView />
 
       {/* Search */}
       <div className="relative">
@@ -101,11 +198,23 @@ const Routes = () => {
                 <h3 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>{route.name}</h3>
                 <p className="text-gray-600 mt-1">{route.description}</p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                route.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {route.status.charAt(0).toUpperCase() + route.status.slice(1)}
-              </span>
+              <div className="flex items-center space-x-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  route.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {route.status.charAt(0).toUpperCase() + route.status.slice(1)}
+                </span>
+                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+                  route.performance.trend === 'up' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                }`}>
+                  {route.performance.trend === 'up' ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3" />
+                  )}
+                  <span>{route.performance.change}</span>
+                </div>
+              </div>
             </div>
 
             {/* Stats Grid */}

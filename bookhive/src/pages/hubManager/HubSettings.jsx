@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { 
-  Save, 
-  MapPin, 
-  Clock, 
-  Phone, 
-  Mail, 
-  Users, 
-  Bell, 
-  Shield, 
-  Database,
+import {
+  Save,
+  MapPin,
+  Clock,
+  Phone,
+  Mail,
+  Users,
+  Bell,
+  Shield,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -34,12 +33,16 @@ const HubSettings = () => {
       pushNotifications: true,
       delayedDeliveries: true,
       riderRequests: true,
-      systemUpdates: false
+      systemUpdates: false,
+      routeOptimization: true,
+      performanceReports: true
     },
     security: {
       twoFactorAuth: false,
       sessionTimeout: 30,
-      passwordExpiry: 90
+      passwordExpiry: 90,
+      loginAttempts: 5,
+      ipWhitelist: false
     }
   });
 
@@ -70,7 +73,7 @@ const HubSettings = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Hub Settings</h1>
-        <button 
+        <button
           onClick={handleSave}
           className="bg-yellow-400 text-blue-900 px-4 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors flex items-center space-x-2"
         >
@@ -86,7 +89,7 @@ const HubSettings = () => {
             <MapPin className="w-5 h-5 text-blue-500" />
             <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Hub Information</h2>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hub Name</label>
@@ -97,7 +100,7 @@ const HubSettings = () => {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
               <input
@@ -107,7 +110,7 @@ const HubSettings = () => {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
@@ -128,7 +131,7 @@ const HubSettings = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <input
@@ -138,7 +141,7 @@ const HubSettings = () => {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
@@ -157,7 +160,7 @@ const HubSettings = () => {
             <Clock className="w-5 h-5 text-yellow-500" />
             <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Operating Hours</h2>
           </div>
-          
+
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -179,7 +182,7 @@ const HubSettings = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
               <select
@@ -193,7 +196,7 @@ const HubSettings = () => {
                 <option value="America/Los_Angeles">Pacific Time (PT)</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Riders</label>
               <input
@@ -212,7 +215,7 @@ const HubSettings = () => {
             <Bell className="w-5 h-5 text-green-500" />
             <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Notifications</h2>
           </div>
-          
+
           <div className="space-y-4">
             {Object.entries(settings.notifications).map(([key, value]) => (
               <div key={key} className="flex items-center justify-between">
@@ -239,7 +242,7 @@ const HubSettings = () => {
             <Shield className="w-5 h-5 text-red-500" />
             <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Security</h2>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">Two-Factor Authentication</label>
@@ -253,7 +256,20 @@ const HubSettings = () => {
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
               </label>
             </div>
-            
+
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">IP Whitelist</label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.security.ipWhitelist}
+                  onChange={(e) => handleInputChange('security', 'ipWhitelist', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+              </label>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Session Timeout (minutes)</label>
               <input
@@ -263,7 +279,7 @@ const HubSettings = () => {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password Expiry (days)</label>
               <input
@@ -273,7 +289,17 @@ const HubSettings = () => {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Max Login Attempts</label>
+              <input
+                type="number"
+                value={settings.security.loginAttempts}
+                onChange={(e) => handleInputChange('security', 'loginAttempts', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Change Password</label>
               <div className="relative">
@@ -296,29 +322,6 @@ const HubSettings = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Data Management */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex items-center space-x-2 mb-4">
-          <Database className="w-5 h-5 text-blue-900" />
-          <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>Data Management</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="bg-gray-50 p-4 rounded-lg text-left hover:bg-gray-100 transition-colors">
-            <h3 className="font-medium text-slate-900 mb-2">Export Data</h3>
-            <p className="text-sm text-gray-600">Download hub data for backup</p>
-          </button>
-          <button className="bg-gray-50 p-4 rounded-lg text-left hover:bg-gray-100 transition-colors">
-            <h3 className="font-medium text-slate-900 mb-2">Import Data</h3>
-            <p className="text-sm text-gray-600">Upload data from external sources</p>
-          </button>
-          <button className="bg-gray-50 p-4 rounded-lg text-left hover:bg-gray-100 transition-colors">
-            <h3 className="font-medium text-slate-900 mb-2">Data Cleanup</h3>
-            <p className="text-sm text-gray-600">Remove old or unnecessary data</p>
-          </button>
         </div>
       </div>
     </div>

@@ -276,7 +276,7 @@ const Dashboard = () => {
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
         gap: '24px',
-        marginTop: '24px'
+        marginTop: '5px'
       }}>
         {/* Delivery Locations Map */}
         <Card>
@@ -357,7 +357,7 @@ const Dashboard = () => {
 
         {/* Routes Overview */}
         <Card>
-          <div style={{ padding: '24px' }}>
+          <div style={{ padding: '12px' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
