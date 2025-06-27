@@ -47,31 +47,36 @@ const RecentActivity = () => {
 
   const getColorClasses = (color) => {
     switch (color) {
-      case 'blue': return 'bg-blue-100 text-blue-600';
-      case 'yellow': return 'bg-yellow-100 text-yellow-600';
-      case 'red': return 'bg-red-100 text-red-600';
-      case 'amber': return 'bg-amber-100 text-amber-600';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'blue':
+        return 'bg-blue-50 text-blue-500';
+      case 'yellow':
+        return 'bg-yellow-50 text-yellow-400';
+      case 'red':
+        return 'bg-red-50 text-red-500';
+      case 'amber':
+        return 'bg-yellow-400 text-white';
+      default:
+        return 'bg-slate-50 text-slate-600';
     }
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-      <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <Clock className="w-6 h-6 text-blue-600" />
+    <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
+      <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+        <Clock className="w-6 h-6 text-blue-500" />
         Recent Activity
       </h3>
       <div className="space-y-4">
         {activities.map((activity) => {
           const Icon = activity.icon;
           return (
-            <div key={activity.id} className="flex items-start gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200 border border-gray-100">
+            <div key={activity.id} className="flex items-start gap-4 p-4 rounded-lg hover:bg-blue-100 transition-colors duration-200 border border-slate-200">
               <div className={`p-3 rounded-full ${getColorClasses(activity.color)} shadow-sm`}>
                 <Icon className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{activity.message}</p>
-                <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                <p className="text-sm font-medium text-slate-900">{activity.message}</p>
+                <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
               </div>
             </div>
           );
