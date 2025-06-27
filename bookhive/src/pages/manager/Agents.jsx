@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { 
-  Search, 
-  Plus, 
-  MessageCircle, 
-  Star, 
-  Car, 
+import {
+  Search,
+  Plus,
+  MessageCircle,
+  Star,
+  Car,
   Bike,
+  Truck,
   Filter,
   MoreHorizontal,
   CheckCircle,
@@ -13,7 +14,8 @@ import {
   Clock,
   Users,
   UserCheck,
-  UserX
+  UserX,
+  AlertTriangle
 } from 'lucide-react';
 
 const Agents = () => {
@@ -68,6 +70,53 @@ const Agents = () => {
       status: 'Active',
       rating: 4.7,
       completedDeliveries: 278,
+      avatar: 'LB'
+    },
+  ];
+
+  const superAgents = [
+    {
+      id: 'A001',
+      name: 'John Smith',
+      phone: '+1 234-567-8901',
+      email: 'john.smith@email.com',
+      vehicle: 'Truck',
+      vehicleId: 'ABC-123',
+      hub: 'Central Hub',
+      status: 'Active',
+      avatar: 'JS'
+    },
+    {
+      id: 'A002',
+      name: 'Sarah Johnson',
+      phone: '+1 234-567-8902',
+      email: 'sarah.j@email.com',
+      vehicle: 'Car',
+      vehicleId: 'XYZ-456',
+      hub: 'West Hub',
+      status: 'Pending',
+      avatar: 'SJ'
+    },
+    {
+      id: 'A003',
+      name: 'Mike Wilson',
+      phone: '+1 234-567-8903',
+      email: 'mike.w@email.com',
+      vehicle: 'Truck',
+      vehicleId: 'BIC-789',
+      hub: 'North Hub',
+      status: 'Offline',
+      avatar: 'MW'
+    },
+    {
+      id: 'A004',
+      name: 'Lisa Brown',
+      phone: '+1 234-567-8904',
+      email: 'lisa.brown@email.com',
+      vehicle: 'Car',
+      vehicleId: 'MOT-321',
+      hub: 'East Hub',
+      status: 'Active',
       avatar: 'LB'
     },
   ];
@@ -133,7 +182,7 @@ const Agents = () => {
 
   const filteredAgents = agents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         agent.id.toLowerCase().includes(searchTerm.toLowerCase());
+      agent.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = selectedFilter === 'all' || agent.status.toLowerCase() === selectedFilter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
@@ -142,6 +191,18 @@ const Agents = () => {
   const activeAgents = agents.filter(a => a.status === 'Active').length;
   const pendingVerification = agents.filter(a => a.status === 'Pending').length + pendingApplications.length;
   const onlineNow = agents.filter(a => a.status === 'Active').length;
+
+  const filteredSuperAgents = superAgents.filter(agent => {
+    const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      agent.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = selectedFilter === 'all' || agent.status.toLowerCase() === selectedFilter.toLowerCase();
+    return matchesSearch && matchesFilter;
+  });
+
+  const totalsuperAgents = superAgents.length;
+  const activeSuperAgents = superAgents.filter(a => a.status === 'Active').length;
+  const pendingVerificationSuper = superAgents.filter(a => a.status === 'Pending').length + pendingApplications.length;
+  const onlineNowSuper = superAgents.filter(a => a.status === 'Active').length;
 
   return (
     <div className="space-y-6 font-sans">
@@ -195,31 +256,37 @@ const Agents = () => {
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('agents')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'agents'
-                  ? 'border-blue-900 text-blue-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'agents'
+                ? 'border-blue-900 text-blue-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Delivery Agents
             </button>
             <button
+              onClick={() => setActiveTab('superagents')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'superagents'
+                ? 'border-blue-900 text-blue-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              Super Agents
+            </button>
+            <button
               onClick={() => setActiveTab('verification')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'verification'
-                  ? 'border-blue-900 text-blue-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'verification'
+                ? 'border-blue-900 text-blue-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Verify Applications
             </button>
             <button
               onClick={() => setActiveTab('suspend')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'suspend'
-                  ? 'border-blue-900 text-blue-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'suspend'
+                ? 'border-blue-900 text-blue-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Suspend Agent
             </button>
@@ -265,7 +332,7 @@ const Agents = () => {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b text-left bg-white rounded-lg border-gray-200" >
+                    <tr className="border-b text-left bg-white rounded-lg border-gray-200">
                       <th className="pb-3 text-sm font-medium text-gray-600">AGENT</th>
                       <th className="pb-3 text-sm font-medium text-gray-600">CONTACT</th>
                       <th className="pb-3 text-sm font-medium text-gray-600">VEHICLE</th>
@@ -350,19 +417,133 @@ const Agents = () => {
             </>
           )}
 
+          {activeTab === 'superagents' && (
+            <>
+              {/* Filters and Search */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search super agents by name, ID, or vehicle..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={selectedFilter}
+                    onChange={(e) => setSelectedFilter(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="offline">Offline</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                  <select className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-900 focus:border-transparent">
+                    <option value="all">All Vehicles</option>
+                    <option value="motorcycle">Motorcycle</option>
+                    <option value="car">Car</option>
+                    <option value="bicycle">Bicycle</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Super Agents Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b text-left bg-white rounded-lg border-gray-200">
+                      <th className="pb-3 text-sm font-medium text-gray-600">AGENT</th>
+                      <th className="pb-3 text-sm font-medium text-gray-600">CONTACT</th>
+                      <th className="pb-3 text-sm font-medium text-gray-600">VEHICLE</th>
+                      <th className="pb-3 text-sm font-medium text-gray-600">HUB</th>
+                      <th className="pb-3 text-sm font-medium text-gray-600">STATUS</th>
+                      <th className="pb-3 text-sm font-medium text-gray-600">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSuperAgents.map((superAgent) => (
+                      <tr key={superAgent.id} className="border-b hover:bg-gray-50 bg-white rounded-lg border-gray-200">
+                        <td className="py-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-900 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                              {superAgent.avatar}
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900">{superAgent.name}</p>
+                              <p className="text-sm text-gray-600">{superAgent.id}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{superAgent.phone}</p>
+                            <p className="text-sm text-gray-600">{superAgent.email}</p>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <div className="flex items-center space-x-2">
+                            {getVehicleIcon(superAgent.vehicle)}
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">{superAgent.vehicle}</p>
+                              <p className="text-sm text-gray-600">{superAgent.vehicleId}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <span className="text-sm font-medium text-slate-900">{superAgent.hub}</span>
+                        </td>
+                        <td className="py-4">
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(superAgent.status)}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(superAgent.status)}`}>
+                              {superAgent.status}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <div className="flex items-center space-x-2">
+                            <button className="p-1 hover:bg-gray-100 rounded">
+                              <MessageCircle size={16} className="text-blue-600" />
+                            </button>
+                            <button className="p-1 hover:bg-gray-100 rounded">
+                              <MoreHorizontal size={16} className="text-gray-400" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+                <span>Showing 1 to {filteredSuperAgents.length} of {totalsuperAgents} super agents</span>
+                <div className="flex items-center space-x-2">
+                  <button className="px-3 py-1 border rounded hover:bg-gray-50">Previous</button>
+                  <button className="px-3 py-1 bg-blue-900 text-white rounded">1</button>
+                  <button className="px-3 py-1 border rounded hover:bg-gray-50">2</button>
+                  <button className="px-3 py-1 border rounded hover:bg-gray-50">3</button>
+                  <button className="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
+                </div>
+              </div>
+            </>
+          )}
+
           {activeTab === 'verification' && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Pending Agent Applications</h3>
               {pendingApplications.map((application) => (
                 <div key={application.id} className="border rounded-lg p-4 hover:bg-gray-50 bg-white rounded-lg border-gray-200">
-                  <div className="flex items-center justify-between ">
+                  <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4 mb-2">
                         <h4 className="font-medium text-slate-900">{application.name}</h4>
                         <span className="text-sm text-gray-600">{application.id}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          application.documents === 'Complete' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${application.documents === 'Complete' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                           {application.documents}
                         </span>
                       </div>

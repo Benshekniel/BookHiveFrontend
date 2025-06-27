@@ -17,7 +17,7 @@ import Testing from '../pages/moderator/tabs/Testing';
 const ModeratorRoutes = () => (
   <DashboardLayout>
     <Routes>
-          <Route path="" element={<ModeratorDashboard />} />
+          <Route path="/" element={<ModeratorDashboard />} />
           <Route path="home" element={<ModeratorDashboard />} />
           <Route path="charity" element={<Charity />} />
           <Route path="bookcircle" element={<BookCircle />} />
