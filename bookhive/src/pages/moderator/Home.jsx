@@ -1,24 +1,19 @@
-import React from 'react';
 import StatsCard from '../../components/shared/StatsCard';
 import InfoCard from '../../components/shared/InfoCard';
-
-import { 
-  Users, 
-  BookOpen, 
-  Heart, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock,
-  TrendingUp,
+import {
+  Users,
+  BookOpen,
+  Heart,
+  CheckCircle,
   Flag,
-  BookUser,
   BookHeart,
   BookMarked,
   Shield,
   Bell,
   Trophy,
   BadgeDollarSign,
-  ShoppingCart
+  ShoppingCart,
+  Award
 } from 'lucide-react';
 
 const Home = () => {
@@ -77,7 +72,44 @@ const Home = () => {
       change: '+15 new this week',
       changeType: 'positive'
     },
-    
+
+  ];
+
+  const supportTickets = [
+    {
+      id: 'TK-1001',
+      user: 'john_reader_42',
+      subject: 'Unable to complete book exchange',
+      category: 'Transaction',
+      priority: 'high',
+      status: 'open',
+      time: '2 hours ago'
+    },
+    {
+      id: 'TK-1002',
+      user: 'new_user_sarah',
+      subject: 'Account verification issues',
+      category: 'Account',
+      priority: 'medium',
+      status: 'in-progress',
+      time: '4 hours ago'
+    },
+    {
+      id: 'TK-1003',
+      user: 'bookworm_mike',
+      subject: 'TrustScore calculation error',
+      category: 'Technical',
+      priority: 'low',
+      status: 'resolved',
+      time: '1 day ago'
+    }
+  ];
+
+  const topDonors = [
+    { name: 'City Public Library', books: 450, rank: 1 },
+    { name: 'BookLovers Foundation', books: 320, rank: 2 },
+    { name: 'Community Reading Center', books: 280, rank: 3 },
+    { name: 'Educational Trust', books: 195, rank: 4 }
   ];
 
   const cardData = [
@@ -201,8 +233,22 @@ const Home = () => {
     }
   };
 
+  // Add this function to handle status color for support tickets
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'open':
+        return 'bg-red-100 text-red-700';
+      case 'in-progress':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'resolved':
+        return 'bg-green-100 text-green-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -233,30 +279,81 @@ const Home = () => {
           ))}
         </div>
       </div>
+      {/* Support Tickets & Donor Recognition */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Support Tickets */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Recent Support Tickets</h2>
+            <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</button>
+          </div>
+          <div className="space-y-3">
+            {supportTickets.map((ticket) => (
+              <div
+                key={ticket.id}
+                className={`p-4 rounded-lg border-l-4 ${getPriorityColor(ticket.priority)} bg-gray-50 border border-gray-200`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-gray-900">{ticket.subject}</h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                    {ticket.status}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  User: {ticket.user} • Category: {ticket.category} • Priority: {ticket.priority} • {ticket.time}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Donor Recognition */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Top Donors</h2>
+            <Award className="w-6 h-6 text-yellow-500" />
+          </div>
+          <div className="space-y-3">
+            {topDonors.map((donor) => (
+              <div key={donor.rank} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${donor.rank === 1 ? 'bg-yellow-500' :
+                    donor.rank === 2 ? 'bg-gray-400' :
+                      donor.rank === 3 ? 'bg-orange-400' : 'bg-blue-500'
+                    }`}>
+                    {donor.rank}
+                  </div>
+                  <span className="font-medium text-gray-900">{donor.name}</span>
+                </div>
+                <span className="text-blue-600 font-semibold">{donor.books} books</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Recent Activities */}
-      <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-textPrimary">Recent Activities</h2>
-          <button className="text-accent hover:text-primary text-sm font-medium">View All</button>
+          <h2 className="text-xl font-semibold text-gray-900">Recent Activities</h2>
+          <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</button>
         </div>
         <div className="space-y-3">
           {recentActivities.map((activity) => (
-            <div 
+            <div
               key={activity.id}
-              className={`p-4 rounded-lg border-l-4 ${getPriorityColor(activity.priority)} bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer`}
+              className={`p-4 rounded-lg border-l-4 ${getPriorityColor(activity.priority)} bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-textPrimary font-medium">{activity.message}</p>
+                  <p className="text-gray-900 font-medium">{activity.message}</p>
                   <p className="text-gray-500 text-sm mt-1">{activity.time}</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    activity.priority === 'high' ? 'bg-red-100 text-red-700' :
-                    activity.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-green-100 text-green-700'
-                  }`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${activity.priority === 'high' ? 'bg-red-100 text-red-700' :
+                      activity.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-green-100 text-green-700'
+                    }`}>
                     {activity.priority}
                   </span>
                 </div>
@@ -265,7 +362,6 @@ const Home = () => {
           ))}
         </div>
       </div>
-
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {cardData.map((card, index) => (

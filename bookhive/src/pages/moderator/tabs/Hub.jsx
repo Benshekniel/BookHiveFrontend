@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { MapPin, Truck, Package, Clock, Users, TrendingUp } from 'lucide-react';
+import { MapPin, Truck, Package, Clock, Users, TrendingUp, Filter, Map } from 'lucide-react';
 
 const Hub = () => {
   const [activeTab, setActiveTab] = useState('hubs');
+  const [hubFilter, setHubFilter] = useState('all');
 
   const deliveryHubs = [
     {
@@ -15,7 +16,8 @@ const Hub = () => {
       completedToday: 23,
       status: 'operational',
       capacity: '80%',
-      averageDeliveryTime: '2.5 hours'
+      averageDeliveryTime: '2.5 hours',
+      coordinates: { lat: 40.7128, lng: -74.0060 }
     },
     {
       id: 'HUB-002',
@@ -27,7 +29,8 @@ const Hub = () => {
       completedToday: 18,
       status: 'operational',
       capacity: '65%',
-      averageDeliveryTime: '3.1 hours'
+      averageDeliveryTime: '3.1 hours',
+      coordinates: { lat: 40.7589, lng: -73.9851 }
     },
     {
       id: 'HUB-003',
@@ -39,7 +42,8 @@ const Hub = () => {
       completedToday: 34,
       status: 'busy',
       capacity: '95%',
-      averageDeliveryTime: '2.8 hours'
+      averageDeliveryTime: '2.8 hours',
+      coordinates: { lat: 40.6892, lng: -74.0445 }
     },
     {
       id: 'HUB-004',
@@ -51,7 +55,34 @@ const Hub = () => {
       completedToday: 8,
       status: 'maintenance',
       capacity: '30%',
-      averageDeliveryTime: '4.2 hours'
+      averageDeliveryTime: '4.2 hours',
+      coordinates: { lat: 40.7282, lng: -73.7949 }
+    },
+    {
+      id: 'HUB-005',
+      name: 'West Side Station',
+      address: '654 Maple Drive, West Side',
+      manager: 'Robert Kim',
+      agents: 10,
+      activeDeliveries: 38,
+      completedToday: 25,
+      status: 'operational',
+      capacity: '72%',
+      averageDeliveryTime: '2.9 hours',
+      coordinates: { lat: 40.7505, lng: -74.0134 }
+    },
+    {
+      id: 'HUB-006',
+      name: 'Suburban Center',
+      address: '987 Cedar Lane, Suburbs',
+      manager: 'Lisa Park',
+      agents: 7,
+      activeDeliveries: 28,
+      completedToday: 16,
+      status: 'operational',
+      capacity: '58%',
+      averageDeliveryTime: '3.5 hours',
+      coordinates: { lat: 40.6782, lng: -73.9442 }
     }
   ];
 
@@ -162,54 +193,46 @@ const Hub = () => {
     return 'text-green-600';
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-textPrimary">Hub Management</h1>
-          <p className="text-gray-600 mt-1">Monitor delivery hubs and track book exchanges</p>
-        </div>
-        <button className="bg-accent hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <TrendingUp className="w-4 h-4" />
-          <span>Generate Report</span>
-        </button>
-      </div>
+  const filteredHubs = hubFilter === 'all' 
+    ? deliveryHubs 
+    : deliveryHubs.filter(hub => hub.status === hubFilter);
 
+  return (
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Active Hubs</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">4</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">6</p>
             </div>
             <MapPin className="w-8 h-8 text-blue-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Active Deliveries</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">156</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">222</p>
             </div>
             <Truck className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Agents</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">41</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">58</p>
             </div>
             <Users className="w-8 h-8 text-purple-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Completed Today</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">83</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">124</p>
             </div>
             <Package className="w-8 h-8 text-yellow-500" />
           </div>
@@ -217,14 +240,14 @@ const Hub = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-cardBg rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('hubs')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'hubs'
-                  ? 'border-accent text-accent'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -234,7 +257,7 @@ const Hub = () => {
               onClick={() => setActiveTab('schedules')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'schedules'
-                  ? 'border-accent text-accent'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -244,7 +267,7 @@ const Hub = () => {
               onClick={() => setActiveTab('performance')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'performance'
-                  ? 'border-accent text-accent'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -255,94 +278,96 @@ const Hub = () => {
 
         <div className="p-6">
           {activeTab === 'hubs' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {deliveryHubs.map((hub) => (
-                <div key={hub.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-textPrimary">{hub.name}</h3>
-                      <p className="text-gray-600 text-sm mt-1">{hub.address}</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hub.status)}`}>
-                      {hub.status}
-                    </span>
-                  </div>
+            <div>
+              {/* Filter */}
+              <div className="flex items-center space-x-4 mb-6">
+                <Filter className="w-5 h-5 text-gray-500" />
+                <select 
+                  value={hubFilter}
+                  onChange={(e) => setHubFilter(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Hubs</option>
+                  <option value="operational">Operational</option>
+                  <option value="busy">Busy</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </div>
 
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Manager:</span>
-                      <span className="font-medium">{hub.manager}</span>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {filteredHubs.map((hub) => (
+                  <div key={hub.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{hub.name}</h3>
+                        <p className="text-gray-600 text-sm mt-1">{hub.address}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hub.status)}`}>
+                        {hub.status}
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Capacity:</span>
-                      <span className={`font-medium ${getCapacityColor(hub.capacity)}`}>{hub.capacity}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Avg Delivery Time:</span>
-                      <span className="font-medium">{hub.averageDeliveryTime}</span>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-textPrimary">{hub.agents}</p>
-                      <p className="text-gray-600 text-sm">Agents</p>
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Manager:</span>
+                        <span className="font-medium">{hub.manager}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Capacity:</span>
+                        <span className={`font-medium ${getCapacityColor(hub.capacity)}`}>{hub.capacity}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Avg Delivery Time:</span>
+                        <span className="font-medium">{hub.averageDeliveryTime}</span>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-accent">{hub.activeDeliveries}</p>
-                      <p className="text-gray-600 text-sm">Active</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-success">{hub.completedToday}</p>
-                      <p className="text-gray-600 text-sm">Today</p>
-                    </div>
-                  </div>
 
-                  <div className="flex justify-between items-center">
-                    <button className="text-accent hover:text-primary text-sm font-medium">
-                      View Details
-                    </button>
-                    <button className="text-gray-600 hover:text-textPrimary text-sm font-medium">
-                      Contact Manager
-                    </button>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-gray-900">{hub.agents}</p>
+                        <p className="text-gray-600 text-sm">Agents</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-blue-600">{hub.activeDeliveries}</p>
+                        <p className="text-gray-600 text-sm">Active</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-green-600">{hub.completedToday}</p>
+                        <p className="text-gray-600 text-sm">Today</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View Details
+                      </button>
+                      <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                        Contact Manager
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
           {activeTab === 'schedules' && (
             <div className="space-y-4">
               {deliverySchedules.map((delivery) => (
-                <div key={delivery.id} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div key={delivery.id} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-textPrimary">{delivery.bookTitle}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{delivery.bookTitle}</h3>
                         <span className="text-gray-600 text-sm">#{delivery.id}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
                           {delivery.status.replace('_', ' ')}
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-3">
-                        <div>
-                          <span className="text-gray-500">From:</span>
-                          <p className="font-medium">{delivery.fromUser}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">To:</span>
-                          <p className="font-medium">{delivery.toUser}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Agent:</span>
-                          <p className="font-medium">{delivery.agent}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Route:</span>
-                          <p className="font-medium text-xs">{delivery.pickupHub} → {delivery.deliveryHub}</p>
-                        </div>
-                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        From: {delivery.fromUser} • To: {delivery.toUser} • Agent: {delivery.agent} • Route: {delivery.pickupHub} → {delivery.deliveryHub}
+                      </p>
 
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <div className="flex items-center">
@@ -355,10 +380,10 @@ const Hub = () => {
                     </div>
                     
                     <div className="flex space-x-2 ml-4">
-                      <button className="text-accent hover:text-primary text-sm font-medium">
+                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                         Track
                       </button>
-                      <button className="text-gray-600 hover:text-textPrimary text-sm font-medium">
+                      <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
                         Contact Agent
                       </button>
                     </div>
@@ -386,23 +411,23 @@ const Hub = () => {
                     {hubPerformance.map((hub) => (
                       <tr key={hub.hubId} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-textPrimary">{hub.hubName}</div>
+                          <div className="text-sm font-medium text-gray-900">{hub.hubName}</div>
                           <div className="text-sm text-gray-500">{hub.hubId}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-textPrimary">{hub.deliveriesThisWeek}</div>
+                          <div className="text-sm text-gray-900">{hub.deliveriesThisWeek}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-textPrimary">{hub.onTimeRate}%</div>
+                          <div className="text-sm text-gray-900">{hub.onTimeRate}%</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <span className="text-sm text-textPrimary">{hub.customerSatisfaction}</span>
+                            <span className="text-sm text-gray-900">{hub.customerSatisfaction}</span>
                             <span className="text-yellow-400 ml-1">★</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-textPrimary">{hub.avgDeliveryTime}h</div>
+                          <div className="text-sm text-gray-900">{hub.avgDeliveryTime}h</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`text-sm font-medium ${getEfficiencyColor(hub.efficiency)}`}>
@@ -417,6 +442,16 @@ const Hub = () => {
             </div>
           )}
         </div>
+      </div>
+      <div className="flex space-x-2 justify-end">
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+          <Map className="w-4 h-4" />
+          <span>View Map</span>
+        </button>
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+          <TrendingUp className="w-4 h-4" />
+          <span>Generate Report</span>
+        </button>
       </div>
     </div>
   );

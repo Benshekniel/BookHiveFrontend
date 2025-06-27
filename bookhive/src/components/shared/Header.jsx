@@ -66,30 +66,7 @@ const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
 
         <div className="flex items-center space-x-4">
           {/* Search */}
-          <div className="relative hidden md:block">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-              style={{ color: '#9CA3AF' }}
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-              style={{
-                borderColor: '#D1D5DB',
-                backgroundColor: '#FFFFFF',
-                color: '#0F172A',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'transparent';
-                e.target.style.boxShadow = '0 0 0 2px #3B82F6';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#D1D5DB';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
+         
 
           {/* Notifications */}
           <button

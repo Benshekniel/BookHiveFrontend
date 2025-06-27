@@ -135,63 +135,50 @@ const Users = () => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'border-l-error';
-      case 'medium': return 'border-l-secondary';
-      case 'low': return 'border-l-success';
+      case 'high': return 'border-l-red-500';
+      case 'medium': return 'border-l-yellow-500';
+      case 'low': return 'border-l-green-500';
       default: return 'border-l-gray-300';
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-textPrimary">User Management</h1>
-          <p className="text-gray-600 mt-1">Manage user registrations, TrustScores, and platform access</p>
-        </div>
-        <div className="flex space-x-2">
-          <button className="bg-accent hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-            <UserCheck className="w-4 h-4" />
-            <span>Bulk Actions</span>
-          </button>
-        </div>
-      </div>
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Pending Registrations</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">24</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">24</p>
             </div>
             <UserCheck className="w-8 h-8 text-blue-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Active Users</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">2,847</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">2,847</p>
             </div>
             <Shield className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Flagged Users</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">12</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
             </div>
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Appeals Pending</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">8</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">8</p>
             </div>
             <Eye className="w-8 h-8 text-purple-500" />
           </div>
@@ -199,14 +186,14 @@ const Users = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-cardBg rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('registrations')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'registrations'
-                  ? 'border-accent text-accent'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -216,7 +203,7 @@ const Users = () => {
               onClick={() => setActiveTab('management')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'management'
-                  ? 'border-accent text-accent'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -226,7 +213,7 @@ const Users = () => {
               onClick={() => setActiveTab('appeals')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'appeals'
-                  ? 'border-accent text-accent'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -239,59 +226,37 @@ const Users = () => {
           {activeTab === 'registrations' && (
             <div className="space-y-4">
               {pendingRegistrations.map((registration) => (
-                <div key={registration.id} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div key={registration.id} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-textPrimary">{registration.fullName}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{registration.fullName}</h3>
                         <span className="text-gray-600 text-sm">@{registration.username}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(registration.status)}`}>
                           {registration.status}
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-3">
-                        <div>
-                          <span className="text-gray-500">Email:</span>
-                          <p className="font-medium">{registration.email}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Location:</span>
-                          <p className="font-medium">{registration.location}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">NIC Photo:</span>
-                          <p className={`font-medium ${getNicPhotoColor(registration.nicPhoto)}`}>
-                            {registration.nicPhoto}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Profile Complete:</span>
-                          <p className="font-medium">{registration.profileComplete}%</p>
-                        </div>
-                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Email: {registration.email} • Location: {registration.location} • NIC Photo: <span className={getNicPhotoColor(registration.nicPhoto)}>{registration.nicPhoto}</span> • Profile Complete: {registration.profileComplete}%
+                      </p>
 
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>Registered: {registration.registrationDate}</span>
-                        {registration.referredBy && (
-                          <>
-                            <span>•</span>
-                            <span>Referred by: {registration.referredBy}</span>
-                          </>
-                        )}
-                      </div>
+                      <p className="text-sm text-gray-500">
+                        Registered: {registration.registrationDate}
+                        {registration.referredBy && ` • Referred by: ${registration.referredBy}`}
+                      </p>
                     </div>
                     
                     <div className="flex space-x-2 ml-4">
-                      <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors flex items-center">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors flex items-center">
                         <Eye className="w-3 h-3 mr-1" />
                         Review
                       </button>
-                      <button className="px-3 py-1 bg-success text-white rounded text-sm hover:bg-green-700 transition-colors flex items-center">
+                      <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors flex items-center">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Approve
                       </button>
-                      <button className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-red-700 transition-colors flex items-center">
+                      <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors flex items-center">
                         <X className="w-3 h-3 mr-1" />
                         Reject
                       </button>
@@ -305,11 +270,11 @@ const Users = () => {
           {activeTab === 'management' && (
             <div className="space-y-4">
               {userManagement.map((user) => (
-                <div key={user.id} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div key={user.id} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-textPrimary">@{user.username}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">@{user.username}</h3>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
                           {user.status}
                         </span>
@@ -320,33 +285,16 @@ const Users = () => {
                         )}
                       </div>
                       
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-3">
-                        <div>
-                          <span className="text-gray-500">TrustScore:</span>
-                          <div className="flex items-center">
-                            <span className={`font-bold text-lg ${getTrustScoreColor(user.trustScore)}`}>
-                              {user.trustScore}
-                            </span>
-                            <Star className="w-4 h-4 text-yellow-400 ml-1" />
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Exchanges:</span>
-                          <p className="font-medium">{user.totalExchanges}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Success Rate:</span>
-                          <p className="font-medium">{user.successRate}%</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Member Since:</span>
-                          <p className="font-medium">{user.joinDate}</p>
-                        </div>
-                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        TrustScore: <span className={`font-bold text-lg ${getTrustScoreColor(user.trustScore)}`}>{user.trustScore}</span> • 
+                        Exchanges: {user.totalExchanges} • 
+                        Success Rate: {user.successRate}% • 
+                        Member Since: {user.joinDate}
+                      </p>
 
                       <div className="mb-3">
-                        <span className="text-gray-500 text-sm">Badges:</span>
                         <div className="flex flex-wrap gap-1 mt-1">
+                        <span className="text-gray-500 text-sm">Badges:</span>
                           {user.badges.length > 0 ? (
                             user.badges.map((badge, index) => (
                               <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
@@ -359,20 +307,20 @@ const Users = () => {
                         </div>
                       </div>
 
-                      <div className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500">
                         Last activity: {user.lastActivity}
-                      </div>
+                      </p>
                     </div>
                     
                     <div className="flex space-x-2 ml-4">
-                      <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         View Profile
                       </button>
-                      <button className="px-3 py-1 bg-secondary text-white rounded text-sm hover:bg-yellow-600 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Adjust Score
                       </button>
                       {user.status === 'flagged' && (
-                        <button className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-red-700 transition-colors">
+                        <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors">
                           Take Action
                         </button>
                       )}
@@ -388,12 +336,12 @@ const Users = () => {
               {userAppeals.map((appeal) => (
                 <div 
                   key={appeal.id}
-                  className={`p-6 rounded-lg border-l-4 ${getPriorityColor(appeal.priority)} bg-gray-50 hover:bg-gray-100 transition-colors`}
+                  className={`p-6 rounded-lg border-l-4 ${getPriorityColor(appeal.priority)} bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-textPrimary">Appeal from @{appeal.username}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Appeal from @{appeal.username}</h3>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appeal.status)}`}>
                           {appeal.status.replace('_', ' ')}
                         </span>
@@ -406,34 +354,25 @@ const Users = () => {
                         </span>
                       </div>
                       
-                      <div className="space-y-2 mb-3 text-sm">
-                        <div>
-                          <span className="text-gray-500">Original Penalty:</span>
-                          <p className="font-medium">{appeal.originalPenalty} - {appeal.reason}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Appeal Reason:</span>
-                          <p className="font-medium">{appeal.appealReason}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Evidence:</span>
-                          <p className="font-medium">{appeal.evidence}</p>
-                        </div>
-                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Original Penalty: {appeal.originalPenalty} - {appeal.reason} • 
+                        Appeal Reason: {appeal.appealReason} • 
+                        Evidence: {appeal.evidence}
+                      </p>
 
-                      <div className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500">
                         Appeal Date: {appeal.appealDate}
-                      </div>
+                      </p>
                     </div>
                     
                     <div className="flex space-x-2 ml-4">
-                      <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Review Evidence
                       </button>
-                      <button className="px-3 py-1 bg-success text-white rounded text-sm hover:bg-green-700 transition-colors">
+                      <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
                         Accept Appeal
                       </button>
-                      <button className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-red-700 transition-colors">
+                      <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors">
                         Reject Appeal
                       </button>
                     </div>
@@ -443,6 +382,12 @@ const Users = () => {
             </div>
           )}
         </div>
+      </div>
+      <div className="flex justify-end space-x-2">
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+          <UserCheck className="w-4 h-4" />
+          <span>Bulk Actions</span>
+        </button>
       </div>
     </div>
   );

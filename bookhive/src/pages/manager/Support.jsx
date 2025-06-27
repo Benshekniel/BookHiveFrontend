@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { 
-  MessageSquare, 
-  Send, 
+import {
+  MessageSquare,
+  Send,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -119,7 +119,7 @@ const Support = () => {
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -128,7 +128,7 @@ const Support = () => {
                 {supportTickets.filter(t => t.status === 'Open').length}
               </p>
             </div>
-            <AlertCircle className="text-red-600" size={32} />
+            <MessageSquare className="text-red-600" size={32} />
           </div>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -153,6 +153,15 @@ const Support = () => {
             <CheckCircle className="text-green-600" size={32} />
           </div>
         </div>
+        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-sm font-medium">Avg Response Time</p>
+              <p className="text-2xl font-bold text-textPrimary mt-1">2.5h</p>
+            </div>
+            <AlertCircle className="w-8 h-8 text-purple-500" />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -161,15 +170,14 @@ const Support = () => {
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Support Tickets
           </h3>
-          
+
           <div className="space-y-4">
             {supportTickets.map((ticket) => (
-              <div 
+              <div
                 key={ticket.id}
                 onClick={() => setSelectedTicket(ticket)}
-                className={`p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 ${
-                  selectedTicket?.id === ticket.id ? 'border-blue-900 bg-blue-50' : 'border-gray-200'
-                }`}
+                className={`p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 ${selectedTicket?.id === ticket.id ? 'border-blue-900 bg-blue-50' : 'border-gray-200'
+                  }`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="font-medium text-slate-900">{ticket.subject}</h4>

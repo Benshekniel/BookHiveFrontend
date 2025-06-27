@@ -26,6 +26,7 @@ export const sidebarMenuConfig = {
     { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
     { label: 'Support', icon: Headset, path: '/moderator/support' },
     { label: 'Testing', icon: FlaskConical, path: '/moderator/test' },
+    { label: 'Settings', icon: Settings, path: '/moderator/settings' },
 
   ],
   bookstore: [
