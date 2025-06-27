@@ -191,7 +191,7 @@ const Agents = () => {
 
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="border-b">
+        <div className="border-b bg-white border-gray-200">
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('agents')}
