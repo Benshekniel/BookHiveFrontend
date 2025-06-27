@@ -39,12 +39,12 @@ export const sidebarMenuConfig = {
   ],
   'delivery-manager': [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/manager' },
-    { label: 'Delivery Agents', icon: Users, path: '/manager/Agents' },
-    { label: 'Delivery', icon: Truck, path: '/manager/Delivery' },
-    { label: 'Hubs', icon: Warehouse, path: '/manager/Hubs' },
-    { label: 'Messages', icon: MessageSquare, path: '/manager/Messages' },
-    { label: 'Support', icon: Headphones, path: '/manager/Support' },
-    { label: 'Settings', icon: Settings, path: '/manager/Schedule' },
+    { label: 'Delivery Agents', icon: Users, path: '/manager/agents' },
+    { label: 'Delivery', icon: Truck, path: '/manager/delivery' },
+    { label: 'Hubs', icon: Warehouse, path: '/manager/hubs' },
+    { label: 'Messages', icon: MessageSquare, path: '/manager/messages' },
+    { label: 'Support', icon: Headphones, path: '/manager/support' },
+    { label: 'Settings', icon: Settings, path: '/manager/schedule' },
   ],
   'delivery-agent': [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/agent' },
