@@ -592,8 +592,8 @@ const OrdersPage = () => {
 
       {/* Review Modal */}
       {showReviewModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold mb-2 text-gray-900">Write a Review</h3>
               <p className="text-gray-600">{selectedOrder.book.title}</p>
@@ -602,7 +602,7 @@ const OrdersPage = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Overall Rating
+                  Delivery Rating
                 </label>
                 <div className="flex space-x-1">
                   {[1, 2, 3, 4, 5].map((star) => (

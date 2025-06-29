@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
-import { Heart, Clock, ShoppingCart, Trophy, BookOpen, Award, TrendingUp, Calendar, Star } from "lucide-react"
+import { useState } from "react"
+import { Link } from 'react-router-dom';
+import {
+  Heart,
+  Clock,
+  ShoppingCart,
+  Trophy,
+  BookOpen,
+  Award,
+  TrendingUp,
+  Calendar,
+  Star,
+  Info,
+  Shield,
+} from "lucide-react"
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('requests');
+  const [activeTab, setActiveTab] = useState("requests")
 
   const statsData = [
     {
@@ -32,6 +45,37 @@ const Dashboard = () => {
       icon: Trophy,
       color: "text-purple-500",
       bgColor: "bg-purple-50",
+    },
+  ]
+
+  const badges = [
+    {
+      name: "Trusted Seller",
+      icon: Star,
+      earned: true,
+      color: "text-yellow-500",
+      bgColor: "bg-yellow-50",
+    },
+    {
+      name: "Verified",
+      icon: Shield,
+      earned: true,
+      color: "text-blue-500",
+      bgColor: "bg-blue-50",
+    },
+    {
+      name: "Quick Responder",
+      icon: Clock,
+      earned: true,
+      color: "text-green-500",
+      bgColor: "bg-green-50",
+    },
+    {
+      name: "Power User",
+      icon: Award,
+      earned: false,
+      color: "text-gray-400",
+      bgColor: "bg-gray-50",
     },
   ]
 
@@ -80,8 +124,38 @@ const Dashboard = () => {
     }
   }
 
+  // Circular progress component for TrustScore
+  const CircularProgress = ({ value, max = 1000 }) => {
+    const percentage = (value / max) * 100
+    const strokeDasharray = 2 * Math.PI * 45 // radius = 45
+    const strokeDashoffset = strokeDasharray - (strokeDasharray * percentage) / 100
+
+    return (
+      <div className="relative w-24 h-24">
+        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-200" />
+          <circle
+            cx="50"
+            cy="50"
+            r="45"
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="none"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            className="text-green-500 transition-all duration-300 ease-in-out"
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-2xl font-bold text-gray-900">{value}</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-8 text-white">
@@ -91,14 +165,60 @@ const Dashboard = () => {
               <p className="text-blue-100 text-lg">Discover new books and connect with readers across Sri Lanka</p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <Link to ="/user/browse-books">
               <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
                 <BookOpen className="w-5 h-5" />
                 <span>Browse Books</span>
               </button>
+              </Link>
               <button className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
                 <TrendingUp className="w-5 h-5" />
                 <span>Become a Seller</span>
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* TrustScore and Badges Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* TrustScore */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">TrustScore</h2>
+              <Info className="w-5 h-5 text-gray-400" />
+            </div>
+            <div className="flex items-center space-x-6">
+              <CircularProgress value={850} />
+              <div className="flex-1">
+                <div className="mb-2">
+                  <span className="text-lg font-semibold text-gray-900">Excellent</span>
+                </div>
+                <div className="mb-1">
+                  <span className="text-green-600 font-medium">+25 this month</span>
+                </div>
+                <div className="text-sm text-gray-500">Based on 47 completed transactions</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Badges Earned */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Your Badges</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {badges.map((badge, index) => (
+                <div key={index} className="text-center">
+                  <div
+                    className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${badge.bgColor} ${badge.earned ? "" : "opacity-50"}`}
+                  >
+                    <badge.icon className={`w-6 h-6 ${badge.color}`} />
+                  </div>
+                  <p className={`text-sm font-medium ${badge.earned ? "text-gray-900" : "text-gray-400"}`}>
+                    {badge.name}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -219,7 +339,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard
