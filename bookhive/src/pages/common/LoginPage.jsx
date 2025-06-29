@@ -94,11 +94,11 @@ const LoginPage = () => {
                   onChange={(event) => {
                     setEmail(event.target.value);
                   }}
-                  // {...register('email')}
-                  // className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                  // style={{
-                  //   borderColor: '#D1D5DB'
-                  // }}
+                  
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  style={{
+                    borderColor: '#D1D5DB'
+                  }}
                   onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="you@example.com"
@@ -121,11 +121,11 @@ const LoginPage = () => {
                   onChange={(event) => {
                     setPassword(event.target.value);
                   }}
-                  // {...register('password')}
-                  // className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                  // style={{
-                  //   borderColor: '#D1D5DB'
-                  // }}
+                  
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                  style={{
+                    borderColor: '#D1D5DB'
+                  }}
                   onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="••••••••"
