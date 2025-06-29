@@ -12,6 +12,7 @@ import {
   ArrowRight,
   X,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { books } from "../../data/mockData";
 import Button from "../../components/shared/Button";
 
@@ -33,10 +34,14 @@ const BooksPage = () => {
   const [nearbyOnly, setNearbyOnly] = useState(false);
 
   // Get unique genres from all books
-  const allGenres = Array.from(new Set(books.flatMap((book) => book.genre))).sort();
+  const allGenres = Array.from(
+    new Set(books.flatMap((book) => book.genre))
+  ).sort();
 
   // Get unique conditions from all books
-  const allConditions = Array.from(new Set(books.map((book) => book.condition)));
+  const allConditions = Array.from(
+    new Set(books.map((book) => book.condition))
+  );
 
   const applyFilters = useCallback(() => {
     let result = [...books];
@@ -133,7 +138,9 @@ const BooksPage = () => {
 
     // Mock bid submission
     console.log(`Bid submitted: Rs. ${bidAmount} for ${selectedBook.title}`);
-    alert(`Your bid of Rs. ${bidAmount} has been submitted for "${selectedBook.title}"`);
+    alert(
+      `Your bid of Rs. ${bidAmount} has been submitted for "${selectedBook.title}"`
+    );
 
     setShowBidModal(false);
     setBidAmount("");
@@ -167,12 +174,10 @@ const BooksPage = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="mb-4 md:mb-0">
               <h1 className="text-3xl font-bold mb-2">Browse Books</h1>
-              <p className="text-blue-100 text-lg">Discover a wide range of books to borrow or buy</p>
+              <p className="text-blue-100 text-lg">
+                Discover a wide range of books to borrow or buy
+              </p>
             </div>
-            <button className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-800 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
-              <ArrowRight className="w-5 h-5" />
-              <span>Back to Dashboard</span>
-            </button>
           </div>
         </div>
 
@@ -206,8 +211,8 @@ const BooksPage = () => {
             <button
               onClick={() => setNearbyOnly(!nearbyOnly)}
               className={`px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors ${
-                nearbyOnly 
-                  ? "bg-blue-500 text-white" 
+                nearbyOnly
+                  ? "bg-blue-500 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -247,7 +252,9 @@ const BooksPage = () => {
                         }`}
                         onClick={() => {
                           if (selectedGenres.includes(genre)) {
-                            setSelectedGenres(selectedGenres.filter((g) => g !== genre));
+                            setSelectedGenres(
+                              selectedGenres.filter((g) => g !== genre)
+                            );
                           } else {
                             setSelectedGenres([...selectedGenres, genre]);
                           }
@@ -280,7 +287,10 @@ const BooksPage = () => {
                               selectedConditions.filter((c) => c !== condition)
                             );
                           } else {
-                            setSelectedConditions([...selectedConditions, condition]);
+                            setSelectedConditions([
+                              ...selectedConditions,
+                              condition,
+                            ]);
                           }
                         }}
                       >
@@ -303,7 +313,9 @@ const BooksPage = () => {
                           ? "bg-yellow-500 text-white"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
-                      onClick={() => setForLending(forLending === true ? null : true)}
+                      onClick={() =>
+                        setForLending(forLending === true ? null : true)
+                      }
                     >
                       For Lending
                     </button>
@@ -329,7 +341,10 @@ const BooksPage = () => {
                       placeholder="Min"
                       value={priceRange.min}
                       onChange={(e) =>
-                        setPriceRange((prev) => ({ ...prev, min: e.target.value }))
+                        setPriceRange((prev) => ({
+                          ...prev,
+                          min: e.target.value,
+                        }))
                       }
                       className="w-full px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                     />
@@ -338,7 +353,10 @@ const BooksPage = () => {
                       placeholder="Max"
                       value={priceRange.max}
                       onChange={(e) =>
-                        setPriceRange((prev) => ({ ...prev, max: e.target.value }))
+                        setPriceRange((prev) => ({
+                          ...prev,
+                          max: e.target.value,
+                        }))
                       }
                       className="w-full px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                     />
@@ -424,7 +442,9 @@ const BooksPage = () => {
                             <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">
                               {book.title}
                             </h3>
-                            <p className="text-sm text-gray-600 mb-2">{book.author}</p>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {book.author}
+                            </p>
                           </div>
                           {book.forSale && (
                             <div className="text-green-600 font-semibold">
@@ -451,7 +471,9 @@ const BooksPage = () => {
                               alt={book.owner.name}
                               className="h-5 w-5 rounded-full object-cover mr-1 inline"
                             />
-                            <span className="text-gray-600">{book.owner.name}</span>
+                            <span className="text-gray-600">
+                              {book.owner.name}
+                            </span>
                             <span className="ml-1 bg-yellow-100 text-yellow-800 px-1 rounded text-xs">
                               {book.owner.trustScore}★
                             </span>
@@ -465,14 +487,13 @@ const BooksPage = () => {
 
                         <div className="mt-4 flex flex-col space-y-2">
                           <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              fullWidth
-                              size="sm"
-                              className="border-2 border-gray-300 text-gray-600 hover:bg-gray-100"
+                            <Link
+                              to={`book-details/${book.id}`} // Changed from `/book-details/${book.id}` to relative path
+                              state={{ book }}
+                              className="w-full inline-flex justify-center items-center px-4 py-2 border-2 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm font-medium"
                             >
                               View Details
-                            </Button>
+                            </Link>
                             {book.forLend && (
                               <Button
                                 variant="secondary"
@@ -517,9 +538,12 @@ const BooksPage = () => {
             ) : (
               <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
                 <BookOpen size={48} className="mx-auto mb-4 text-gray-400" />
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">No books found</h3>
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">
+                  No books found
+                </h3>
                 <p className="text-gray-600 mb-4">
-                  Try adjusting your search or filters to find what you're looking for.
+                  Try adjusting your search or filters to find what you're
+                  looking for.
                 </p>
                 {activeFiltersCount > 0 && (
                   <Button
@@ -538,7 +562,7 @@ const BooksPage = () => {
 
       {/* Bid Modal */}
       {showBidModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50 shadow-2xl">
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Place a Bid</h3>
@@ -549,11 +573,19 @@ const BooksPage = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             {selectedBook && (
               <div className="mb-4">
-                <p className="text-gray-600 mb-2">Book: <span className="font-medium">{selectedBook.title}</span></p>
-                <p className="text-gray-600 mb-4">Current Price: <span className="font-medium text-green-600">Rs. {selectedBook.price}</span></p>
+                <p className="text-gray-600 mb-2">
+                  Book:{" "}
+                  <span className="font-medium">{selectedBook.title}</span>
+                </p>
+                <p className="text-gray-600 mb-4">
+                  Current Price:{" "}
+                  <span className="font-medium text-green-600">
+                    Rs. {selectedBook.price}
+                  </span>
+                </p>
               </div>
             )}
 

@@ -8,6 +8,9 @@ import ProfileSettings from '../pages/general-user/ProfileSettings';
 import Messages from '../pages/general-user/Messages';
 import BooksPage from '../pages/general-user/BrowseBooks';
 import OrdersPage from '../pages/general-user/Orders';
+import BookCircle from '../pages/general-user/BookCircles';
+import BookDetailsPage from '../pages/general-user/BookDetails';
+import SellerDashboardPage from '../pages/general-user/SellerDashboard';
 
 
 function UserRoutes() {
@@ -15,6 +18,7 @@ function UserRoutes() {
     <DashboardLayout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="seller-dashboard" element={<SellerDashboardPage />} />
         <Route path="list-book" element={<BookListing />} />
         <Route path="transactions" element={<TransactionHistory />} />
         <Route path="competitions" element={<Competitions />} />
@@ -22,6 +26,8 @@ function UserRoutes() {
         <Route path="messages" element={<Messages />} />
         <Route path="browse-books" element={<BooksPage />} />
         <Route path="orders" element={<OrdersPage />} />
+        <Route path="book-circles" element={<BookCircle />} />
+        <Route path="user/book-details" element={<BookDetailsPage />} />
       </Routes>
     </DashboardLayout>
   );
