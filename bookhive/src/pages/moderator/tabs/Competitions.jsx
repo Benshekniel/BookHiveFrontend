@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
+import CompetitionCreate from "../subPages/competitionCreate";
+
 import { Trophy, Calendar, Users, Star, Plus, Eye, Filter } from 'lucide-react';
 
 const Competitions = () => {
   const [activeTab, setActiveTab] = useState('active');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
 
   const competitions = [
     {
@@ -162,39 +166,75 @@ const Competitions = () => {
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
-            <button
-              onClick={() => setActiveTab('active')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'active'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Active Competitions
-            </button>
-            <button
-              onClick={() => setActiveTab('leaderboards')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'leaderboards'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Leaderboards
-            </button>
-            <button
-              onClick={() => setActiveTab('submissions')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'submissions'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Submissions
-            </button>
+          <nav className="flex items-center justify-between px-6">
+            
+            {/* Left side: Tab buttons */}
+            <div className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('active')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'active'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Active Competitions
+              </button>
+              <button
+                onClick={() => setActiveTab('leaderboards')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'leaderboards'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Leaderboards
+              </button>
+              <button
+                onClick={() => setActiveTab('submissions')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'submissions'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Submissions
+              </button>
+            </div>
+
+            {/* Right side: Create Event button */}
+            <div className="py-4">
+              <button 
+                onClick={() => setShowCreateEvent(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Event</span>
+              </button>
+            </div>
           </nav>
         </div>
+
+          {showCreateEvent && (
+          <div className="fixed inset-0 z-50 backdrop-blur-sm bg-black/30 flex justify-center items-center p-4">
+            <div
+              className="bg-white rounded-lg shadow-lg p-6 relative"
+              style={{ width: '500px', height: '400px' }}
+            >
+              {/* Close Button inside modal */}
+              <button
+                onClick={() => setShowCreateEvent(false)}
+                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+
+            <CompetitionCreate setShowCreateEvent={setShowCreateEvent} />
+            </div>
+          </div>
+        )}
+
 
         <div className="p-6">
           {activeTab === 'active' && (
@@ -375,12 +415,7 @@ const Competitions = () => {
           )}
         </div>
       </div>
-      <div className="flex justify-end">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <Plus className="w-4 h-4" />
-          <span>Create Competition</span>
-        </button>
-      </div>
+
     </div>
   );
 };
