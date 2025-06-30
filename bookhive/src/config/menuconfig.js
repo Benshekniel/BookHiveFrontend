@@ -3,7 +3,7 @@ import {
   Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
   ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign, Box,
-  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route,FlaskConical, CircleDashed
+  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route,FlaskConical, CircleDashed,MessageSquareText,MessageCircle,UserCog
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
@@ -65,10 +65,18 @@ export const sidebarMenuConfig = {
     { label: 'Hub Settings', icon: Settings, path: '/hubmanager/settings' },
   ]
   ,
-  organization: [
+   organization : [
     { label: 'Dashboard', icon: Home, path: '/organization' },
-    { label: 'Reports', icon: Building, path: '/organization/reports' },
+    { label: 'Book Request', icon: BookOpen, path: '/organization/request' },
+    { label: 'Donations', icon: HeartHandshake, path: '/organization/received' },
+    { label: 'Messages', icon: MessageSquareText, path: '/organization/messages' },
+    { label: 'Notifications', icon: Bell, path: '/organization/notifications' },
+    { label: 'Feedback', icon: MessageCircle, path: '/organization/feedback' },
+    { label: 'Profile', icon: UserCog, path: '/organization/settings' },
   ],
+  
+  
+
   user: [
     { label: 'Dashboard', icon: Home, path: '/user' },
     { label: 'SellerDashboard', icon: Home, path: '/user/seller-dashboard' },
