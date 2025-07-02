@@ -13,12 +13,12 @@ const BookDetailsPage = () => {
 
   useEffect(() => {
     if (id) {
-      const foundBook = books.find((b) => b.id === parseInt(id));
+      const foundBook = books.find((b) => b.id == id);
       setBook(foundBook || null);
     } else if (location.state?.book) {
       setBook(location.state.book);
     } else {
-      navigate("browse-books"); // Relative path
+      navigate("/browse-books"); // Relative path
     }
   }, [id, navigate]);
 
@@ -47,7 +47,7 @@ const BookDetailsPage = () => {
             <p className="text-blue-100 mt-2">Explore and interact with this book</p>
           </div>
           <Link
-            to="browse-books" // Relative path
+            to="/user/browse-books" // Relative path
             className="inline-flex items-center px-4 py-2 border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-yellow-500"
           >
             <ArrowRight className="w-5 h-5 rotate-180 mr-2" />
@@ -110,7 +110,7 @@ const BookDetailsPage = () => {
 
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <Link
-                  to="browse-books" // Relative path
+                  to="/user/browse-books" // Relative path
                   className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border-2 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm font-medium"
                 >
                   Back to Browse

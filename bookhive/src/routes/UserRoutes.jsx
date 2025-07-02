@@ -27,7 +27,7 @@ function UserRoutes() {
         <Route path="browse-books" element={<BooksPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="book-circles" element={<BookCircle />} />
-        <Route path="user/book-details" element={<BookDetailsPage />} />
+        <Route path="browse-books/book-details/:id" element={<BookDetailsPage />} />
       </Routes>
     </DashboardLayout>
   );
