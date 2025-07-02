@@ -47,12 +47,20 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout, isMobileOpen, setIsMobileO
           onClick={() => setIsMobileOpen(false)}
         />
       )}
+      {/* Sidebar for mobile: only show when isMobileOpen, for desktop: always show */}
       <div
-        className={`sidebar flex flex-col bg-blue-900 text-white transition-all h-full ${isMobileOpen ? 'fixed top-0 left-0 z-50 w-64' : collapsed ? 'w-0 lg:w-16' : 'w-0 lg:w-64'
-          } overflow-hidden lg:overflow-x-hidden lg:overflow-y-visible z-10`}
+        className={`
+          sidebar flex flex-col bg-blue-900 text-white transition-all h-full
+          ${isMobileOpen
+            ? 'fixed top-0 left-0 z-50 w-64 lg:hidden'
+            : 'hidden lg:flex lg:fixed lg:top-0 lg:left-0 ' + (collapsed ? 'lg:w-16' : 'lg:w-64')
+          }
+          overflow-hidden lg:overflow-y-auto
+        `}
         style={{
-        transitionDuration: collapsed ? '500ms' : '300ms',
+          transitionDuration: collapsed ? '500ms' : '300ms',
           backgroundColor: '#1E3A8A',
+          height: '100vh',
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

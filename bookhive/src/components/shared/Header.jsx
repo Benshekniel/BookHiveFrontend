@@ -81,7 +81,8 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   const displayRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
 
   return (
-    <div className="flex min-h-screen h-screen bg-background relative">
+    <div className="min-h-screen h-screen bg-background relative">
+      {/* Sidebar: fixed on desktop */}
       <Sidebar
         key="main-sidebar"
         collapsed={collapsed}
@@ -90,7 +91,13 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
-      <div className="flex-1 flex flex-col ml-0 lg:ml-0"> {/* Removed dynamic margin */}
+      {/* Main content: only add left margin on desktop */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300
+          lg:ml-0
+          ${collapsed ? 'lg:ml-16' : 'lg:ml-64'}
+        `}
+      >
         <header
           className="shadow-sm border-b px-6 py-4"
           style={{
