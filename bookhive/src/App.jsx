@@ -12,6 +12,7 @@ import DeliveryAgentRoutes from './routes/DeliveryAgentRoutes';
 import OrganizationRoutes from './routes/OrganizationRoutes';
 import HubManagerRouters from './routes/HubManagerRoutes';
 import Header from './components/shared/Header';
+import UserNavbar from './components/user/navbar';
 import './index.css';
 
 // Create Auth Context
@@ -54,16 +55,17 @@ const App = () => {
     }
   };
 
-  const renderLayout = (children) => (
-    <Header
+  const renderLayout = (children, CustomHeader = Header) => (
+    <CustomHeader
       isMobileOpen={isMobileOpen}
       setIsMobileOpen={setIsMobileOpen}
       collapsed={collapsed}
       setCollapsed={setCollapsed}
       onLogout={logout}
+      user={user}
     >
       {children}
-    </Header>
+    </CustomHeader>
   );
 
   return (
@@ -75,7 +77,7 @@ const App = () => {
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/user/*" element={renderLayout(<UserRoutes />)} />
+        <Route path="/user/*" element={renderLayout(<UserRoutes />, UserNavbar)} />
         <Route path="/admin/*" element={renderLayout(<AdminRoutes />)} />
         <Route path="/moderator/*" element={renderLayout(<ModeratorRoutes />)} />
         <Route path="/hubmanager/*" element={renderLayout(<HubManagerRouters />)} />
