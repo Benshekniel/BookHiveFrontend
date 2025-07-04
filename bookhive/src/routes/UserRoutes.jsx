@@ -11,6 +11,7 @@ import OrdersPage from '../pages/general-user/Orders';
 import BookCircle from '../pages/general-user/BookCircles';
 import BookDetailsPage from '../pages/general-user/BookDetails';
 import SellerDashboardPage from '../pages/general-user/SellerDashboard';
+import Notifications from '../pages/general-user/UserNotifications';
 
 
 function UserRoutes() {
@@ -28,6 +29,7 @@ function UserRoutes() {
         <Route path="orders" element={<OrdersPage />} />
         <Route path="book-circles" element={<BookCircle />} />
         <Route path="browse-books/book-details/:id" element={<BookDetailsPage />} />
+        <Route path="notifications" element={<Notifications />} />
       </Routes>
     </DashboardLayout>
   );

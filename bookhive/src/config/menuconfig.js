@@ -86,6 +86,7 @@ export const sidebarMenuConfig = {
     { label: 'Messages', icon: MessageSquare, path: '/user/messages' },
     { label: 'Profile Settings', icon: User, path: '/user/profile-settings' },
     { label: 'Book Circle', icon: CircleDashed, path: '/user/book-circles' },
+    { label: 'Notifications', icon: Bell, path: '/user/notifications' },
     
   ],
   // guest: [
