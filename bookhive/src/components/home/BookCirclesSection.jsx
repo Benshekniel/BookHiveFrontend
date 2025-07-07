@@ -5,18 +5,18 @@ import { Link } from 'react-router-dom';
 
 const BookCirclesSection = () => {
   return (
-    <div className="py-16" style={{ backgroundColor: '#F9FAFB' }}>
+    <div className="py-16" style={{ backgroundColor: '#F8FAFC' }}> {/* Background */}
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
+          <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#0F172A' }}> {/* Text */}
             Join Book Circles
           </h2>
           <Link 
             to="/circles" 
             className="flex items-center transition-colors"
-            style={{ color: '#407aff' }}
-            onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
-            onMouseOut={(e) => (e.target.style.color = '#407aff')}
+            style={{ color: '#3B82F6' }} // Accent
+            onMouseOver={(e) => (e.target.style.color = '#1E40AF')} // Darker Accent
+            onMouseOut={(e) => (e.target.style.color = '#3B82F6')}
           >
             <span className="mr-1">View All</span>
             <ArrowRight size={18} />
@@ -61,7 +61,7 @@ const BookCirclesSection = () => {
                       <span 
                         key={index} 
                         className="text-xs px-2 py-1 rounded-full"
-                        style={{ backgroundColor: 'rgba(64, 122, 255, 0.1)', color: '#407aff' }}
+                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6' }} // Accent
                       >
                         {tag}
                       </span>
@@ -76,13 +76,13 @@ const BookCirclesSection = () => {
                         src={member.avatar}
                         alt={member.name}
                         className="w-8 h-8 rounded-full border-2 object-cover"
-                        style={{ borderColor: '#ffffff' }}
+                        style={{ borderColor: '#FFFFFF' }} // Cards
                         title={member.name}
                       />
                     ))}
                     {circle.members.length > 3 && (
                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium border-2"
-                        style={{ borderColor: '#ffffff' }}
+                        style={{ borderColor: '#FFFFFF' }} // Cards
                       >
                         +{circle.members.length - 3}
                       </div>
@@ -91,9 +91,9 @@ const BookCirclesSection = () => {
                   <Link to={`/circles/${circle.id}`}>
                     <button
                       className="px-4 py-2 font-semibold rounded-lg transition-all duration-200 border-2"
-                      style={{ borderColor: '#ffd639', color: '#ffd639', backgroundColor: 'transparent' }}
-                      onMouseOver={(e) => (e.target.style.backgroundColor = '#FFC107', e.target.style.color = '#FFFFFF')}
-                      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#ffd639')}
+                      style={{ borderColor: '#FBBF24', color: '#FBBF24', backgroundColor: 'transparent' }} // Secondary
+                      onMouseOver={(e) => (e.target.style.backgroundColor = '#FBBF24', e.target.style.color = '#FFFFFF')}
+                      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#FBBF24')}
                     >
                       Join Circle
                     </button>
@@ -103,21 +103,23 @@ const BookCirclesSection = () => {
             </div>
           ))}
           <div className="bg-yellow/10 border-2 border-dashed rounded-lg transition-all duration-200 transform hover:shadow-lg hover:-translate-y-2"
-            style={{ borderColor: '#ffd639' }}
+            style={{ borderColor: '#FBBF24' }} // Secondary
           >
             <div className="p-8 flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(255, 214, 57, 0.2)' }}>
-                <Users className="text-yellow" style={{ color: '#ffd639' }} size={24} />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(251, 191, 36, 0.2)' }}> {/* Secondary */}
+                <Users className="text-yellow" style={{ color: '#FBBF24' }} size={24} /> {/* Secondary */}
               </div>
-              <h3 className="text-xl font-bold mb-3" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>Create Your Own Circle</h3>
+              <h3 className="text-xl font-bold mb-3" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#0F172A' }}> {/* Text */}
+                Create Your Own Circle
+              </h3>
               <p className="text-gray-600 mb-6">
                 Start a new book circle based on your interests and invite others to join.
               </p>
               <button
                 className="px-4 py-2 font-semibold rounded-lg transition-all duration-200"
-                style={{ backgroundColor: '#ffd639', color: '#FFFFFF' }}
-                onMouseOver={(e) => (e.target.style.backgroundColor = '#FFC107')}
-                onMouseOut={(e) => (e.target.style.backgroundColor = '#ffd639')}
+                style={{ backgroundColor: '#FBBF24', color: '#FFFFFF' }} // Secondary
+                onMouseOver={(e) => (e.target.style.backgroundColor = '#D97706')} // Darker Honey Yellow
+                onMouseOut={(e) => (e.target.style.backgroundColor = '#FBBF24')}
               >
                 Create Circle
               </button>

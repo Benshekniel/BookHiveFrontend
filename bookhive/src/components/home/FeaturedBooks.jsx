@@ -10,17 +10,17 @@ const FeaturedBooks = () => {
     .slice(0, 4);
 
   return (
-    <div className="py-16 bg-white">
+    <div className="py-16 bg-white"> {/* Cards */}
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
+          <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#0F172A' }}> {/* Text */}
             Featured Books
           </h2>
           <Link 
             to="/books" 
             className="flex items-center transition-colors"
-            style={{ color: '#1E3A8A' }} // text-secondary
-            onMouseOver={(e) => (e.target.style.color = '#152B70')} // hover:text-secondary-dark
+            style={{ color: '#1E3A8A' }} // Primary
+            onMouseOver={(e) => (e.target.style.color = '#0F172A')} // Text (darker shade)
             onMouseOut={(e) => (e.target.style.color = '#1E3A8A')}
           >
             <span className="mr-1">View All</span>
@@ -40,7 +40,7 @@ const FeaturedBooks = () => {
               />
             </div>
             <div className="md:w-2/3 p-8 flex flex-col justify-center">
-              <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
+              <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#0F172A' }}> {/* Text */}
                 Have Books to Share?
               </h3>
               <p className="text-gray-600 mb-6">
@@ -50,9 +50,9 @@ const FeaturedBooks = () => {
               </p>
               <button
                 className="px-4 py-2 font-semibold rounded-lg transition-all duration-200"
-                style={{ backgroundColor: '#FFC107', color: '#FFFFFF' }} // btn-primary
-                onMouseOver={(e) => (e.target.style.backgroundColor = '#FFA000')} // hover:bg-primary-dark
-                onMouseOut={(e) => (e.target.style.backgroundColor = '#FFC107')}
+                style={{ backgroundColor: '#FBBF24', color: '#FFFFFF' }} // Secondary
+                onMouseOver={(e) => (e.target.style.backgroundColor = '#D97706')} // Darker Honey Yellow
+                onMouseOut={(e) => (e.target.style.backgroundColor = '#FBBF24')}
               >
                 Add Your Books
               </button>
