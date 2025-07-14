@@ -13,42 +13,89 @@ const signupSchemaStep1 = z.object({
   phone: z.string().min(10, 'Phone must be at least 10 digits'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(8, 'Confirm password must match'),
+  address: z.string().min(5, 'Address must be at least 5 characters'),
+  city: z.string().min(2, 'City must be at least 2 characters'),
+  state: z.string().min(2, 'State must be at least 2 characters'),
+  zipCode: z.string().min(5, 'Zip Code must be at least 5 characters'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
 
 const signupSchemaStep2 = z.object({
-  email: z.string().email('Please enter a valid email'),
-  city: z.string().min(2, 'City must be at least 2 characters'),
-  district: z.string().min(2, 'District must be at least 2 characters'),
+  role: z.enum(['user', 'bookstore', 'organization', 'delivery-agent'], 'Please select a role'),
 });
 
-const signupSchemaStep3 = z.object({
-  nicFront: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png'].includes(file[0].type), 'Please upload a valid image (JPEG/PNG)'),
-  nicBack: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png'].includes(file[0].type), 'Please upload a valid image (JPEG/PNG)'),
-  addressProof: z.any().refine((file) => file && file[0] && ['application/pdf', 'image/jpeg', 'image/png'].includes(file[0].type), 'Please upload a valid PDF or image (JPEG/PNG)'),
+const userSchemaStep3 = z.object({
+  dob: z.string().min(1, 'Date of birth is required'),
+  idType: z.enum(['nic', 'passport'], 'Please select ID type'),
+  idFront: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png'].includes(file[0].type), 'Please upload a valid image (JPEG/PNG)'),
+  idBack: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png'].includes(file[0].type), 'Please upload a valid image (JPEG/PNG)'),
+  billImage: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png', 'application/pdf'].includes(file[0].type), 'Please upload a valid image or PDF'),
+  gender: z.enum(['male', 'female', 'other'], 'Please select gender'),
+});
+
+const bookstoreSchemaStep3 = z.object({
+  storeRegistrationNo: z.string().min(1, 'Store Registration No is required'),
+  registrationCopy: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png', 'application/pdf'].includes(file[0].type), 'Please upload a valid image or PDF'),
+  runningYear: z.string().min(1, 'Running Year is required'),
+});
+
+const organizationSchemaStep3 = z.object({
+  organizationType: z.string().min(1, 'Organization Type is required'),
+  registrationNo: z.string().min(1, 'Registration No is required'),
+  registrationCopy: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png', 'application/pdf'].includes(file[0].type), 'Please upload a valid image or PDF'),
+  runningYears: z.string().min(1, 'Running Years is required'),
+});
+
+const deliveryAgentSchemaStep3 = z.object({
+  age: z.string().min(1, 'Age is required'),
+  gender: z.enum(['male', 'female', 'other'], 'Please select gender'),
+  idType: z.enum(['nic', 'passport'], 'Please select ID type'),
+  idFront: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png'].includes(file[0].type), 'Please upload a valid image (JPEG/PNG)'),
+  idBack: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png'].includes(file[0].type), 'Please upload a valid image (JPEG/PNG)'),
+  hub: z.string().min(1, 'Hub is required'),
+  vehicleType: z.string().min(1, 'Vehicle Type is required'),
+  vehicleRC: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png', 'application/pdf'].includes(file[0].type), 'Please upload a valid image or PDF'),
 });
 
 const SignupPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({});
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(
-      step === 1 ? signupSchemaStep1 : step === 2 ? signupSchemaStep2 : signupSchemaStep3
-    ),
+  const [selectedRole, setSelectedRole] = useState('');
+
+  const getSchemaForStep = () => {
+    if (step === 1) return signupSchemaStep1;
+    if (step === 2) return signupSchemaStep2;
+    if (step === 3) {
+      switch (selectedRole) {
+        case 'user': return userSchemaStep3;
+        case 'bookstore': return bookstoreSchemaStep3;
+        case 'organization': return organizationSchemaStep3;
+        case 'delivery-agent': return deliveryAgentSchemaStep3;
+        default: return userSchemaStep3;
+      }
+    }
+    return signupSchemaStep1;
+  };
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+    resolver: zodResolver(getSchemaForStep()),
   });
   const [error, setError] = useState('');
 
   const onSubmitStep1 = (data) => {
     setFormData({ ...formData, ...data });
     setStep(2);
+    reset();
   };
 
   const onSubmitStep2 = (data) => {
     setFormData({ ...formData, ...data });
+    setSelectedRole(data.role);
     setStep(3);
+    reset();
   };
 
   const onSubmitStep3 = (data) => {
@@ -56,6 +103,13 @@ const SignupPage = () => {
     console.log('Final form data:', { ...formData, ...data });
     navigate('/login');
   };
+
+  const roleOptions = [
+    { value: 'user', label: 'User (Buyer, Borrower, Lender, Seller)' },
+    { value: 'bookstore', label: 'Book Store' },
+    { value: 'organization', label: 'Organization' },
+    { value: 'delivery-agent', label: 'Delivery Agent' },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
@@ -82,52 +136,75 @@ const SignupPage = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-md rounded-lg sm:px-10 transition-all duration-200">
+          {/* Step indicator */}
+          <div className="mb-6">
+            <div className="flex justify-center">
+              <div className="flex items-center space-x-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  1
+                </div>
+                <div className={`w-8 h-1 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  2
+                </div>
+                <div className={`w-8 h-1 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  3
+                </div>
+              </div>
+            </div>
+          </div>
+
           <form className="space-y-6" onSubmit={handleSubmit(
             step === 1 ? onSubmitStep1 : step === 2 ? onSubmitStep2 : onSubmitStep3
           )}>
             {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+            
             {step === 1 && (
               <>
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                    First Name
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="firstName"
-                      type="text"
-                      {...register('firstName')}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                      style={{ borderColor: '#D1D5DB' }}
-                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
-                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="John"
-                    />
-                    {errors.firstName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-                    )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                      First Name
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="firstName"
+                        type="text"
+                        {...register('firstName')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="John"
+                      />
+                      {errors.firstName && (
+                        <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                      Last Name
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="lastName"
+                        type="text"
+                        {...register('lastName')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="Doe"
+                      />
+                      {errors.lastName && (
+                        <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                    Last Name
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="lastName"
-                      type="text"
-                      {...register('lastName')}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                      style={{ borderColor: '#D1D5DB' }}
-                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
-                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="Doe"
-                    />
-                    {errors.lastName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-                    )}
-                  </div>
-                </div>
+                
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                     Email
@@ -148,9 +225,10 @@ const SignupPage = () => {
                     )}
                   </div>
                 </div>
+                
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone
+                    Phone Number
                   </label>
                   <div className="mt-1">
                     <input
@@ -168,46 +246,134 @@ const SignupPage = () => {
                     )}
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                      Password
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="password"
+                        type="password"
+                        {...register('password')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="••••••••"
+                      />
+                      {errors.password && (
+                        <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                      Confirm Password
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="confirmPassword"
+                        type="password"
+                        {...register('confirmPassword')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="••••••••"
+                      />
+                      {errors.confirmPassword && (
+                        <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                    Address
                   </label>
                   <div className="mt-1">
                     <input
-                      id="password"
-                      type="password"
-                      {...register('password')}
+                      id="address"
+                      type="text"
+                      {...register('address')}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                       style={{ borderColor: '#D1D5DB' }}
                       onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                       onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="••••••••"
+                      placeholder="123 Main Street"
                     />
-                    {errors.password && (
-                      <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                    {errors.address && (
+                      <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
                     )}
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                    Confirm Password
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      {...register('confirmPassword')}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                      style={{ borderColor: '#D1D5DB' }}
-                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
-                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="••••••••"
-                    />
-                    {errors.confirmPassword && (
-                      <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-                    )}
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                      City
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="city"
+                        type="text"
+                        {...register('city')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="New York"
+                      />
+                      {errors.city && (
+                        <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+                      State
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="state"
+                        type="text"
+                        {...register('state')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="NY"
+                      />
+                      {errors.state && (
+                        <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">
+                      Zip Code
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="zipCode"
+                        type="text"
+                        {...register('zipCode')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="10001"
+                      />
+                      {errors.zipCode && (
+                        <p className="mt-1 text-sm text-red-600">{errors.zipCode.message}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
+
                 <div className="mt-6">
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
@@ -225,88 +391,41 @@ const SignupPage = () => {
                     >
                       Google
                     </button>
-                    {/* <button
-                      type="button"
-                      className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                      onClick={() => navigate('/login')}
-                    >
-                      Facebook
-                    </button> */}
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    
-                  >
+                  <Button type="submit" variant="primary">
                     Next
                   </Button>
-                  
                 </div>
               </>
             )}
+
             {step === 2 && (
               <>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email address
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    Select Your Role
                   </label>
-                  <div className="mt-1">
-                    <input
-                      id="email"
-                      type="email"
-                      {...register('email')}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                      style={{ borderColor: '#D1D5DB' }}
-                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
-                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="john.doe@example.com"
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                    )}
+                  <div className="space-y-3">
+                    {roleOptions.map((option) => (
+                      <div key={option.value} className="flex items-center">
+                        <input
+                          id={option.value}
+                          type="radio"
+                          value={option.value}
+                          {...register('role')}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <label htmlFor={option.value} className="ml-3 block text-sm text-gray-900">
+                          {option.label}
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                </div>
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                    City
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="city"
-                      type="text"
-                      {...register('city')}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                      style={{ borderColor: '#D1D5DB' }}
-                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
-                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="New York"
-                    />
-                    {errors.city && (
-                      <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="district" className="block text-sm font-medium text-gray-700">
-                    District
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="district"
-                      type="text"
-                      {...register('district')}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                      style={{ borderColor: '#D1D5DB' }}
-                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
-                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="Manhattan"
-                    />
-                    {errors.district && (
-                      <p className="mt-1 text-sm text-red-600">{errors.district.message}</p>
-                    )}
-                  </div>
+                  {errors.role && (
+                    <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
+                  )}
                 </div>
                 <div className="flex justify-between">
                   <Button type="button" variant="secondary" onClick={() => setStep(1)}>
@@ -318,68 +437,175 @@ const SignupPage = () => {
                 </div>
               </>
             )}
-            {step === 3 && (
+
+            {step === 3 && selectedRole === 'user' && (
               <>
                 <div>
-                  <label htmlFor="nicFront" className="block text-sm font-medium text-gray-700">
-                    NIC Front
+                  <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
+                    Date of Birth
                   </label>
                   <div className="mt-1">
                     <input
-                      id="nicFront"
-                      type="file"
-                      accept="image/jpeg,image/png"
-                      {...register('nicFront', { required: true })}
+                      id="dob"
+                      type="date"
+                      {...register('dob')}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                       style={{ borderColor: '#D1D5DB' }}
                       onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                       onBlur={(e) => (e.target.style.boxShadow = 'none')}
                     />
-                    {errors.nicFront && (
-                      <p className="mt-1 text-sm text-red-600">{errors.nicFront.message}</p>
+                    {errors.dob && (
+                      <p className="mt-1 text-sm text-red-600">{errors.dob.message}</p>
                     )}
                   </div>
                 </div>
+
                 <div>
-                  <label htmlFor="nicBack" className="block text-sm font-medium text-gray-700">
-                    NIC Back
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ID Type
                   </label>
-                  <div className="mt-1">
-                    <input
-                      id="nicBack"
-                      type="file"
-                      accept="image/jpeg,image/png"
-                      {...register('nicBack', { required: true })}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                      style={{ borderColor: '#D1D5DB' }}
-                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
-                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                    />
-                    {errors.nicBack && (
-                      <p className="mt-1 text-sm text-red-600">{errors.nicBack.message}</p>
-                    )}
+                  <div className="flex space-x-4">
+                    <div className="flex items-center">
+                      <input
+                        id="nic"
+                        type="radio"
+                        value="nic"
+                        {...register('idType')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label htmlFor="nic" className="ml-2 block text-sm text-gray-900">
+                        NIC
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="passport"
+                        type="radio"
+                        value="passport"
+                        {...register('idType')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label htmlFor="passport" className="ml-2 block text-sm text-gray-900">
+                        Passport
+                      </label>
+                    </div>
+                  </div>
+                  {errors.idType && (
+                    <p className="mt-1 text-sm text-red-600">{errors.idType.message}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="idFront" className="block text-sm font-medium text-gray-700">
+                      ID Front
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="idFront"
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        {...register('idFront')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      />
+                      {errors.idFront && (
+                        <p className="mt-1 text-sm text-red-600">{errors.idFront.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="idBack" className="block text-sm font-medium text-gray-700">
+                      ID Back
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="idBack"
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        {...register('idBack')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      />
+                      {errors.idBack && (
+                        <p className="mt-1 text-sm text-red-600">{errors.idBack.message}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
+
                 <div>
-                  <label htmlFor="addressProof" className="block text-sm font-medium text-gray-700">
-                    Address Proof (Bill/PDF)
+                  <label htmlFor="billImage" className="block text-sm font-medium text-gray-700">
+                    Bill Image (Address Proof)
                   </label>
                   <div className="mt-1">
                     <input
-                      id="addressProof"
+                      id="billImage"
                       type="file"
-                      accept="application/pdf,image/jpeg,image/png"
-                      {...register('addressProof', { required: true })}
+                      accept="image/jpeg,image/png,application/pdf"
+                      {...register('billImage')}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                       style={{ borderColor: '#D1D5DB' }}
                       onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                       onBlur={(e) => (e.target.style.boxShadow = 'none')}
                     />
-                    {errors.addressProof && (
-                      <p className="mt-1 text-sm text-red-600">{errors.addressProof.message}</p>
+                    {errors.billImage && (
+                      <p className="mt-1 text-sm text-red-600">{errors.billImage.message}</p>
                     )}
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gender
+                  </label>
+                  <div className="flex space-x-4">
+                    <div className="flex items-center">
+                      <input
+                        id="male"
+                        type="radio"
+                        value="male"
+                        {...register('gender')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label htmlFor="male" className="ml-2 block text-sm text-gray-900">
+                        Male
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="female"
+                        type="radio"
+                        value="female"
+                        {...register('gender')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label htmlFor="female" className="ml-2 block text-sm text-gray-900">
+                        Female
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="other"
+                        type="radio"
+                        value="other"
+                        {...register('gender')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label htmlFor="other" className="ml-2 block text-sm text-gray-900">
+                        Other
+                      </label>
+                    </div>
+                  </div>
+                  {errors.gender && (
+                    <p className="mt-1 text-sm text-red-600">{errors.gender.message}</p>
+                  )}
+                </div>
+
                 <div className="flex justify-between">
                   <Button type="button" variant="secondary" onClick={() => setStep(2)}>
                     Back
@@ -389,6 +615,448 @@ const SignupPage = () => {
                   </Button>
                 </div>
               </>
+            )}
+
+            {step === 3 && selectedRole === 'bookstore' && (
+              <>
+                <div>
+                  <label htmlFor="storeRegistrationNo" className="block text-sm font-medium text-gray-700">
+                    Store Registration No
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="storeRegistrationNo"
+                      type="text"
+                      {...register('storeRegistrationNo')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      placeholder="REG123456"
+                    />
+                    {errors.storeRegistrationNo && (
+                      <p className="mt-1 text-sm text-red-600">{errors.storeRegistrationNo.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="registrationCopy" className="block text-sm font-medium text-gray-700">
+                    Registration Copy
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="registrationCopy"
+                      type="file"
+                      accept="image/jpeg,image/png,application/pdf"
+                      {...register('registrationCopy')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                    />
+                    {errors.registrationCopy && (
+                      <p className="mt-1 text-sm text-red-600">{errors.registrationCopy.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="runningYear" className="block text-sm font-medium text-gray-700">
+                    Running Year
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="runningYear"
+                      type="number"
+                      {...register('runningYear')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      placeholder="2020"
+                    />
+                    {errors.runningYear && (
+                      <p className="mt-1 text-sm text-red-600">{errors.runningYear.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <Button type="button" variant="secondary" onClick={() => setStep(2)}>
+                    Back
+                  </Button>
+                  <Button type="submit" variant="primary">
+                    Submit
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && selectedRole === 'organization' && (
+              <>
+                <div>
+                  <label htmlFor="organizationType" className="block text-sm font-medium text-gray-700">
+                    Organization Type
+                  </label>
+                  <div className="mt-1">
+                    <select
+                      id="organizationType"
+                      {...register('organizationType')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                    >
+                      <option value="">Select organization type</option>
+                      <option value="nonprofit">Non-Profit</option>
+                      <option value="government">Government</option>
+                      <option value="educational">Educational Institution</option>
+                      <option value="library">Library</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {errors.organizationType && (
+                      <p className="mt-1 text-sm text-red-600">{errors.organizationType.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="registrationNo" className="block text-sm font-medium text-gray-700">
+                    Registration No
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="registrationNo"
+                      type="text"
+                      {...register('registrationNo')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      placeholder="ORG123456"
+                    />
+                    {errors.registrationNo && (
+                      <p className="mt-1 text-sm text-red-600">{errors.registrationNo.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="registrationCopy" className="block text-sm font-medium text-gray-700">
+                    Registration Copy
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="registrationCopy"
+                      type="file"
+                      accept="image/jpeg,image/png,application/pdf"
+                      {...register('registrationCopy')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                    />
+                    {errors.registrationCopy && (
+                      <p className="mt-1 text-sm text-red-600">{errors.registrationCopy.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="runningYears" className="block text-sm font-medium text-gray-700">
+                    Running Years
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="runningYears"
+                      type="number"
+                      {...register('runningYears')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      placeholder="5"
+                    />
+                    {errors.runningYears && (
+                      <p className="mt-1 text-sm text-red-600">{errors.runningYears.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <Button type="button" variant="secondary" onClick={() => setStep(2)}>
+                    Back
+                  </Button>
+                  <Button type="submit" variant="primary">
+                    Submit
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && selectedRole === 'delivery-agent' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="age" className="block text-sm font-medium text-gray-700">
+                      Age
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="age"
+                        type="number"
+                        {...register('age')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                        placeholder="25"
+                      />
+                      {errors.age && (
+                        <p className="mt-1 text-sm text-red-600">{errors.age.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Gender
+                    </label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center">
+                        <input
+                          id="male-agent"
+                          type="radio"
+                          value="male"
+                          {...register('gender')}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <label htmlFor="male-agent" className="ml-2 block text-sm text-gray-900">
+                          Male
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="female-agent"
+                          type="radio"
+                          value="female"
+                          {...register('gender')}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <label htmlFor="female-agent" className="ml-2 block text-sm text-gray-900">
+                          Female
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="other-agent"
+                          type="radio"
+                          value="other"
+                          {...register('gender')}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <label htmlFor="other-agent" className="ml-2 block text-sm text-gray-900">
+                          Other
+                        </label>
+                      </div>
+                    </div>
+                    {errors.gender && (
+                      <p className="mt-1 text-sm text-red-600">{errors.gender.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ID Type
+                  </label>
+                  <div className="flex space-x-4">
+                    <div className="flex items-center">
+                      <input
+                        id="nic-agent"
+                        type="radio"
+                        value="nic"
+                        {...register('idType')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label htmlFor="nic-agent" className="ml-2 block text-sm text-gray-900">
+                        NIC
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="passport-agent"
+                        type="radio"
+                        value="passport"
+                        {...register('idType')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label htmlFor="passport-agent" className="ml-2 block text-sm text-gray-900">
+                        Passport
+                      </label>
+                    </div>
+                  </div>
+                  {errors.idType && (
+                    <p className="mt-1 text-sm text-red-600">{errors.idType.message}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="idFront" className="block text-sm font-medium text-gray-700">
+                      ID Front
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="idFront"
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        {...register('idFront')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      />
+                      {errors.idFront && (
+                        <p className="mt-1 text-sm text-red-600">{errors.idFront.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="idBack" className="block text-sm font-medium text-gray-700">
+                      ID Back
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="idBack"
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        {...register('idBack')}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                        style={{ borderColor: '#D1D5DB' }}
+                        onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                        onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      />
+                      {errors.idBack && (
+                        <p className="mt-1 text-sm text-red-600">{errors.idBack.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="hub" className="block text-sm font-medium text-gray-700">
+                    Hub
+                  </label>
+                  <div className="mt-1">
+                    <select
+                      id="hub"
+                      {...register('hub')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                    >
+                      <option value="">Select hub</option>
+                      <option value="central">Central Hub</option>
+                      <option value="north">North Hub</option>
+                      <option value="south">South Hub</option>
+                      <option value="east">East Hub</option>
+                      <option value="west">West Hub</option>
+                    </select>
+                    {errors.hub && (
+                      <p className="mt-1 text-sm text-red-600">{errors.hub.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="vehicleType" className="block text-sm font-medium text-gray-700">
+                    Vehicle Type
+                  </label>
+                  <div className="mt-1">
+                    <select
+                      id="vehicleType"
+                      {...register('vehicleType')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                    >
+                      <option value="">Select vehicle type</option>
+                      <option value="bike">Bike</option>
+                      <option value="car">Car</option>
+                      <option value="van">Van</option>
+                      <option value="truck">Truck</option>
+                      <option value="bicycle">Bicycle</option>
+                    </select>
+                    {errors.vehicleType && (
+                      <p className="mt-1 text-sm text-red-600">{errors.vehicleType.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="vehicleRC" className="block text-sm font-medium text-gray-700">
+                    Vehicle Registration Certificate (RC)
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="vehicleRC"
+                      type="file"
+                      accept="image/jpeg,image/png,application/pdf"
+                      {...register('vehicleRC')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                    />
+                    {errors.vehicleRC && (
+                      <p className="mt-1 text-sm text-red-600">{errors.vehicleRC.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <Button type="button" variant="secondary" onClick={() => setStep(2)}>
+                    Back
+                  </Button>
+                  <Button type="submit" variant="primary">
+                    Submit
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <input
+                      id="terms"
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      required
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="terms" className="font-medium text-gray-700">
+                      I agree to the Terms and Conditions
+                    </label>
+                    <p className="text-gray-500">
+                      By creating an account, you agree to our{' '}
+                      <a href="#" className="text-blue-600 hover:text-blue-500">
+                        Terms of Service
+                      </a>{' '}
+                      and{' '}
+                      <a href="#" className="text-blue-600 hover:text-blue-500">
+                        Privacy Policy
+                      </a>
+                      .
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
           </form>
         </div>

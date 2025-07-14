@@ -9,6 +9,7 @@ import Messages from '../pages/hubManager/Messages';
 import Performance from '../pages/hubManager/Performance';
 import HubRoutes from '../pages/hubManager/Routes';
 import Support from '../pages/hubManager/Support';
+import ProfileSettings from '../pages/hubManager/ProfileSettings';
 
 const AdminRoutes = () => (
   <DashboardLayout>
@@ -21,6 +22,7 @@ const AdminRoutes = () => (
       <Route path="performance" element={<Performance />} />
       <Route path="routes" element={<HubRoutes />} />
       <Route path="support" element={<Support />} />      
+      <Route path="profile-settings" element={<ProfileSettings />} />      
     </Routes>
   </DashboardLayout>
 );

@@ -49,7 +49,7 @@ export const sidebarMenuConfig = {
   'delivery-agent': [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/agent' },
     { label: 'Tasks', icon: ClipboardList, path: '/agent/tasks' },
-    { label: 'Active Delivery', icon: Truck, path: '/agent/delivery' },
+    { label: 'Delivery', icon: Truck, path: '/agent/delivery' },
     { label: 'Notification', icon: Bell, path: '/agent/notification' },
     { label: 'Performance', icon: LineChart, path: '/agent/performance' },
     { label: 'Support', icon: Headset, path: '/agent/support' },
@@ -86,6 +86,7 @@ export const sidebarMenuConfig = {
     { label: 'Messages', icon: MessageSquare, path: '/user/messages' },
     { label: 'Profile Settings', icon: User, path: '/user/profile-settings' },
     { label: 'Book Circle', icon: CircleDashed, path: '/user/book-circles' },
+    { label: 'Notifications', icon: Bell, path: '/user/notifications' },
     
   ],
   // guest: [
