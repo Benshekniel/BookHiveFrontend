@@ -5,16 +5,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { BookOpen } from 'lucide-react';
 import Button from '../../components/shared/Button';
+import axios from "axios";
+
 
 const signupSchemaStep1 = z.object({
   firstName: z.string().min(2, 'First Name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email'),
-  phone: z.string().min(10, 'Phone must be at least 10 digits'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  phone: z.string()
+    .regex(/^\d+$/, 'Phone must contain only numbers')
+    .min(10, 'Phone must be at least 10 digits')
+    .max(10, 'Phone must not exceed 10 digits'),
+  password: z.string().min(8, 'Pard must be at least 8 characters'),
   confirmPassword: z.string().min(8, 'Confirm password must match'),
   address: z.string().min(5, 'Address must be at least 5 characters'),
-  city: z.string().min(2, 'City must be at least 2 characters'),
+  city: z.string().min(2, 'City must be asswot least 2 characters'),
   state: z.string().min(2, 'State must be at least 2 characters'),
   zipCode: z.string().min(5, 'Zip Code must be at least 5 characters'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -65,6 +70,59 @@ const SignupPage = () => {
   const [formData, setFormData] = useState({});
   const [selectedRole, setSelectedRole] = useState('');
 
+const onSubmitStep3 = async (data) => {
+  const allData = { ...formData, ...data };
+  setFormData(allData);
+
+  if (selectedRole === 'organization') {
+    const orgPayload = {
+      type: allData.organizationType,
+      reg_no: allData.registrationNo,
+      status: 'active',
+      fname: allData.firstName,
+      lname: allData.lastName,
+      email: allData.email,
+      password: allData.password,
+      phone: parseInt(allData.phone.slice(0, 10), 10),  // limiting phone to first 10 digits
+      years: parseInt(allData.runningYears, 10),
+      address: allData.address,
+      city: allData.city,
+      state: allData.state,
+      zip: allData.zipCode,
+    };
+
+    try {
+      await axios.post('http://localhost:9090/api/register_Org', orgPayload, {
+        headers: { 'Content-Type': 'application/json' }
+      }).then(res => {
+        console.log(res.data);
+
+     if (res.data.message === "success") {
+        alert("Account created successfully. Redirecting to login...");
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500); // waits 1.5 seconds
+      }else if (res.data.message === "email already in use") {
+          alert("Email already exists");
+        }else if (res.data.message === "registration number already in use") {
+          alert("Registration number already in use");
+        }   else {
+          alert("Registration failed: " + (res.data.message || "Unknown error"));
+        }
+
+      });
+    } catch (error) {
+      console.error('Registration failed:', error.response?.data || error.message);
+      setError('Registration failed. Please try again.');
+    }
+  } else {
+    // For other roles
+    navigate('/login');
+  }
+};
+
+
+
   const getSchemaForStep = () => {
     if (step === 1) return signupSchemaStep1;
     if (step === 2) return signupSchemaStep2;
@@ -98,11 +156,11 @@ const SignupPage = () => {
     reset();
   };
 
-  const onSubmitStep3 = (data) => {
-    setFormData({ ...formData, ...data });
-    console.log('Final form data:', { ...formData, ...data });
-    navigate('/login');
-  };
+  // const onSubmitStep3 = (data) => {
+  //   setFormData({ ...formData, ...data });
+  //   console.log('Final form data:', { ...formData, ...data });
+  //   navigate('/login');
+  // };
 
   const roleOptions = [
     { value: 'user', label: 'User (Buyer, Borrower, Lender, Seller)' },
