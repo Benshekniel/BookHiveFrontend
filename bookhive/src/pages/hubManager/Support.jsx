@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   HelpCircle,
   Search,
@@ -11,14 +11,20 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Send
+  Send,
+  RefreshCw
 } from 'lucide-react';
+import { deliveryApi, agentApi } from '../../services/apiService';
 
 const Support = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [message, setMessage] = useState('');
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hubId] = useState(1); // This should come from auth context
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -31,63 +37,194 @@ const Support = () => {
 
     setSelectedTicket(prev => ({
       ...prev,
-      responses: [...prev.responses, newResponse]
+      responses: [...(prev.responses || []), newResponse]
     }));
+    
+    // Update the ticket in the list
+    setSupportTickets(prevTickets => 
+      prevTickets.map(ticket => 
+        ticket.id === selectedTicket.id 
+          ? { ...ticket, responses: [...(ticket.responses || []), newResponse] }
+          : ticket
+      )
+    );
+    
     setMessage('');
   };
 
-  const supportTickets = [
-    {
-      id: 'T001',
-      subject: 'Agent Vehicle Breakdown',
-      message: 'Agent John Smith reports vehicle breakdown on Route 95. Need immediate assistance.',
-      priority: 'High',
-      status: 'Open',
-      createdAt: '2 hours ago',
-      responses: [
-        {
-          from: 'Support Team',
-          message: 'We have received your request and are dispatching a replacement vehicle.',
-          time: '1 hour ago'
-        }
-      ]
-    },
-    {
-      id: 'T002',
-      subject: 'System Access Issue',
-      message: 'Unable to access delivery tracking system since morning. Getting error 500.',
-      priority: 'Medium',
-      status: 'In Progress',
-      createdAt: '4 hours ago',
-      responses: [
-        {
-          from: 'Support Team',
-          message: 'We are investigating the server issues. Will update you shortly.',
-          time: '3 hours ago'
-        },
-        {
-          from: 'Manager',
-          message: 'The issue seems to be with the authentication service.',
-          time: '2 hours ago'
-        }
-      ]
-    },
-    {
-      id: 'T003',
-      subject: 'Hub Capacity Management',
-      message: 'North Hub is consistently reaching 95% capacity. Need guidance on expansion.',
+  // Fetch support data
+  useEffect(() => {
+    fetchSupportData();
+  }, [hubId]);
+
+  const fetchSupportData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch data to generate realistic support tickets
+      const [deliveriesResponse, agentsResponse] = await Promise.all([
+        deliveryApi.getDeliveriesByHub(hubId),
+        agentApi.getAgentsByHub(hubId)
+      ]);
+
+      // Generate support tickets based on real issues
+      const generatedTickets = generateSupportTickets(deliveriesResponse, agentsResponse);
+      setSupportTickets(generatedTickets);
+
+    } catch (err) {
+      console.error('Error fetching support data:', err);
+      setError('Failed to load support data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateSupportTickets = (deliveries, agents) => {
+    const tickets = [];
+
+    // Generate tickets based on delivery issues
+    const delayedDeliveries = deliveries.filter(d => d.status === 'DELAYED');
+    delayedDeliveries.slice(0, 2).forEach((delivery, index) => {
+      tickets.push({
+        id: `T${String(tickets.length + 1).padStart(3, '0')}`,
+        subject: `Delayed Delivery - ${delivery.trackingNumber}`,
+        message: `Delivery ${delivery.trackingNumber} to ${delivery.deliveryAddress} is running behind schedule. Customer is concerned about arrival time.`,
+        priority: 'High',
+        status: 'Open',
+        createdAt: formatTimeAgo(delivery.updatedAt || delivery.createdAt),
+        responses: [
+          {
+            from: 'System',
+            message: 'Ticket automatically generated due to delivery delay detection.',
+            time: formatTimeAgo(delivery.updatedAt || delivery.createdAt)
+          }
+        ],
+        category: 'Delivery',
+        relatedData: { delivery, type: 'delivery' }
+      });
+    });
+
+    // Generate tickets based on agent issues
+    const unavailableAgents = agents.filter(a => a.availabilityStatus === 'UNAVAILABLE');
+    unavailableAgents.slice(0, 1).forEach((agent, index) => {
+      tickets.push({
+        id: `T${String(tickets.length + 1).padStart(3, '0')}`,
+        subject: `Agent Unavailable - ${agent.name || `${agent.firstName} ${agent.lastName}`}`,
+        message: `Agent ${agent.name || `${agent.firstName} ${agent.lastName}`} has been marked as unavailable. Need to redistribute their assigned deliveries.`,
+        priority: 'Medium',
+        status: 'In Progress',
+        createdAt: '2 hours ago',
+        responses: [
+          {
+            from: 'Dispatch Team',
+            message: 'We are working on redistributing the deliveries to available agents.',
+            time: '1 hour ago'
+          }
+        ],
+        category: 'Agent',
+        relatedData: { agent, type: 'agent' }
+      });
+    });
+
+    // Add some general system tickets
+    tickets.push({
+      id: `T${String(tickets.length + 1).padStart(3, '0')}`,
+      subject: 'Route Optimization Request',
+      message: 'Request for route optimization analysis for Zone B - Suburbs. Current efficiency is below 90%.',
       priority: 'Low',
       status: 'Resolved',
       createdAt: '1 day ago',
       responses: [
         {
-          from: 'Support Team',
-          message: 'Please submit a formal capacity expansion request with usage analytics.',
-          time: '1 day ago'
+          from: 'Analytics Team',
+          message: 'Route optimization analysis completed. Recommendations sent to your dashboard.',
+          time: '6 hours ago'
+        },
+        {
+          from: 'Hub Manager',
+          message: 'Thank you. I\'ll review the recommendations.',
+          time: '5 hours ago'
         }
-      ]
+      ],
+      category: 'System',
+      relatedData: { type: 'system' }
+    });
+
+    // Add performance report ticket
+    tickets.push({
+      id: `T${String(tickets.length + 1).padStart(3, '0')}`,
+      subject: 'Weekly Performance Report Inquiry',
+      message: 'Need clarification on the performance metrics calculation in this week\'s report.',
+      priority: 'Low',
+      status: 'Open',
+      createdAt: '3 hours ago',
+      responses: [
+        {
+          from: 'Support Team',
+          message: 'We\'ll have our analytics team review your question and provide clarification.',
+          time: '2 hours ago'
+        }
+      ],
+      category: 'Reports',
+      relatedData: { type: 'report' }
+    });
+
+    return tickets.sort((a, b) => {
+      const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    });
+  };
+
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffMinutes < 60) {
+      return `${diffMinutes} min ago`;
+    } else if (diffMinutes < 1440) {
+      return `${Math.floor(diffMinutes / 60)} hours ago`;
+    } else {
+      return `${Math.floor(diffMinutes / 1440)} days ago`;
     }
-  ];
+  };
+
+  const createNewTicket = () => {
+    const newTicket = {
+      id: `T${String(supportTickets.length + 1).padStart(3, '0')}`,
+      subject: 'New Support Request',
+      message: 'Please describe your issue here...',
+      priority: 'Medium',
+      status: 'Open',
+      createdAt: 'Just now',
+      responses: [],
+      category: 'General',
+      relatedData: { type: 'general' }
+    };
+
+    setSupportTickets(prev => [newTicket, ...prev]);
+    setSelectedTicket(newTicket);
+  };
+
+  const updateTicketStatus = (ticketId, newStatus) => {
+    setSupportTickets(prevTickets => 
+      prevTickets.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, status: newStatus }
+          : ticket
+      )
+    );
+
+    if (selectedTicket?.id === ticketId) {
+      setSelectedTicket(prev => ({ ...prev, status: newStatus }));
+    }
+  };
+
+  const refreshData = async () => {
+    await fetchSupportData();
+  };
 
   const faqItems = [
     {
@@ -119,6 +256,16 @@ const Support = () => {
       question: 'What do the different delivery statuses mean?',
       answer: 'Pending: Order received but not assigned. Picked Up: Rider has collected the item. In Transit: On the way to destination. Delivered: Successfully completed. Delayed: Behind schedule.',
       category: 'Deliveries'
+    },
+    {
+      question: 'How do I handle urgent delivery requests?',
+      answer: 'Mark the delivery as urgent priority, assign your best available rider, and monitor progress closely. Use the messaging system to coordinate.',
+      category: 'Operations'
+    },
+    {
+      question: 'What should I do if an agent reports vehicle issues?',
+      answer: 'Immediately create a support ticket, reassign their current deliveries to other agents, and coordinate backup transportation if available.',
+      category: 'Emergency'
     }
   ];
 
@@ -128,12 +275,6 @@ const Support = () => {
       description: 'Complete guide for managing your delivery hub',
       type: 'document',
       icon: FileText
-    },
-    {
-      title: 'Video Tutorial: Route Management',
-      description: 'Learn how to create and manage delivery routes',
-      type: 'video',
-      icon: Video
     },
     {
       title: 'Best Practices for Rider Management',
@@ -152,13 +293,8 @@ const Support = () => {
       description: 'Understanding and using performance metrics',
       type: 'document',
       icon: FileText
-    },
-    {
-      title: 'Video Tutorial: Map-Based Route Optimization',
-      description: 'How to use the visual map for route improvements',
-      type: 'video',
-      icon: Video
     }
+    
   ];
 
   const getStatusColor = (status) => {
@@ -197,8 +333,59 @@ const Support = () => {
     item.answer.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600">Loading support data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 text-lg">{error}</p>
+          <button 
+            onClick={refreshData}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Header */}
+      {/* <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Support Center</h1>
+          <p className="text-sm text-gray-600">Get help and manage support tickets</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={createNewTicket}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Ticket</span>
+          </button>
+          <button 
+            onClick={refreshData}
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div> */}
 
       {/* Quick Contact */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -228,10 +415,10 @@ const Support = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
-            Support Tickets
+            Support Tickets ({supportTickets.length})
           </h3>
 
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-96 overflow-y-auto">
             {supportTickets.map((ticket) => (
               <div
                 key={ticket.id}
@@ -255,11 +442,17 @@ const Support = () => {
                 </div>
                 <p className="text-sm text-gray-600 mb-2 line-clamp-2">{ticket.message}</p>
                 <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{ticket.id}</span>
+                  <span>{ticket.id} • {ticket.category}</span>
                   <span>{ticket.createdAt}</span>
                 </div>
               </div>
             ))}
+
+            {supportTickets.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No support tickets found.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -268,23 +461,34 @@ const Support = () => {
           {selectedTicket ? (
             <div className="h-full flex flex-col">
               <div className="border-b pb-4 mb-4">
-                <h3 className="text-lg font-semibold text-slate-900 mb-2 font-heading">
-                  {selectedTicket.subject}
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-slate-900 font-heading">
+                    {selectedTicket.subject}
+                  </h3>
+                  <select
+                    value={selectedTicket.status}
+                    onChange={(e) => updateTicketStatus(selectedTicket.id, e.target.value)}
+                    className="px-3 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                  </select>
+                </div>
                 <div className="flex items-center space-x-2 mb-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(selectedTicket.priority)}`}>
                     {selectedTicket.priority}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
-                    {selectedTicket.status}
-                  </span>
+                  <span className="text-xs text-gray-500">#{selectedTicket.id}</span>
+                  <span className="text-xs text-gray-500">•</span>
+                  <span className="text-xs text-gray-500">{selectedTicket.category}</span>
                 </div>
                 <p className="text-sm text-gray-600">{selectedTicket.message}</p>
               </div>
 
               {/* Conversation */}
-              <div className="flex-1 space-y-4 mb-4">
-                {selectedTicket.responses.map((response, index) => (
+              <div className="flex-1 space-y-4 mb-4 overflow-y-auto">
+                {(selectedTicket.responses || []).map((response, index) => (
                   <div key={index} className="bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-slate-900">{response.from}</span>
@@ -309,7 +513,8 @@ const Support = () => {
                     />
                     <button
                       onClick={handleSendMessage}
-                      className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center"
+                      disabled={!message.trim()}
+                      className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center disabled:opacity-50"
                     >
                       <Send size={16} />
                     </button>
@@ -321,7 +526,7 @@ const Support = () => {
             <div className="flex items-center justify-center h-64 text-gray-500">
               <div className="text-center">
                 <MessageSquare className="mx-auto mb-4" size={48} />
-                <p>Select a ticket to view conversation</p>
+                <p>Select a ticket to view details</p>
               </div>
             </div>
           )}

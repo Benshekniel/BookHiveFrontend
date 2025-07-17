@@ -1,74 +1,153 @@
-import { Package, Users, Clock, AlertTriangle, MapPin, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Package, Users, Clock, AlertTriangle, MapPin, TrendingUp, RefreshCw } from 'lucide-react';
+import { deliveryApi, agentApi, hubApi } from '../../services/apiService';
 
 const Dashboard = () => {
-  const stats = [
-    { title: 'Active Deliveries', value: '24', icon: Package, color: 'text-blue-500' },
-    { title: 'Available Riders', value: '12', icon: Users, color: 'text-green-500' },
-    { title: 'Pending Tasks', value: '8', icon: Clock, color: 'text-yellow-400' },
-    { title: 'Urgent Alerts', value: '3', icon: AlertTriangle, color: 'text-red-500' },
-  ];
+  const [stats, setStats] = useState({
+    activeDeliveries: 0,
+    availableRiders: 0,
+    pendingTasks: 0,
+    urgentAlerts: 0
+  });
+  const [recentDeliveries, setRecentDeliveries] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  const recentDeliveries = [
-    { id: 'DEL001', customer: 'John Doe', rider: 'Mike Johnson', status: 'In Transit', time: '2:30 PM' },
-    { id: 'DEL002', customer: 'Sarah Smith', rider: 'Alex Brown', status: 'Delivered', time: '2:15 PM' },
-    { id: 'DEL003', customer: 'Robert Wilson', rider: 'Emma Davis', status: 'Picked Up', time: '2:00 PM' },
-  ];
+  // Fetch dashboard data
+  useEffect(() => {
+    fetchDashboardData();
+    
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const alerts = [
-    { type: 'warning', message: 'Delivery DEL004 is running 30 minutes late', time: '5 min ago' },
-    { type: 'error', message: 'Rider Tom Wilson is unavailable', time: '10 min ago' },
-    { type: 'info', message: 'New rider registration pending approval', time: '15 min ago' },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch data from multiple endpoints
+      const [deliveriesResponse, agentsResponse] = await Promise.all([
+        deliveryApi.getAllDeliveries(),
+        agentApi.getAllAgents()
+      ]);
 
-  const deliveryLocations = [
-    { area: 'Downtown', deliveries: 45, lat: 40.7589, lng: -73.9851 },
-    { area: 'Northside', deliveries: 32, lat: 40.7831, lng: -73.9712 },
-    { area: 'Westside', deliveries: 28, lat: 40.7505, lng: -74.0087 },
-    { area: 'Eastside', deliveries: 38, lat: 40.7614, lng: -73.9776 },
-    { area: 'Southside', deliveries: 22, lat: 40.7282, lng: -73.9942 },
-    { area: 'Industrial', deliveries: 18, lat: 40.7505, lng: -74.0134 },
-    { area: 'Suburbs', deliveries: 35, lat: 40.7831, lng: -73.9554 },
-    { area: 'Harbor', deliveries: 15, lat: 40.7061, lng: -74.0087 }
-  ];
+      // Calculate stats
+      const activeDeliveries = deliveriesResponse.filter(d => 
+        ['IN_TRANSIT', 'PICKED_UP'].includes(d.status)
+      ).length;
+      
+      const availableRiders = agentsResponse.filter(a => 
+        a.availabilityStatus === 'AVAILABLE'
+      ).length;
+      
+      const pendingTasks = deliveriesResponse.filter(d => 
+        d.status === 'PENDING'
+      ).length;
+      
+      const urgentAlerts = deliveriesResponse.filter(d => 
+        d.status === 'DELAYED' || (d.priority === 'URGENT' && d.status !== 'DELIVERED')
+      ).length;
 
-  const routes = [
-    { 
-      id: 'A', 
-      name: 'Route A - Downtown', 
-      color: 'bg-blue-500', 
-      points: [
-        { lat: 40.7589, lng: -73.9851 },
-        { lat: 40.7614, lng: -73.9776 },
-        { lat: 40.7505, lng: -73.9712 },
-        { lat: 40.7831, lng: -73.9554 }
-      ],
-      efficiency: 92
-    },
-    { 
-      id: 'B', 
-      name: 'Route B - Residential', 
-      color: 'bg-green-500', 
-      points: [
-        { lat: 40.7831, lng: -73.9712 },
-        { lat: 40.7505, lng: -74.0087 },
-        { lat: 40.7282, lng: -73.9942 },
-        { lat: 40.7061, lng: -74.0087 }
-      ],
-      efficiency: 88
-    },
-    { 
-      id: 'C', 
-      name: 'Route C - Industrial', 
-      color: 'bg-yellow-400', 
-      points: [
-        { lat: 40.7505, lng: -74.0134 },
-        { lat: 40.7282, lng: -73.9942 },
-        { lat: 40.7061, lng: -74.0087 },
-        { lat: 40.7589, lng: -73.9851 }
-      ],
-      efficiency: 85
+      setStats({
+        activeDeliveries,
+        availableRiders,
+        pendingTasks,
+        urgentAlerts
+      });
+
+      // Transform recent deliveries
+      const transformedDeliveries = deliveriesResponse
+        .slice(0, 5) // Get latest 5
+        .map(delivery => ({
+          id: delivery.trackingNumber || `DEL${delivery.id}`,
+          customer: delivery.customerName || 'Unknown Customer',
+          rider: delivery.agentName || 'Unassigned',
+          status: mapBackendStatus(delivery.status),
+          time: formatTime(delivery.updatedAt || delivery.createdAt)
+        }));
+
+      setRecentDeliveries(transformedDeliveries);
+
+      // Generate alerts based on data
+      const generatedAlerts = generateAlerts(deliveriesResponse, agentsResponse);
+      setAlerts(generatedAlerts);
+
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const mapBackendStatus = (backendStatus) => {
+    const statusMap = {
+      'PENDING': 'Pending',
+      'ASSIGNED': 'Assigned',
+      'PICKED_UP': 'Picked Up',
+      'IN_TRANSIT': 'In Transit',
+      'DELIVERED': 'Delivered',
+      'CANCELLED': 'Cancelled',
+      'DELAYED': 'Delayed'
+    };
+    return statusMap[backendStatus] || 'Unknown';
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffMinutes < 60) {
+      return `${diffMinutes} min ago`;
+    } else if (diffMinutes < 1440) {
+      return `${Math.floor(diffMinutes / 60)} hours ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const generateAlerts = (deliveries, agents) => {
+    const alerts = [];
+    
+    // Check for delayed deliveries
+    const delayedDeliveries = deliveries.filter(d => d.status === 'DELAYED');
+    delayedDeliveries.forEach(delivery => {
+      alerts.push({
+        type: 'warning',
+        message: `Delivery ${delivery.trackingNumber || delivery.id} is running late`,
+        time: formatTime(delivery.updatedAt)
+      });
+    });
+
+    // Check for unavailable riders
+    const unavailableRiders = agents.filter(a => a.availabilityStatus === 'UNAVAILABLE');
+    if (unavailableRiders.length > 0) {
+      alerts.push({
+        type: 'error',
+        message: `${unavailableRiders.length} rider(s) are currently unavailable`,
+        time: '5 min ago'
+      });
+    }
+
+    // Check for pending deliveries without agents
+    const unassignedDeliveries = deliveries.filter(d => 
+      d.status === 'PENDING' && !d.agentId
+    );
+    if (unassignedDeliveries.length > 0) {
+      alerts.push({
+        type: 'info',
+        message: `${unassignedDeliveries.length} pending deliveries need agent assignment`,
+        time: '10 min ago'
+      });
+    }
+
+    return alerts.slice(0, 3); // Show only latest 3 alerts
+  };
 
   const StatCard = ({ title, value, icon: Icon, color }) => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -90,13 +169,73 @@ const Dashboard = () => {
     </div>
   );
 
+  if (loading && recentDeliveries.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Header */}
+      {/* <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Hub Dashboard</h1>
+          <p className="text-sm text-gray-600">Last updated: {lastUpdated.toLocaleTimeString()}</p>
+        </div>
+        <button 
+          onClick={fetchDashboardData}
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </button>
+      </div> */}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="mt-2 text-red-600 hover:text-red-800 underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
-        ))}
+        <StatCard 
+          title="Active Deliveries" 
+          value={stats.activeDeliveries} 
+          icon={Package} 
+          color="text-blue-500" 
+        />
+        <StatCard 
+          title="Available Riders" 
+          value={stats.availableRiders} 
+          icon={Users} 
+          color="text-green-500" 
+        />
+        <StatCard 
+          title="Pending Tasks" 
+          value={stats.pendingTasks} 
+          icon={Clock} 
+          color="text-yellow-400" 
+        />
+        <StatCard 
+          title="Urgent Alerts" 
+          value={stats.urgentAlerts} 
+          icon={AlertTriangle} 
+          color="text-red-500" 
+        />
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
@@ -105,25 +244,30 @@ const Dashboard = () => {
           <div className="p-6">
             <h2 className="text-xl font-poppins font-semibold text-slate-900 mb-4 m-0">Recent Deliveries</h2>
             <div>
-              {recentDeliveries.map((delivery) => (
-                <div key={delivery.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-4">
-                  <div className="flex flex-col">
-                    <p className="font-medium text-slate-900 m-0">{delivery.id}</p>
-                    <p className="text-sm text-gray-500 m-0">{delivery.customer} • {delivery.rider}</p>
+              {recentDeliveries.length > 0 ? (
+                recentDeliveries.map((delivery) => (
+                  <div key={delivery.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-4">
+                    <div className="flex flex-col">
+                      <p className="font-medium text-slate-900 m-0">{delivery.id}</p>
+                      <p className="text-sm text-gray-500 m-0">{delivery.customer} • {delivery.rider}</p>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className={
+                        `px-2 py-1 rounded-full text-xs font-medium
+                        ${delivery.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                          delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                          delivery.status === 'Picked Up' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'}`
+                      }>
+                        {delivery.status}
+                      </span>
+                      <p className="text-sm text-gray-500 mt-1 m-0">{delivery.time}</p>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className={
-                      `px-2 py-1 rounded-full text-xs font-medium
-                      ${delivery.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                        delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'}`
-                    }>
-                      {delivery.status}
-                    </span>
-                    <p className="text-sm text-gray-500 mt-1 m-0">{delivery.time}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">No recent deliveries</p>
+              )}
             </div>
           </div>
         </Card>
@@ -133,20 +277,24 @@ const Dashboard = () => {
           <div className="p-6">
             <h2 className="text-xl font-poppins font-semibold text-slate-900 mb-4 m-0">Alerts & Notifications</h2>
             <div>
-              {alerts.map((alert, index) => (
-                <div
-                  key={index}
-                  className={`
-                    p-3 rounded-lg border-l-4 mb-4
-                    ${alert.type === 'error' ? 'bg-red-50 border-red-400' :
-                      alert.type === 'warning' ? 'bg-yellow-50 border-yellow-400' :
-                      'bg-blue-50 border-blue-400'}
-                  `}
-                >
-                  <p className="text-sm text-slate-900 m-0">{alert.message}</p>
-                  <p className="text-xs text-gray-500 mt-1 m-0">{alert.time}</p>
-                </div>
-              ))}
+              {alerts.length > 0 ? (
+                alerts.map((alert, index) => (
+                  <div
+                    key={index}
+                    className={`
+                      p-3 rounded-lg border-l-4 mb-4
+                      ${alert.type === 'error' ? 'bg-red-50 border-red-400' :
+                        alert.type === 'warning' ? 'bg-yellow-50 border-yellow-400' :
+                        'bg-blue-50 border-blue-400'}
+                    `}
+                  >
+                    <p className="text-sm text-slate-900 m-0">{alert.message}</p>
+                    <p className="text-xs text-gray-500 mt-1 m-0">{alert.time}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">No active alerts</p>
+              )}
             </div>
           </div>
         </Card>
@@ -174,15 +322,18 @@ const Dashboard = () => {
               />
               {/* Overlay with delivery markers */}
               <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow text-xs">
-                <div className="font-semibold mb-2">Delivery Areas</div>
-                {deliveryLocations.slice(0, 4).map((location, index) => (
-                  <div key={index} className="flex items-center gap-2 mb-1">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span>{location.area}: {location.deliveries}</span>
-                  </div>
-                ))}
-                <div className="text-[10px] text-gray-500 mt-2">
-                  Total: {deliveryLocations.reduce((sum, loc) => sum + loc.deliveries, 0)} deliveries
+                <div className="font-semibold mb-2">Active Deliveries</div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>In Transit: {stats.activeDeliveries}</span>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <span>Pending: {stats.pendingTasks}</span>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span>Delayed: {stats.urgentAlerts}</span>
                 </div>
               </div>
             </div>
@@ -208,7 +359,7 @@ const Dashboard = () => {
                 title="Routes Overview Map"
               />
               {/* Routes Legend */}
-              <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow text-xs">
+              {/* <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow text-xs">
                 <div className="font-semibold mb-2">Active Routes</div>
                 {routes.map((route, index) => (
                   <div key={index} className="flex items-center gap-2 mb-2">
@@ -223,10 +374,10 @@ const Dashboard = () => {
                       }>
                         {route.efficiency}%
                       </span>
-                    </div>
-                  </div>
-                ))}
+                </div>
               </div>
+                ))}
+              </div> */}
             </div>
           </div>
         </Card>
