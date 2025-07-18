@@ -24,6 +24,7 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout, isMobileOpen, setIsMobileO
 
   const handleNavigation = (path) => {
     navigate(path);
+    window.scrollTo(0, 0);
     if (isMobileOpen) setIsMobileOpen(false);
   };
 
