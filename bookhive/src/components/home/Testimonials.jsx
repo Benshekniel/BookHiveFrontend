@@ -9,10 +9,10 @@ const testimonials = [
 
 const Testimonials = () => {
   return (
-    <div className="py-16 bg-white">
+    <div className="py-16 bg-white"> {/* Cards */}
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
+          <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#0F172A' }}> {/* Text */}
             What Our Community Says
           </h2>
           <p className="mt-3 text-gray-600 max-w-2xl mx-auto">
@@ -32,14 +32,16 @@ const Testimonials = () => {
                     src={testimonial.avatar} 
                     alt={testimonial.name} 
                     className="w-12 h-12 rounded-full object-cover border-2" 
-                    style={{ borderColor: '#ffd639' }}
+                    style={{ borderColor: '#FBBF24' }} // Secondary
                   />
-                  <div className="absolute -bottom-1 -right-1 bg-yellow text-blue" style={{ backgroundColor: '#ffd639', color: '#407aff' }}>
+                  <div className="absolute -bottom-1 -right-1 bg-yellow text-blue" style={{ backgroundColor: '#FBBF24', color: '#3B82F6' }}> {/* Secondary, Accent */}
                     <Quote size={12} />
                   </div>
                 </div>
                 <div className="ml-4">
-                  <h3 className="font-semibold" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>{testimonial.name}</h3>
+                  <h3 className="font-semibold" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#0F172A' }}> {/* Text */}
+                    {testimonial.name}
+                  </h3>
                   <p className="text-sm text-gray-600">{testimonial.role}</p>
                 </div>
               </div>
@@ -50,7 +52,7 @@ const Testimonials = () => {
                     <svg 
                       key={i} 
                       className="w-4 h-4" 
-                      style={{ color: i < testimonial.rating ? '#ffd639' : '#D1D5DB' }}
+                      style={{ color: i < testimonial.rating ? '#FBBF24' : '#D1D5DB' }} // Secondary
                       fill="currentColor" 
                       viewBox="0 0 20 20"
                     >
@@ -67,9 +69,9 @@ const Testimonials = () => {
         <div className="mt-12 text-center">
           <button
             className="px-4 py-2 font-semibold rounded-lg transition-all duration-200 border-2"
-            style={{ borderColor: '#ffd639', color: '#ffd639', backgroundColor: 'transparent' }}
-            onMouseOver={(e) => (e.target.style.backgroundColor = '#FFC107', e.target.style.color = '#FFFFFF')}
-            onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#ffd639')}
+            style={{ borderColor: '#FBBF24', color: '#FBBF24', backgroundColor: 'transparent' }} // Secondary
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#FBBF24', e.target.style.color = '#FFFFFF')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#FBBF24')}
           >
             Read More Stories
           </button>

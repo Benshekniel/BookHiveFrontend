@@ -5,21 +5,14 @@ import { Link } from "react-router-dom";
 
 const Hero = () => {
   const honeycombBgStyle = {
-    backgroundImage:
-      "radial-gradient(transparent 0%, transparent 20%, rgba(255, 214, 57, 0.05) 20%), radial-gradient(transparent 0%, transparent 20%, rgba(64, 122, 255, 0.05) 20%)",
-    backgroundPosition: "0 0, 20px 20px",
-    backgroundSize: "40px 40px",
+    backgroundImage: 'radial-gradient(transparent 0%, transparent 20%, rgba(251, 191, 36, 0.05) 20%), radial-gradient(transparent 0%, transparent 20%, rgba(59, 130, 246, 0.05) 20%)', // Updated to Honey Yellow, Bright Sky Blue
+    backgroundPosition: '0 0, 20px 20px',
+    backgroundSize: '40px 40px',
   };
 
   return (
-    <div
-      className="relative overflow-hidden"
-      style={{ backgroundColor: "#1d5ed8" }}
-    >
-      <div
-        className="absolute inset-0 opacity-10"
-        style={honeycombBgStyle}
-      ></div>
+    <div className="relative overflow-hidden" style={{ backgroundColor: '#1E3A8A' }}> {/* Primary */}
+      <div className="absolute inset-0 opacity-10" style={honeycombBgStyle}></div>
 
       <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
         <div className="flex flex-col md:flex-row items-center">
@@ -36,74 +29,57 @@ const Hero = () => {
             >
               Connect with Book Lovers Across Sri Lanka
             </h1>
-            <p className="text-lg mb-8 max-w-lg" style={{ color: "#DBEAFE" }}>
-              Borrow, lend, buy, or sell books through a trusted community
-              platform. Join BookHive today and be part of Sri Lanka's largest
-              book sharing network.
+            <p className="text-lg mb-8 max-w-lg" style={{ color: '#F8FAFC' }}> {/* Background */}
+              Borrow, lend, buy, or sell books through a trusted community platform.
+              Join BookHive today and be part of Sri Lanka's largest book sharing network.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/signup" className="text-center">
-                <Button variant="primary" size="lg" className="shadow-lg">
-                  Join BookHive
-                </Button>
-              </Link>
-              <Button variant="outline" size="lg">
+              <Button
+                variant="primary"
+                size="lg"
+                className="shadow-lg"
+              >
+                Join BookHive
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+              >
                 How It Works
               </Button>
             </div>
 
             <div className="mt-10 grid grid-cols-2 gap-6 max-w-md">
               <div className="flex items-start">
-                <div
-                  className="p-2 rounded-full mr-3"
-                  style={{ backgroundColor: "#ffd639" }}
-                >
-                  <BookOpen
-                    className="text-blue"
-                    style={{ color: "#1d4ed8" }}
-                    size={18}
-                  />
+                <div className="p-2 rounded-full mr-3" style={{ backgroundColor: '#FBBF24' }}> {/* Secondary */}
+                  <BookOpen className="text-blue" style={{ color: '#1E3A8A' }} size={18} /> {/* Primary */}
                 </div>
                 <div>
                   <h3 className="font-semibold">1000+ Books</h3>
-                  <p className="text-sm" style={{ color: "#DBEAFE" }}>
+                  <p className="text-sm" style={{ color: '#F8FAFC' }}> {/* Background */}
                     Available for lending & sale
                   </p>
                 </div>
               </div>
               <div className="flex items-start">
-                <div
-                  className="p-2 rounded-full mr-3"
-                  style={{ backgroundColor: "#ffd639" }}
-                >
-                  <Users
-                    className="text-blue"
-                    style={{ color: "#1d4ed8" }}
-                    size={18}
-                  />
+                <div className="p-2 rounded-full mr-3" style={{ backgroundColor: '#FBBF24' }}> {/* Secondary */}
+                  <Users className="text-blue" style={{ color: '#1E3A8A' }} size={18} /> {/* Primary */}
                 </div>
                 <div>
                   <h3 className="font-semibold">500+ Users</h3>
-                  <p className="text-sm" style={{ color: "#DBEAFE" }}>
+                  <p className="text-sm" style={{ color: '#F8FAFC' }}> {/* Background */}
                     Growing community
                   </p>
                 </div>
               </div>
               <div className="flex items-start">
-                <div
-                  className="p-2 rounded-full mr-3"
-                  style={{ backgroundColor: "#ffd639" }}
-                >
-                  <MapPin
-                    className="text-blue"
-                    style={{ color: "#1d4ed8" }}
-                    size={18}
-                  />
+                <div className="p-2 rounded-full mr-3" style={{ backgroundColor: '#FBBF24' }}> {/* Secondary */}
+                  <MapPin className="text-blue" style={{ color: '#1E3A8A' }} size={18} /> {/* Primary */}
                 </div>
                 <div>
                   <h3 className="font-semibold">25 Districts</h3>
-                  <p className="text-sm" style={{ color: "#DBEAFE" }}>
+                  <p className="text-sm" style={{ color: '#F8FAFC' }}> {/* Background */}
                     Nationwide coverage
                   </p>
                 </div>
@@ -126,17 +102,11 @@ const Hero = () => {
                   alt="Featured book"
                   className="w-full h-24 object-cover rounded mb-2"
                 />
-                <p className="font-semibold text-xs truncate">
+                <p className="font-semibold text-xs truncate" style={{ color: '#0F172A' }}> {/* Text */}
                   The Silent Patient
                 </p>
                 <div className="flex items-center mt-1">
-                  <div
-                    className="text-xs px-1.5 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: "rgba(255, 214, 57, 0.2)",
-                      color: "#ffd639",
-                    }}
-                  >
+                  <div className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' }}> {/* Secondary */}
                     4.8★
                   </div>
                   <p className="text-xs text-gray-500 ml-1">Bestseller</p>
@@ -148,17 +118,13 @@ const Hero = () => {
                     src="https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"
                     alt="User"
                     className="w-8 h-8 rounded-full object-cover border-2"
-                    style={{ borderColor: "#ffd639" }}
+                    style={{ borderColor: '#FBBF24' }} /* Secondary */
                   />
                   <div className="ml-2">
-                    <p className="font-semibold text-xs">Jayani</p>
-                    <div
-                      className="text-xs px-1 rounded-full"
-                      style={{
-                        backgroundColor: "rgba(255, 214, 57, 0.2)",
-                        color: "#ffd639",
-                      }}
-                    >
+                    <p className="font-semibold text-xs" style={{ color: '#0F172A' }}> {/* Text */}
+                      Jayani
+                    </p>
+                    <div className="text-xs px-1 rounded-full" style={{ backgroundColor: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' }}> {/* Secondary */}
                       4.9★
                     </div>
                   </div>

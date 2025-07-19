@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Bell, Search, User, Menu } from 'lucide-react';
 import { useAuth } from '../../App';
 import Sidebar from './Sidebar';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 
 const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollapsed, onLogout }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
 
@@ -77,122 +78,143 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     label = found ? found[1] : 'Dashboard';
   }
 
-  const displayName = user?.name || 'Guest';
-  const displayRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
+  const displayName = user?.name || user?.username || 'Guest';
 
   return (
-    <div className="min-h-screen h-screen bg-background relative">
-      {/* Sidebar: fixed on desktop */}
-      <Sidebar
-        key="main-sidebar"
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        onLogout={onLogout}
-        isMobileOpen={isMobileOpen}
-        setIsMobileOpen={setIsMobileOpen}
-      />
-      {/* Main content: only add left margin on desktop */}
-      <div
-        className={`flex-1 flex flex-col transition-all duration-300
-          lg:ml-0
-          ${collapsed ? 'lg:ml-16' : 'lg:ml-64'}
-        `}
-      >
-        <header
-          className="shadow-sm border-b px-6 py-4"
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderColor: '#E5E7EB',
-          }}
+    <>
+      <div className="min-h-screen h-screen bg-background relative">
+        {/* Sidebar: fixed on desktop */}
+        <Sidebar
+          key="main-sidebar"
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          onLogout={onLogout}
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+        />
+        {/* Main content: only add left margin on desktop */}
+        <div
+          className={`flex-1 flex flex-col transition-all duration-300
+            lg:ml-0
+            ${collapsed ? 'lg:ml-16' : 'lg:ml-64'}
+          `}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden p-2 rounded-lg transition-colors"
-                style={{ backgroundColor: 'transparent' }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#F3F4F6';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                }}
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <div>
-                <h1
-                  className="text-2xl font-bold"
-                  style={{
-                    color: '#0F172A',
-                    fontFamily: 'Poppins, system-ui, sans-serif',
+          <header
+            className="shadow-sm border-b px-6 py-4"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderColor: '#E5E7EB',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setIsMobileOpen(!isMobileOpen)}
+                  className="lg:hidden p-2 rounded-lg transition-colors"
+                  style={{ backgroundColor: 'transparent' }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#F3F4F6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
                   }}
                 >
-                  {label}
-                </h1>
-                <p className="text-sm" style={{ color: '#6B7280' }}></p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                className="relative p-2 rounded-lg transition-colors"
-                style={{
-                  color: '#6B7280',
-                  backgroundColor: 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = '#0F172A';
-                  e.target.style.backgroundColor = '#F3F4F6';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = '#6B7280';
-                  e.target.style.backgroundColor = 'transparent';
-                }}
-              >
-                <Bell className="w-5 h-5" />
-                <span
-                  className="absolute top-0 right-0 w-2 h-2 rounded-full"
-                  style={{ backgroundColor: '#EF4444' }}
-                ></span>
-              </button>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: '#1E3A8A' }}
-                >
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                <div className="hidden md:block">
-                  <p
-                    className="text-sm font-medium"
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1
+                    className="text-2xl font-bold"
                     style={{
                       color: '#0F172A',
-                      fontFamily: 'Open Sans, system-ui, sans-serif',
+                      fontFamily: 'Poppins, system-ui, sans-serif',
                     }}
                   >
-                    {displayName}
-                  </p>
-                  <p className="text-xs" style={{ color: '#6B7280' }}>
-                    {displayRole}
-                  </p>
-                  {user && (
-                    <button
-                      onClick={onLogout}
-                      className="text-xs text-red-500 hover:text-red-700"
-                    >
-                      Logout
-                    </button>
+                    {label}
+                  </h1>
+                  <p className="text-sm" style={{ color: '#6B7280' }}></p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  className="relative p-2 rounded-lg transition-colors"
+                  style={{
+                    color: '#6B7280',
+                    backgroundColor: 'transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.color = '#0F172A';
+                    e.target.style.backgroundColor = '#F3F4F6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.color = '#6B7280';
+                    e.target.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <Bell className="w-5 h-5" />
+                  <span
+                    className="absolute top-0 right-0 w-2 h-2 rounded-full"
+                    style={{ backgroundColor: '#EF4444' }}
+                  ></span>
+                </button>
+                
+                {/* Profile Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                    className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <img
+                      src={user?.profileImage || "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full object-cover border-2 border-yellow-400"
+                    />
+                    <span className="text-sm font-medium text-gray-700 hidden xl:block">
+                      {displayName}
+                    </span>
+                  </button>
+
+                  {/* Profile Dropdown Menu */}
+                  {isProfileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <Link
+                        to="profile-settings"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <User size={16} className="inline mr-2" />
+                        Profile Settings
+                      </Link>
+                      <hr className="my-2" />
+                      <button
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          onLogout();
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <User size={16} className="inline mr-2" />
+                        Logout
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        </header>
-        <main className="flex-1 p-4">
-          {children || <div className="text-gray-500">No content available</div>}
-        </main>
+          </header>
+          <main className="flex-1 p-4">
+            {children || <div className="text-gray-500">No content available</div>}
+          </main>
+        </div>
       </div>
-    </div>
+      
+      {/* Click outside to close profile menu */}
+      {isProfileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsProfileMenuOpen(false)}
+        />
+      )}
+    </>
   );
 };
 

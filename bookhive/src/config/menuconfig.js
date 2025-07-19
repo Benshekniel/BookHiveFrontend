@@ -58,11 +58,10 @@ export const sidebarMenuConfig = {
     { label: 'Dashboard', icon: LayoutDashboard, path: '/hubmanager' },
     { label: 'Delivery', icon: Truck, path: '/hubmanager/deliveries' },
     { label: 'Agents', icon: Users, path: '/hubmanager/agents' },
-    { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
     { label: 'Routes', icon: Route, path: '/hubmanager/routes' },
-    { label: 'Performance', icon: LineChart, path: '/hubmanager/performance' },
+    { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
     { label: 'Support', icon: Headset, path: '/hubmanager/support' },
-    { label: 'Hub Settings', icon: Settings, path: '/hubmanager/settings' },
+    { label: 'Performance', icon: LineChart, path: '/hubmanager/performance' },
   ]
   ,
    organization : [
