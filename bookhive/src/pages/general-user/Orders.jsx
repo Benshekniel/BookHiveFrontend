@@ -319,7 +319,7 @@ const OrdersPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-8xl mx-auto p-6 space-y-6">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-8 text-white">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
