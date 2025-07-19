@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from 'react-router-dom';
 import {
   Heart,
@@ -12,10 +12,24 @@ import {
   Star,
   Info,
   Shield,
+  Plus,
+  Check,
+  X,
+  CheckCircle,
+  ArrowRight,
 } from "lucide-react"
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("requests")
+  const [isSeller, setIsSeller] = useState(false) // Simulated role state
+  const [sellerApplication, setSellerApplication] = useState({ open: false, status: null, details: {} })
+  const [trustScore, setTrustScore] = useState(850)
+
+  useEffect(() => {
+    // Fetch user role and TrustScore from API (e.g., via JWT)
+    // setIsSeller(response.role === 'seller')
+    // setTrustScore(response.trustScore)
+  }, [])
 
   const statsData = [
     {
@@ -39,20 +53,24 @@ const Dashboard = () => {
       color: "text-green-500",
       bgColor: "bg-green-50",
     },
-    {
-      title: "Competitions",
-      value: "2",
-      icon: Trophy,
-      color: "text-purple-500",
-      bgColor: "bg-purple-50",
-    },
+    ...(isSeller
+      ? [
+          {
+            title: "Listed",
+            value: "5",
+            icon: BookOpen,
+            color: "text-purple-500",
+            bgColor: "bg-purple-50",
+          },
+        ]
+      : []),
   ]
 
   const badges = [
     {
       name: "Trusted Seller",
       icon: Star,
-      earned: true,
+      earned: isSeller,
       color: "text-yellow-500",
       bgColor: "bg-yellow-50",
     },
@@ -73,7 +91,7 @@ const Dashboard = () => {
     {
       name: "Power User",
       icon: Award,
-      earned: false,
+      earned: trustScore >= 900,
       color: "text-gray-400",
       bgColor: "bg-gray-50",
     },
@@ -88,6 +106,18 @@ const Dashboard = () => {
       date: "2024-01-15",
       author: "James Clear",
     },
+    ...(isSeller
+      ? [
+          {
+            id: 2,
+            title: "The Alchemist",
+            type: "Lend",
+            status: "Pending",
+            date: "2025-07-01",
+            author: "Paulo Coelho",
+          },
+        ]
+      : []),
   ]
 
   const featuredCompetitions = [
@@ -124,10 +154,9 @@ const Dashboard = () => {
     }
   }
 
-  // Circular progress component for TrustScore
   const CircularProgress = ({ value, max = 1000 }) => {
     const percentage = (value / max) * 100
-    const strokeDasharray = 2 * Math.PI * 45 // radius = 45
+    const strokeDasharray = 2 * Math.PI * 45
     const strokeDashoffset = strokeDasharray - (strokeDasharray * percentage) / 100
 
     return (
@@ -154,9 +183,30 @@ const Dashboard = () => {
     )
   }
 
+  const handleBecomeSeller = () => {
+    if (trustScore < 700) {
+      alert("Your TrustScore must be at least 700 to apply.")
+      return
+    }
+    setSellerApplication({ open: true, status: "pending", details: {} })
+  }
+
+  const handleApplicationSubmit = () => {
+    setSellerApplication((prev) => ({ ...prev, status: "submitted", open: true }))
+    // Simulate API call to submit application and update role
+    setTimeout(() => {
+      setSellerApplication((prev) => ({ ...prev, status: "approved", open: true }))
+      setIsSeller(true) // Transition to Seller role
+    }, 2000)
+  }
+
+  const handleCloseModal = () => {
+    setSellerApplication((prev) => ({ ...prev, open: false }))
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 ">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-8xl mx-auto p-6 space-y-6">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-8 text-white">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -165,19 +215,140 @@ const Dashboard = () => {
               <p className="text-blue-100 text-lg">Discover new books and connect with readers across Sri Lanka</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link to ="/user/browse-books">
-              <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
-                <BookOpen className="w-5 h-5" />
-                <span>Browse Books</span>
-              </button>
+              <Link to="/user/browse-books">
+                <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
+                  <BookOpen className="w-5 h-5" />
+                  <span>Browse Books</span>
+                </button>
               </Link>
-              <button className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
-                <TrendingUp className="w-5 h-5" />
-                <span>Become a Seller</span>
-              </button>
+              {!isSeller && (
+                <button
+                  onClick={handleBecomeSeller}
+                  className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors"
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  <span>Become a Seller</span>
+                </button>
+              )}
+              {isSeller && (
+                <>
+                <Link to="list-book">
+                  <button className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
+                    <Plus className="w-5 h-5" />
+                    <span>Manage Listings</span>
+                  </button>
+                </Link>
+                <Link to="book-request">
+                  <button className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
+                    <span>Manage Requests</span>
+                  </button>
+                </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Seller Application Modal */}
+        {sellerApplication.open && (
+          <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl">
+              <div className="text-center">
+                {sellerApplication.status === "pending" && (
+                  <>
+                    <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <TrendingUp className="text-blue-500" size={32} />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Become a Seller</h3>
+                    <p className="text-gray-600 mb-6">
+                      Start selling your books and earn money while helping other readers discover great books.
+                    </p>
+                    
+                    <div className="space-y-3 mb-6 text-left">
+                      <div className="flex items-center">
+                        <CheckCircle className="text-green-500 mr-3" size={18} />
+                        <span className="text-sm">List unlimited books</span>
+                      </div>
+                      <div className="flex items-center">
+                        <CheckCircle className="text-green-500 mr-3" size={18} />
+                        <span className="text-sm">Set your own prices</span>
+                      </div>
+                      <div className="flex items-center">
+                        <CheckCircle className="text-green-500 mr-3" size={18} />
+                        <span className="text-sm">Manage lending periods</span>
+                      </div>
+                      <div className="flex items-center">
+                        <CheckCircle className="text-green-500 mr-3" size={18} />
+                        <span className="text-sm">Build your reputation</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleCloseModal}
+                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium"
+                      >
+                        Maybe Later
+                      </button>
+                      <button
+                        onClick={handleApplicationSubmit}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center"
+                      >
+                        Get Started
+                        <ArrowRight size={18} className="ml-2" />
+                      </button>
+                    </div>
+                  </>
+                )}
+                {sellerApplication.status === "submitted" && (
+                  <div>
+                    <Check className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                    <h3 className="text-xl font-bold mb-2">Application Submitted</h3>
+                    <p className="text-gray-600 mb-6">Your application is under review. We’ll notify you soon.</p>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={handleCloseModal}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {sellerApplication.status === "approved" && (
+                  <div>
+                    <Check className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                    <h3 className="text-xl font-bold mb-2">Approved!</h3>
+                    <p className="text-gray-600 mb-6">You are now a Seller. Start managing your listings!</p>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={handleCloseModal}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {sellerApplication.status === "rejected" && (
+                  <div>
+                    <X className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                    <h3 className="text-xl font-bold mb-2">Application Rejected</h3>
+                    <p className="text-gray-600 mb-6">Please contact support for assistance.</p>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={handleCloseModal}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TrustScore and Badges Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -188,10 +359,12 @@ const Dashboard = () => {
               <Info className="w-5 h-5 text-gray-400" />
             </div>
             <div className="flex items-center space-x-6">
-              <CircularProgress value={850} />
+              <CircularProgress value={trustScore} />
               <div className="flex-1">
                 <div className="mb-2">
-                  <span className="text-lg font-semibold text-gray-900">Excellent</span>
+                  <span className="text-lg font-semibold text-gray-900">
+                    {trustScore >= 900 ? "Excellent" : trustScore >= 700 ? "Good" : "Fair"}
+                  </span>
                 </div>
                 <div className="mb-1">
                   <span className="text-green-600 font-medium">+25 this month</span>
@@ -210,7 +383,9 @@ const Dashboard = () => {
               {badges.map((badge, index) => (
                 <div key={index} className="text-center">
                   <div
-                    className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${badge.bgColor} ${badge.earned ? "" : "opacity-50"}`}
+                    className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${
+                      badge.bgColor
+                    } ${badge.earned ? "" : "opacity-50"}`}
                   >
                     <badge.icon className={`w-6 h-6 ${badge.color}`} />
                   </div>
@@ -265,7 +440,9 @@ const Dashboard = () => {
                         <h3 className="font-semibold text-gray-900 mb-1">{request.title}</h3>
                         <p className="text-sm text-gray-600 mb-2">{request.type}</p>
                         <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            request.status
+                          )}`}
                         >
                           {request.status}
                         </span>
@@ -293,6 +470,11 @@ const Dashboard = () => {
                   <Trophy className="w-5 h-5 text-yellow-500" />
                   <h2 className="text-xl font-semibold text-gray-900">Featured Competitions</h2>
                 </div>
+                {isSeller && trustScore >= 900 && (
+                  <button className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm">
+                    <Plus className="w-4 h-4 inline" /> Create
+                  </button>
+                )}
               </div>
             </div>
             <div className="p-6">
@@ -330,9 +512,11 @@ const Dashboard = () => {
                 ))}
               </div>
               <div className="mt-6 text-center">
+                <Link to="/user/competitions">
                 <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                   View All Competitions
                 </button>
+                </Link>
               </div>
             </div>
           </div>
