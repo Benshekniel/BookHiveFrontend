@@ -1,6 +1,7 @@
-import React from 'react';
-import { Search, BookOpen, Users, MapPin } from 'lucide-react';
-import Button from '../shared/Button';
+import React from "react";
+import { Search, BookOpen, Users, MapPin } from "lucide-react";
+import Button from "../shared/Button";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   const honeycombBgStyle = {
@@ -15,8 +16,17 @@ const Hero = () => {
 
       <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
         <div className="flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 text-white mb-10 md:mb-0" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
-            <h1 className="text-4xl md:text-5xl leading-tight mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif", fontWeight: 'bold' }}>
+          <div
+            className="md:w-1/2 text-white mb-10 md:mb-0"
+            style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}
+          >
+            <h1
+              className="text-4xl md:text-5xl leading-tight mb-4"
+              style={{
+                fontFamily: "'Poppins', system-ui, sans-serif",
+                fontWeight: "bold",
+              }}
+            >
               Connect with Book Lovers Across Sri Lanka
             </h1>
             <p className="text-lg mb-8 max-w-lg" style={{ color: '#F8FAFC' }}> {/* Background */}
