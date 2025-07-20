@@ -61,7 +61,6 @@ export const sidebarMenuConfig = {
     { label: 'Routes', icon: Route, path: '/hubmanager/routes' },
     { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
     { label: 'Support', icon: Headset, path: '/hubmanager/support' },
-    { label: 'Performance', icon: LineChart, path: '/hubmanager/performance' },
   ]
   ,
    organization : [
