@@ -71,7 +71,7 @@ const apiClient = new ApiClient();
 // Book API Service
 export const bookApi = {
   // GET /api/books
-  getAllBooks: () => apiClient.get('/books'),
+  getAllBooks: () => apiClient.get('/getBooks'),
 
   // GET /api/books/{bookId} (not implemented in backend yet, assuming by ID)
   getBookById: (bookId) => apiClient.get(`/books/${bookId}`),
