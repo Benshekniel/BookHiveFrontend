@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { Heart, Plus, Eye, CheckCircle, Clock, Users, BookOpen, Calendar, TrendingUp, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
+import CharityCreate from "../subPages/charityCreate";
 
 const Charity = () => {
   const [activeTab, setActiveTab] = useState('requests');
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
 
   const donationRequests = [
     {
@@ -203,28 +206,67 @@ const Charity = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'requests'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="border-b border-gray-200">
+            <nav className="flex justify-between items-center px-6">
+              {/* Left side buttons */}
+              <div className="flex space-x-8 -mb-px">
+                <button
+                  onClick={() => setActiveTab('requests')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'requests'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Donation Requests
+                </button>
+                <button
+                  onClick={() => setActiveTab('events')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'events'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Active Events
+                </button>
+              </div>
+
+              {/* Right side button */}
+              <div className="py-4">
+                <button 
+                onClick={() => setShowCreateEvent(true)}
+                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                  <Plus className="w-4 h-4" />
+                  <span>Create Event</span>
+                </button>
+              </div>
+            </nav>
+          </div>
+        {showCreateEvent && (
+          <div className="fixed inset-0 z-50 backdrop-blur-sm bg-black/30 flex justify-center items-center p-4">
+            <div
+              className="bg-white rounded-lg shadow-lg p-6 relative"
+              style={{ width: '500px', height: '400px' }}
             >
-              Donation Requests
-            </button>
-            <button
-              onClick={() => setActiveTab('events')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'events'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              Active Events
-            </button>
-          </nav>
+              {/* Close Button inside modal */}
+              <button
+                onClick={() => setShowCreateEvent(false)}
+                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+
+              <CharityCreate setShowCreateEvent={setShowCreateEvent}/>
+            </div>
+          </div>
+        )}
+        
         </div>
+
+
 
         <div className="p-6">
           {activeTab === 'requests' && (
@@ -319,13 +361,9 @@ const Charity = () => {
           )}
         </div>
       </div>
-      <div className="flex justify-end">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <Plus className="w-4 h-4" />
-          <span>Create Event</span>
-        </button>
-      </div>
+
     </div>
+    
   );
 };
 

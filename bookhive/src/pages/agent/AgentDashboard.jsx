@@ -182,7 +182,7 @@ export default function AgentDashboard() {
           <h2 className="text-lg font-semibold text-[#0F172A] mb-4">
             Ongoing Deliveries
           </h2>
-          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg h-64 flex items-center justify-center relative overflow-hidden">
+          {/* <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg h-64 flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 to-green-100/20"></div>
             <div className="text-center z-10">
               <MapPin className="mx-auto mb-2 text-blue-500" size={48} />
@@ -205,7 +205,7 @@ export default function AgentDashboard() {
                 ))}
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Distance & Deliveries Summary */}

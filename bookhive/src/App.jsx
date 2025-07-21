@@ -14,6 +14,7 @@ import HubManagerRouters from './routes/HubManagerRoutes';
 import Header from './components/shared/Header';
 import UserNavbar from './components/user/navbar';
 import './index.css';
+import UplaodPage from './pages/common/UploadForm';
 
 // Create Auth Context
 const AuthContext = createContext();
@@ -86,6 +87,9 @@ const App = () => {
         <Route path="/agent/*" element={renderLayout(<DeliveryAgentRoutes />)} />
         <Route path="/organization/*" element={renderLayout(<OrganizationRoutes />)} />
         <Route path="*" element={renderLayout(<div>404: Page Not Found</div>)} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/upload" element={<UplaodPage />} />
+
       </Routes>
     </AuthContext.Provider>
   );

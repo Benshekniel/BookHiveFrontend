@@ -1,4 +1,4 @@
-{/* Stats Cards */}import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -19,7 +19,7 @@ import {
   Truck,
   Home
 } from 'lucide-react';
-import { deliveryApi, agentApi } from '../../services/apiService';
+import { deliveryApi, agentApi } from '../../services/HubmanagerService';
 
 const Deliveries = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -479,17 +479,6 @@ const Deliveries = () => {
               </div>
             </div>
 
-            {/* Delivery Notes */}
-            {/* {delivery.deliveryNotes && (
-              <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <h3 className="font-semibold text-slate-900 mb-2 flex items-center">
-                  <AlertTriangle className="w-4 h-4 mr-2 text-blue-600" />
-                  Delivery Notes
-                </h3>
-                <p className="text-sm text-gray-700">{delivery.deliveryNotes}</p>
-              </div>
-            )} */}
-
             {/* Action Buttons */}
             <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
               <button 
@@ -511,6 +500,35 @@ const Deliveries = () => {
       </div>
     );
   };
+
+  // Loading animation
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600">Loading deliveries...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 text-lg">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
