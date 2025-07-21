@@ -5,12 +5,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { BookOpen } from 'lucide-react';
 import Button from '../../components/shared/Button';
+import axios from "axios";
 
 const signupSchemaStep1 = z.object({
   firstName: z.string().min(2, 'First Name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email'),
-  phone: z.string().min(10, 'Phone must be at least 10 digits'),
+  phone: z.string()
+    .regex(/^\d+$/, 'Phone must contain only numbers')
+    .min(10, 'Phone must be at least 10 digits')
+    .max(10, 'Phone must not exceed 10 digits'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(8, 'Confirm password must match'),
   address: z.string().min(5, 'Address must be at least 5 characters'),
@@ -98,11 +102,78 @@ const SignupPage = () => {
     reset();
   };
 
-  const onSubmitStep3 = (data) => {
-    setFormData({ ...formData, ...data });
-    console.log('Final form data:', { ...formData, ...data });
-    navigate('/login');
+
+  const onSubmitStep3 = async (data) => {
+    const allData = { ...formData, ...data };
+    setFormData(allData);
+  
+    if (selectedRole === 'organization') {
+      const registrationCopyFile = allData.registrationCopy?.[0];
+  
+      if (!registrationCopyFile) {
+        setError('Registration copy is required');
+        alert('Registration copy is required');
+        return;
+      }
+  
+      // 📦 Create FormData and append JSON + file
+      const formDataToSend = new FormData();
+      
+      // Append file
+      formDataToSend.append('registrationCopyFile', registrationCopyFile);
+  
+      // Create JSON and append as Blob
+      const orgData = {
+        type: allData.organizationType,
+        reg_no: allData.registrationNo,
+        status: 'active',
+        fname: allData.firstName,
+        lname: allData.lastName,
+        email: allData.email,
+        password: allData.password,
+        phone: parseInt(allData.phone.slice(0, 10), 10),
+        years: parseInt(allData.runningYears, 10),
+        address: allData.address,
+        city: allData.city,
+        state: allData.state,
+        zip: allData.zipCode
+      };
+  
+      const jsonBlob = new Blob([JSON.stringify(orgData)], {
+        type: 'application/json'
+      });
+  
+      formDataToSend.append('orgData', jsonBlob);
+  
+      try {
+        const response = await axios.post('http://localhost:9090/api/registerOrg', formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+  
+        const result = response.data;
+  
+        if (result.message === "success") {
+          alert("Account created successfully. Login now ...");
+          setTimeout(() => navigate('/login'), 1500);
+        } else {
+          alert("Error: " + result.message);
+          setError(result.message);
+        }
+  
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Something went wrong: " + (error.response?.data?.message || error.message));
+        setError("Something went wrong: " + (error.response?.data?.message || error.message));
+      }
+    } else {
+      navigate('/login');
+    }
   };
+  
+  
+  
 
   const roleOptions = [
     { value: 'user', label: 'User (Buyer, Borrower, Lender, Seller)' },
@@ -136,7 +207,6 @@ const SignupPage = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-md rounded-lg sm:px-10 transition-all duration-200">
-          {/* Step indicator */}
           <div className="mb-6">
             <div className="flex justify-center">
               <div className="flex items-center space-x-2">
@@ -264,7 +334,7 @@ const SignupPage = () => {
                         placeholder="••••••••"
                       />
                       {errors.password && (
-                        <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                        <p class courage="mt-1 text-sm text-red-600">{errors.password.message}</p>
                       )}
                     </div>
                   </div>
@@ -278,7 +348,7 @@ const SignupPage = () => {
                         type="password"
                         {...register('confirmPassword')}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-                        style={{ borderColor: '#D1D5DB' }}
+                        style={{ borderColor: '#D1D5 twistDB' }}
                         onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                         onBlur={(e) => (e.target.style.boxShadow = 'none')}
                         placeholder="••••••••"
