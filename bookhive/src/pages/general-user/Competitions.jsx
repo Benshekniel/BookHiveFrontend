@@ -13,13 +13,13 @@ const mockData = {
       title: "Short Story Championship 2024",
       category: "Writing",
       description: "Unleash your creativity in this premier writing competition...",
-      prize: "Rs. 50,000 + Publication",
+      prize: "Trustscore Increment",
       deadline: "March 15, 2024",
       featured: true,
       participants: 45,
       maxParticipants: 100,
       organizer: { name: "Literary Society", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" },
-      rules: ["Original work only - no plagiarism", "Word limit: 1,500-3,000 words", "Submit in PDF format", "One entry per participant"],
+      rules: ["Original work only - no plagiarism", "Word limit: 1,500-3,000 words", "One entry per participant"],
       judgesCriteria: ["Creativity and originality (40%)", "Writing style and technique (30%)", "Character development (20%)", "Overall impact (10%)"],
       submissions: [
         { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest, where whispers of forgotten legends guide his path...", votes: 72 },
@@ -37,7 +37,7 @@ const mockData = {
       title: "Young Writers Challenge 2025",
       category: "Writing",
       description: "A platform for young writers to showcase their skills...",
-      prize: "Rs. 15,000 + Mentorship",
+      prize: "Trustscore Increment",
       deadline: "July 15, 2025",
       featured: false,
       participants: 28,
@@ -148,7 +148,7 @@ const Competitions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [votes, setVotes] = useState({});
+  const [votes, setVotes] = useState({}); // Tracks user's vote contribution (0 or 1) per submission
   const [userSubmissions, setUserSubmissions] = useState(mockData.userSubmissions);
 
   const { writingCompetitions } = mockData;
@@ -220,11 +220,29 @@ const Competitions = () => {
   };
 
   const handleVote = (competitionId, submissionId) => {
+    const key = `${competitionId}-${submissionId}`;
     setVotes((prev) => ({
       ...prev,
-      [`${competitionId}-${submissionId}`]: (prev[`${competitionId}-${submissionId}`] || 0) + 1,
+      [key]: (prev[key] || 0) === 0 ? 1 : 0, // Toggle between 0 and 1
     }));
-    setShowContentModal(false);
+    // Do not close modal automatically so user can see the updated count
+  };
+
+  const getCurrentVotes = (competitionId, submissionId, originalVotes) => {
+    const key = `${competitionId}-${submissionId}`;
+    return originalVotes + (votes[key] || 0);
+  };
+
+  const getLeaderboard = (competition) => {
+    if (!competition.submissions) return [];
+    return competition.submissions
+      .map((sub) => ({
+        userId: sub.userId,
+        name: sub.name,
+        votes: getCurrentVotes(competition.id, sub.id, sub.votes),
+        submissionTitle: sub.title,
+      }))
+      .sort((a, b) => b.votes - a.votes);
   };
 
   const openEditModal = (submission) => {
@@ -470,11 +488,15 @@ const Competitions = () => {
                           {competition.submissions
                             .filter((s) => s.userId !== mockData.currentUser.id)
                             .map((submission) => {
-                              const currentVotes = votes[`${competition.id}-${submission.id}`] || submission.votes;
+                              const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
                               return (
                                 <div key={submission.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition">
                                   <h5 className="font-medium text-gray-900">{submission.title} by {submission.name}</h5>
                                   <p className="text-gray-600 text-sm mb-2 line-clamp-2">{submission.content.substring(0, 50)}...</p>
+                                  <div className="flex items-center text-sm text-gray-600 mb-2">
+                                    <Star size={14} className="mr-1 text-yellow-500" />
+                                    {currentVotes} votes
+                                  </div>
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -494,7 +516,7 @@ const Competitions = () => {
                         <div className="mt-6">
                           <h4 className="font-semibold text-gray-900 text-lg mb-4">Leaderboard</h4>
                           <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-4 rounded-lg shadow-inner">
-                            {competition.leaderboard.map((entry, index) => {
+                            {getLeaderboard(competition).map((entry, index) => {
                               const isCurrentUser = entry.userId === mockData.currentUser.id;
                               return (
                                 <div
@@ -528,7 +550,7 @@ const Competitions = () => {
                           {competition.submissions
                             .filter(s => s.userId === mockData.currentUser.id)
                             .map((submission) => {
-                              const currentVotes = votes[`${competition.id}-${submission.id}`] || submission.votes;
+                              const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
                               return (
                                 <div key={submission.id} className="p-4 bg-green-50 rounded-lg border border-green-200">
                                   <h5 className="font-medium text-gray-900">{submission.title}</h5>
@@ -651,7 +673,7 @@ const Competitions = () => {
 
         {/* Competition Details Modal */}
         {selectedCompetition && !showSubmissionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -721,7 +743,7 @@ const Competitions = () => {
 
         {/* Submission Modal */}
         {showSubmissionModal && selectedCompetition && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -795,7 +817,7 @@ const Competitions = () => {
 
         {/* Edit Submission Modal */}
         {showEditModal && editingSubmission && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -871,7 +893,7 @@ const Competitions = () => {
 
         {/* Content View Modal */}
         {showContentModal && selectedSubmission && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -901,6 +923,10 @@ const Competitions = () => {
                       Word count: {selectedSubmission.wordCount}
                     </div>
                   )}
+                  <div className="flex items-center text-sm font-medium text-gray-700">
+                    <Star size={16} className="mr-1 text-yellow-500" />
+                    Current Votes: {getCurrentVotes(selectedSubmission.competitionId, selectedSubmission.id, selectedSubmission.votes)}
+                  </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
                   <Button
@@ -918,7 +944,7 @@ const Competitions = () => {
                       onClick={() => handleVote(selectedSubmission.competitionId, selectedSubmission.id)}
                       icon={<Star size={16} />}
                     >
-                      Vote
+                      {(votes[`${selectedSubmission.competitionId}-${selectedSubmission.id}`] || 0) > 0 ? "Remove Vote" : "Vote"}
                     </Button>
                   )}
                 </div>
@@ -929,7 +955,7 @@ const Competitions = () => {
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && selectedSubmission && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-md w-full shadow-2xl">
               <div className="p-6">
                 <div className="flex items-center mb-4">
