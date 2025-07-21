@@ -383,12 +383,7 @@ const Users = () => {
           )}
         </div>
       </div>
-      <div className="flex justify-end space-x-2">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <UserCheck className="w-4 h-4" />
-          <span>Bulk Actions</span>
-        </button>
-      </div>
+
     </div>
   );
 };

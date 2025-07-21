@@ -242,39 +242,58 @@ const Hub = () => {
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
-            <button
-              onClick={() => setActiveTab('hubs')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'hubs'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Delivery Hubs
-            </button>
-            <button
-              onClick={() => setActiveTab('schedules')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'schedules'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Delivery Schedules
-            </button>
-            <button
-              onClick={() => setActiveTab('performance')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'performance'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Performance Reports
-            </button>
+          <nav className="flex items-center justify-between px-6">
+            
+            {/* Left side: Tabs */}
+            <div className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('hubs')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'hubs'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Delivery Hubs
+              </button>
+              <button
+                onClick={() => setActiveTab('schedules')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'schedules'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Delivery Schedules
+              </button>
+              <button
+                onClick={() => setActiveTab('performance')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'performance'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Performance Reports
+              </button>
+            </div>
+
+            {/* Right side: Buttons */}
+            <div className="flex space-x-2 py-4">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                <Map className="w-4 h-4" />
+                <span>View Map</span>
+              </button>
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                <TrendingUp className="w-4 h-4" />
+                <span>Generate Report</span>
+              </button>
+            </div>
+
           </nav>
         </div>
+
+
 
         <div className="p-6">
           {activeTab === 'hubs' && (
@@ -443,16 +462,7 @@ const Hub = () => {
           )}
         </div>
       </div>
-      <div className="flex space-x-2 justify-end">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <Map className="w-4 h-4" />
-          <span>View Map</span>
-        </button>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <TrendingUp className="w-4 h-4" />
-          <span>Generate Report</span>
-        </button>
-      </div>
+
     </div>
   );
 };
