@@ -68,7 +68,7 @@ const UserNavbar = ({ user, onLogout, children }) => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-8">
+            <div className="hidden lg:flex items-center space-x-7">
               {/* Main Navigation Items */}
               {userNavItems.map((item) => {
                 const Icon = item.icon;
@@ -122,7 +122,7 @@ const UserNavbar = ({ user, onLogout, children }) => {
                     className="h-8 w-8 rounded-full object-cover border-2 border-yellow-400"
                   />
                   <span className="text-sm font-medium text-gray-700 hidden xl:block">
-                    {user?.username || 'User'}
+                    {user?.username || 'Nive'}
                   </span>
                 </button>
 
@@ -137,14 +137,14 @@ const UserNavbar = ({ user, onLogout, children }) => {
                       <User size={16} className="inline mr-2" />
                       Profile Settings
                     </Link>
-                    <Link
+                    {/* <Link
                       to="/user/seller-dashboard"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       onClick={() => setIsProfileMenuOpen(false)}
                     >
                       <Home size={16} className="inline mr-2" />
                       Seller Dashboard
-                    </Link>
+                    </Link> */}
                     <hr className="my-2" />
                     <button
                       onClick={() => {
@@ -259,14 +259,14 @@ const UserNavbar = ({ user, onLogout, children }) => {
                   <span>Profile Settings</span>
                 </Link>
 
-                <Link
+                {/* <Link
                   to="/user/seller-dashboard"
                   className="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <Home size={20} />
                   <span>Seller Dashboard</span>
-                </Link>
+                </Link> */}
 
                 {/* Mobile Logout */}
                 <button
