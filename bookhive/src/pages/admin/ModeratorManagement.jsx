@@ -10,7 +10,6 @@ const ModeratorManagement = () => {
 
   // Moderators state for dynamic addition, edit, delete
   const [moderators, setModerators] = useState([
-
     {
       id: 1,
       name: 'Alice Smith',
@@ -122,6 +121,33 @@ const ModeratorManagement = () => {
     { id: 'dispute_resolution', name: 'Dispute Resolution', description: 'Handle user disputes, complaints, and conflict mediation' }
   ];
 
+  const activityLog = [
+    {
+      id: 1,
+      moderatorId: 1,
+      moderatorName: 'Alice Smith',
+      action: 'Approved book listing',
+      details: 'Approved "The Great Gatsby" by John Doe',
+      timestamp: '2024-01-15 10:30:00'
+    },
+    {
+      id: 2,
+      moderatorId: 2,
+      moderatorName: 'Bob Johnson',
+      action: 'Removed inappropriate content',
+      details: 'Removed forum post with inappropriate language',
+      timestamp: '2024-01-14 16:45:00'
+    },
+    {
+      id: 3,
+      moderatorId: 1,
+      moderatorName: 'Alice Smith',
+      action: 'Suspended user account',
+      details: 'Suspended user "baduser123" for policy violations',
+      timestamp: '2024-01-14 14:20:00'
+    }
+  ];
+
   const filteredModerators = moderators.filter(moderator => {
     const matchesSearch = moderator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          moderator.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -211,7 +237,6 @@ const ModeratorManagement = () => {
   return (
     <div className="bg-white p-6 min-h-screen">
       <div className="sm:flex sm:items-center mb-8">
-
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-semibold text-slate-900">Moderator Management</h1>
           <p className="mt-2 text-sm text-slate-700">
@@ -223,7 +248,6 @@ const ModeratorManagement = () => {
             type="button"
             onClick={() => setShowAddModal(true)}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto transition-colors"
-
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Moderator
