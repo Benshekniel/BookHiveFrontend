@@ -53,12 +53,12 @@ const Dashboard = () => {
     { id: 'D004', agent: 'Lisa Brown', status: 'In Transit', time: '12 mins ago' },
   ];
 
-  const hubPerformanceData = [
-    { name: 'Downtown Hub', efficiency: 94, deliveries: 45, target: 90 },
-    { name: 'North Hub', efficiency: 91, deliveries: 38, target: 90 },
-    { name: 'South Hub', efficiency: 96, deliveries: 42, target: 90 },
-    { name: 'West Hub', efficiency: 88, deliveries: 31, target: 90 },
-    { name: 'East Hub', efficiency: 92, deliveries: 39, target: 90 },
+  const agentCountData = [
+    { name: 'Downtown Hub', agents: 12 },
+    { name: 'North Hub', agents: 8 },
+    { name: 'South Hub', agents: 10 },
+    { name: 'West Hub', agents: 6 },
+    { name: 'East Hub', agents: 9 },
   ];
 
   const revenueData = [
@@ -138,21 +138,22 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Hub Performance Graph */}
+        {/* Delivery Agents by Hub */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
-            Hub Performance Comparison
+            Delivery Agents by Hub
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={hubPerformanceData}>
+          <div className='mt-8'>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={agentCountData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis />
-              <Tooltip />
-              <Bar dataKey="efficiency" fill="#3B82F6" name="Efficiency %" />
-              <Bar dataKey="target" fill="#E5E7EB" name="Target %" />
+              <Tooltip formatter={(value) => [value, 'Agents']} />
+              <Bar dataKey="agents" fill="#3B82F6" />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
@@ -163,13 +164,13 @@ const Dashboard = () => {
             Revenue by Hub
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={revenueData}>
+            <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis />
               <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
-              <Bar dataKey="revenue" fill="#22C55E" />
-            </BarChart>
+              <Line type="monotone" dataKey="revenue" stroke="#FBBF24" strokeWidth={3} />
+            </LineChart>
           </ResponsiveContainer>
         </div>
 
@@ -179,13 +180,13 @@ const Dashboard = () => {
             Deliveries by Hub
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={deliveryCountData}>
+            <BarChart data={deliveryCountData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="deliveries" stroke="#FBBF24" strokeWidth={3} />
-            </LineChart>
+              <Tooltip formatter={(value) => [value, 'Deliveries']} />
+              <Bar dataKey="deliveries" fill="#22C55E" />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>

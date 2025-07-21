@@ -15,7 +15,9 @@ import {
   Users,
   UserCheck,
   UserX,
-  AlertTriangle
+  AlertTriangle,
+  Delete,
+  Trash
 } from 'lucide-react';
 
 const Agents = () => {
@@ -121,6 +123,41 @@ const Agents = () => {
     },
   ];
 
+  const stats = [
+    {
+      title: 'Total Agents',
+      value: '50', // Placeholder value
+      change: '+5 this week',
+      icon: Users,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50'
+    },
+    {
+      title: 'Active Agents',
+      value: '42',
+      change: '+3 from yesterday',
+      icon: CheckCircle,
+      color: 'text-green-600',
+      bg: 'bg-green-50'
+    },
+    {
+      title: 'Pending Verification',
+      value: '8',
+      change: '2 awaiting review',
+      icon: Clock,
+      color: 'text-yellow-400',
+      bg: 'bg-yellow-50'
+    },
+    {
+      title: 'Online Now',
+      value: '35',
+      change: 'Updated 5 mins ago',
+      icon: UserCheck,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50'
+    }
+  ];
+
   const pendingApplications = [
     {
       id: 'PA001',
@@ -167,6 +204,8 @@ const Agents = () => {
     }
   };
 
+  
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Active':
@@ -207,36 +246,25 @@ const Agents = () => {
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-2 mb-2">
-            <Users className="text-blue-600" size={20} />
-            <span className="font-medium text-sm">Total Agents</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {stats.map((stat, index) => {
+        const Icon = stat.icon;
+        return (
+          <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1 font-medium">{stat.title}</p>
+                <p className="text-2xl font-bold text-slate-900 font-heading">{stat.value}</p>
+                <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
+              </div>
+              <div className={`p-3 rounded-lg ${stat.bg}`}>
+                <Icon className={stat.color} size={24} />
+              </div>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{totalAgents}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-2 mb-2">
-            <CheckCircle className="text-green-600" size={20} />
-            <span className="font-medium text-sm">Active Agents</span>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{activeAgents}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-2 mb-2">
-            <Clock className="text-yellow-400" size={20} />
-            <span className="font-medium text-sm">Pending Verification</span>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{pendingVerification}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-2 mb-2">
-            <UserCheck className="text-blue-600" size={20} />
-            <span className="font-medium text-sm">Online Now</span>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{onlineNow}</p>
-        </div>
-      </div>
+        );
+      })}
+    </div>
 
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -269,15 +297,7 @@ const Agents = () => {
             >
               Verify Applications
             </button>
-            <button
-              onClick={() => setActiveTab('suspend')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'suspend'
-                ? 'border-blue-900 text-blue-900'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-            >
-              Suspend Agent
-            </button>
+            
           </nav>
         </div>
 
@@ -382,7 +402,7 @@ const Agents = () => {
                               <MessageCircle size={16} className="text-blue-600" />
                             </button>
                             <button className="p-1 hover:bg-gray-100 rounded">
-                              <MoreHorizontal size={16} className="text-gray-400" />
+                              <Trash size={16} className="text-red-400" />
                             </button>
                           </div>
                         </td>
@@ -449,11 +469,12 @@ const Agents = () => {
                       <th className="pb-3 text-sm font-medium text-gray-600">VEHICLE</th>
                       <th className="pb-3 text-sm font-medium text-gray-600">HUB</th>
                       <th className="pb-3 text-sm font-medium text-gray-600">STATUS</th>
+                      <th className="pb-3 text-sm font-medium text-gray-600">RATING</th>
                       <th className="pb-3 text-sm font-medium text-gray-600">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSuperAgents.map((superAgent) => (
+                    {filteredAgents.map((superAgent) => (
                       <tr key={superAgent.id} className="border-b hover:bg-gray-50 bg-white rounded-lg border-gray-200">
                         <td className="py-4">
                           <div className="flex items-center space-x-3">
@@ -493,12 +514,18 @@ const Agents = () => {
                           </div>
                         </td>
                         <td className="py-4">
+                          <div className="flex items-center space-x-1">
+                            <Star className="text-yellow-400 fill-current" size={14} />
+                            <span className="text-sm font-medium">{superAgent.rating}</span>
+                          </div>
+                        </td>
+                        <td className="py-4">
                           <div className="flex items-center space-x-2">
                             <button className="p-1 hover:bg-gray-100 rounded">
                               <MessageCircle size={16} className="text-blue-600" />
                             </button>
                             <button className="p-1 hover:bg-gray-100 rounded">
-                              <MoreHorizontal size={16} className="text-gray-400" />
+                              <Trash size={16} className="text-red-400" />
                             </button>
                           </div>
                         </td>
@@ -560,39 +587,6 @@ const Agents = () => {
                         <span>Reject</span>
                       </button>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'suspend' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Suspend Agent</h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="text-yellow-400" size={20} />
-                  <p className="text-sm text-yellow-800">
-                    Suspending an agent will immediately disable their access and stop all active deliveries.
-                  </p>
-                </div>
-              </div>
-              {agents.filter(a => a.status === 'Active').map((agent) => (
-                <div key={agent.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-900 text-white rounded-full flex items-center justify-center font-semibold text-sm">
-                        {agent.avatar}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-slate-900">{agent.name}</h4>
-                        <p className="text-sm text-gray-600">{agent.id} • {agent.completedDeliveries} deliveries</p>
-                      </div>
-                    </div>
-                    <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-1">
-                      <UserX size={16} />
-                      <span>Suspend</span>
-                    </button>
                   </div>
                 </div>
               ))}
