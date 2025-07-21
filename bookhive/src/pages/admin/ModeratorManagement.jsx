@@ -1,24 +1,29 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Eye, Shield, User, Mail, Calendar, Search, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Shield, User, Search, X } from 'lucide-react';
 
 const ModeratorManagement = () => {
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedModerator, setSelectedModerator] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const [newModerator, setNewModerator] = useState({
-    name: '',
-    email: '',
-    permissions: []
-  });
-
-  const moderators = [
+  // Moderators state for dynamic addition, edit, delete
+  const [moderators, setModerators] = useState([
     {
       id: 1,
       name: 'Alice Smith',
       email: 'alice.smith@bookhive.com',
+      phone: '+1 234 5678',
+      employeeId: 'EMP001',
+      dateOfBirth: '1990-05-15',
+      address: '123 Main St',
+      city: 'New York',
+      emergencyContact: 'John Smith',
+      emergencyPhone: '+1 876 5432',
+      qualifications: 'Bachelor in Literature',
+      experience: '5 years in content moderation',
+      notes: 'Excellent team player',
       status: 'active',
       lastActivity: '2024-01-15 10:30:00',
       createdAt: '2023-12-01',
@@ -30,6 +35,16 @@ const ModeratorManagement = () => {
       id: 2,
       name: 'Bob Johnson',
       email: 'bob.johnson@bookhive.com',
+      phone: '+1 345 6789',
+      employeeId: 'EMP002',
+      dateOfBirth: '1985-08-20',
+      address: '456 Elm St',
+      city: 'Los Angeles',
+      emergencyContact: 'Jane Johnson',
+      emergencyPhone: '+1 987 6543',
+      qualifications: 'Master in Communications',
+      experience: '7 years in event management',
+      notes: 'Strong leadership skills',
       status: 'active',
       lastActivity: '2024-01-14 16:45:00',
       createdAt: '2023-11-15',
@@ -41,6 +56,16 @@ const ModeratorManagement = () => {
       id: 3,
       name: 'Carol Davis',
       email: 'carol.davis@bookhive.com',
+      phone: '+1 456 7890',
+      employeeId: 'EMP003',
+      dateOfBirth: '1992-03-10',
+      address: '789 Oak St',
+      city: 'Chicago',
+      emergencyContact: 'Mike Davis',
+      emergencyPhone: '+1 765 4321',
+      qualifications: 'Bachelor in Psychology',
+      experience: '4 years in user management',
+      notes: 'Detail-oriented',
       status: 'suspended',
       lastActivity: '2024-01-10 09:15:00',
       createdAt: '2023-10-20',
@@ -52,6 +77,16 @@ const ModeratorManagement = () => {
       id: 4,
       name: 'David Wilson',
       email: 'david.wilson@bookhive.com',
+      phone: '+1 567 8901',
+      employeeId: 'EMP004',
+      dateOfBirth: '1988-11-25',
+      address: '101 Pine St',
+      city: 'San Francisco',
+      emergencyContact: 'Sarah Wilson',
+      emergencyPhone: '+1 654 3210',
+      qualifications: 'Master in Law',
+      experience: '6 years in dispute resolution',
+      notes: 'Highly analytical',
       status: 'inactive',
       lastActivity: '2023-12-28 14:20:00',
       createdAt: '2023-09-10',
@@ -59,14 +94,31 @@ const ModeratorManagement = () => {
       actionsCount: 67,
       warningsIssued: 5
     }
-  ];
+  ]);
 
-  const permissions = [
-    { id: 'content_moderation', name: 'Content Moderation', description: 'Review and moderate book listings and user content' },
-    { id: 'user_management', name: 'User Management', description: 'Manage user accounts and registrations' },
-    { id: 'event_management', name: 'Event Management', description: 'Create and manage platform events' },
-    { id: 'dispute_resolution', name: 'Dispute Resolution', description: 'Handle user disputes and complaints' },
-    { id: 'notification_management', name: 'Notification Management', description: 'Send and manage platform notifications' }
+  // State for add modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newModerator, setNewModerator] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    employeeId: '',
+    dateOfBirth: '',
+    address: '',
+    city: '',
+    emergencyContact: '',
+    emergencyPhone: '',
+    qualifications: '',
+    experience: '',
+    notes: '',
+    status: 'active'
+  });
+
+  const permissionsList = [
+    { id: 'content_moderation', name: 'Content Moderation', description: 'Review and moderate book listings, forum posts, and user-generated content' },
+    { id: 'user_management', name: 'User Management', description: 'Manage user accounts, registrations, and profile verification' },
+    { id: 'event_management', name: 'Event Management', description: 'Create, manage, and promote platform events and book drives' },
+    { id: 'dispute_resolution', name: 'Dispute Resolution', description: 'Handle user disputes, complaints, and conflict mediation' }
   ];
 
   const activityLog = [
@@ -112,11 +164,9 @@ const ModeratorManagement = () => {
     return colors[status] || colors.active;
   };
 
-  const handleCreateModerator = (e) => {
-    e.preventDefault();
-    console.log('Creating moderator:', newModerator);
-    setShowCreateModal(false);
-    setNewModerator({ name: '', email: '', permissions: [] });
+  const handleViewModerator = (moderator) => {
+    setSelectedModerator(moderator);
+    setShowViewModal(true);
   };
 
   const handleEditModerator = (moderator) => {
@@ -124,22 +174,68 @@ const ModeratorManagement = () => {
     setShowEditModal(true);
   };
 
-  const handlePermissionChange = (permissionId, checked) => {
-    if (checked) {
-      setNewModerator({
-        ...newModerator,
-        permissions: [...newModerator.permissions, permissionId]
-      });
-    } else {
-      setNewModerator({
-        ...newModerator,
-        permissions: newModerator.permissions.filter(p => p !== permissionId)
-      });
+  const handleDeleteModerator = (id) => {
+    if (window.confirm('Are you sure you want to delete this moderator?')) {
+      setModerators(moderators.filter(mod => mod.id !== id));
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewModerator({ ...newModerator, [name]: value });
+  };
+
+  const handleSimpleAdd = (e) => {
+    e.preventDefault();
+    if (!newModerator.name || !newModerator.email) return; // Basic check
+
+    const newId = moderators.length + 1;
+    setModerators([
+      ...moderators,
+      {
+        ...newModerator,
+        id: newId,
+        lastActivity: new Date().toISOString(),
+        createdAt: new Date().toISOString().split('T')[0],
+        permissions: [], // Default empty
+        actionsCount: 0,
+        warningsIssued: 0
+      }
+    ]);
+
+    setNewModerator({
+      name: '',
+      email: '',
+      phone: '',
+      employeeId: '',
+      dateOfBirth: '',
+      address: '',
+      city: '',
+      emergencyContact: '',
+      emergencyPhone: '',
+      qualifications: '',
+      experience: '',
+      notes: '',
+      status: 'active'
+    });
+    setShowAddModal(false);
+  };
+
+  const handleUpdateModerator = (e) => {
+    e.preventDefault();
+    setModerators(moderators.map(mod => 
+      mod.id === selectedModerator.id ? { ...selectedModerator } : mod
+    ));
+    setShowEditModal(false);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setSelectedModerator({ ...selectedModerator, [name]: value });
+  };
+
   return (
-    <div className="bg-slate-50 p-6 min-h-screen">
+    <div className="bg-white p-6 min-h-screen">
       <div className="sm:flex sm:items-center mb-8">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-semibold text-slate-900">Moderator Management</h1>
@@ -149,8 +245,9 @@ const ModeratorManagement = () => {
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Moderator
@@ -158,7 +255,6 @@ const ModeratorManagement = () => {
         </div>
       </div>
 
-      {/* Search and Filter */}
       <div className="bg-white shadow rounded-lg mb-6 border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -171,7 +267,7 @@ const ModeratorManagement = () => {
                   placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="pl-10 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -180,7 +276,7 @@ const ModeratorManagement = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -192,7 +288,6 @@ const ModeratorManagement = () => {
         </div>
       </div>
 
-      {/* Moderators Table */}
       <div className="bg-white shadow rounded-lg mb-8 border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Current Moderators</h3>
@@ -200,24 +295,12 @@ const ModeratorManagement = () => {
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Moderator
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Permissions
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Activity
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Last Active
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Moderator</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Permissions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Activity</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Last Active</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
@@ -226,8 +309,8 @@ const ModeratorManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-900 flex items-center justify-center">
-                            <User className="h-5 w-5 text-white" />
+                          <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                            <div className="h-5 w-5 text-white"><User /></div>
                           </div>
                         </div>
                         <div className="ml-4">
@@ -245,7 +328,7 @@ const ModeratorManagement = () => {
                       <div className="text-sm text-slate-900">{moderator.permissions.length} permissions</div>
                       <div className="text-sm text-slate-500">
                         {moderator.permissions.slice(0, 2).map(p => 
-                          permissions.find(perm => perm.id === p)?.name
+                          permissionsList.find(perm => perm.id === p)?.name
                         ).join(', ')}
                         {moderator.permissions.length > 2 && '...'}
                       </div>
@@ -260,20 +343,20 @@ const ModeratorManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-2">
                         <button 
-                          onClick={() => console.log('View details:', moderator.id)}
-                          className="text-blue-500 hover:text-blue-700"
+                          onClick={() => handleViewModerator(moderator)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => handleEditModerator(moderator)}
-                          className="text-green-500 hover:text-green-700"
+                          className="text-yellow-600 hover:text-yellow-900 transition-colors"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => console.log('Delete moderator:', moderator.id)}
-                          className="text-red-500 hover:text-red-700"
+                          onClick={() => handleDeleteModerator(moderator.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -287,7 +370,6 @@ const ModeratorManagement = () => {
         </div>
       </div>
 
-      {/* Activity Log */}
       <div className="bg-white shadow rounded-lg border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Recent Moderator Activity</h3>
@@ -301,7 +383,7 @@ const ModeratorManagement = () => {
                     ) : null}
                     <div className="relative flex space-x-3">
                       <div>
-                        <span className="h-8 w-8 rounded-full bg-blue-900 flex items-center justify-center ring-8 ring-white">
+                        <span className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center ring-8 ring-white">
                           <Shield className="h-4 w-4 text-white" />
                         </span>
                       </div>
@@ -325,72 +407,434 @@ const ModeratorManagement = () => {
         </div>
       </div>
 
-      {/* Create Moderator Modal repay */}
-      {showCreateModal && (
+      {/* Add Moderator Modal */}
+      {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <form onSubmit={handleCreateModerator}>
-                <div>
-                  <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Add New Moderator</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Full Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={newModerator.name}
-                        onChange={(e) => setNewModerator({...newModerator, name: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Email Address</label>
-                      <input
-                        type="email"
-                        required
-                        value={newModerator.email}
-                        onChange={(e) => setNewModerator({...newModerator, email: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Permissions</label>
-                      <div className="space-y-2">
-                        {permissions.map((permission) => (
-                          <div key={permission.id} className="flex items-start">
-                            <div className="flex items-center h-5">
-                              <input
-                                type="checkbox"
-                                checked={newModerator.permissions.includes(permission.id)}
-                                onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
-                                className="focus:ring-blue-500 h-4 w-4 text-blue-900 border-slate-200 rounded"
-                              />
-                            </div>
-                            <div className="ml-3 text-sm">
-                              <label className="font-medium text-slate-700">{permission.name}</label>
-                              <p className="text-slate-500">{permission.description}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+          <div className="flex min-h-screen items-center justify-center px-4">
+            <div className="fixed inset-0 bg-black/30" onClick={() => setShowAddModal(false)}></div>
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative overflow-y-auto max-h-[80vh]">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Add New Moderator</h3>
+              <form onSubmit={handleSimpleAdd}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={newModerator.name}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={newModerator.email}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter email"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={newModerator.phone}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter phone"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Employee ID</label>
+                    <input
+                      type="text"
+                      name="employeeId"
+                      value={newModerator.employeeId}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter employee ID"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      value={newModerator.dateOfBirth}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Address</label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={newModerator.address}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter address"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={newModerator.city}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter city"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Name</label>
+                    <input
+                      type="text"
+                      name="emergencyContact"
+                      value={newModerator.emergencyContact}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter emergency contact name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Phone</label>
+                    <input
+                      type="tel"
+                      name="emergencyPhone"
+                      value={newModerator.emergencyPhone}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter emergency phone"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Qualifications</label>
+                    <textarea
+                      name="qualifications"
+                      value={newModerator.qualifications}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter qualifications"
+                      rows="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Experience</label>
+                    <textarea
+                      name="experience"
+                      value={newModerator.experience}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter experience"
+                      rows="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Notes</label>
+                    <textarea
+                      name="notes"
+                      value={newModerator.notes}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter notes"
+                      rows="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Status</label>
+                    <select
+                      name="status"
+                      value={newModerator.status}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
                   </div>
                 </div>
-                <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                  <button
-                    type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-900 text-base font-medium text-white hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm"
-                  >
-                    Add Moderator
-                  </button>
+                <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-slate-200 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-900 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  >
+                    Add
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Moderator Modal (Read-only) */}
+      {showViewModal && selectedModerator && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4">
+            <div className="fixed inset-0 bg-black/30" onClick={() => setShowViewModal(false)}></div>
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative overflow-y-auto max-h-[80vh]">
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Moderator Details</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Name</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Email</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Phone</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.phone}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Employee ID</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.employeeId}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.dateOfBirth}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Address</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.address}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">City</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.city}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Emergency Contact Name</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.emergencyContact}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Emergency Contact Phone</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.emergencyPhone}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Qualifications</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.qualifications}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Experience</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.experience}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Notes</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.notes}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Status</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.status}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Last Activity</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.lastActivity}</p>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowViewModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Moderator Modal */}
+      {showEditModal && selectedModerator && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4">
+            <div className="fixed inset-0 bg-black/30" onClick={() => setShowEditModal(false)}></div>
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative overflow-y-auto max-h-[80vh]">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Edit Moderator</h3>
+              <form onSubmit={handleUpdateModerator}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={selectedModerator.name}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={selectedModerator.email}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={selectedModerator.phone}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Employee ID</label>
+                    <input
+                      type="text"
+                      name="employeeId"
+                      value={selectedModerator.employeeId}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      value={selectedModerator.dateOfBirth}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Address</label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={selectedModerator.address}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={selectedModerator.city}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Name</label>
+                    <input
+                      type="text"
+                      name="emergencyContact"
+                      value={selectedModerator.emergencyContact}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Phone</label>
+                    <input
+                      type="tel"
+                      name="emergencyPhone"
+                      value={selectedModerator.emergencyPhone}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Qualifications</label>
+                    <textarea
+                      name="qualifications"
+                      value={selectedModerator.qualifications}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      rows="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Experience</label>
+                    <textarea
+                      name="experience"
+                      value={selectedModerator.experience}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      rows="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Notes</label>
+                    <textarea
+                      name="notes"
+                      value={selectedModerator.notes}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      rows="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Status</label>
+                    <select
+                      name="status"
+                      value={selectedModerator.status}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  >
+                    Update
                   </button>
                 </div>
               </form>
