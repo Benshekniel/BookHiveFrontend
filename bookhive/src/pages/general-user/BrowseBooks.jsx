@@ -1015,28 +1015,7 @@ const BooksPage = () => {
                 >
                   Wishlisted Books
                 </h2>
-                {/* <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                  <div className="relative flex-1">
-                    <Search
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                      size={18}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search for a book to add to wishlist..."
-                      className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
-                      value={wishlistSearchQuery}
-                      onChange={(e) => setWishlistSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    variant="primary"
-                    className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2 rounded-lg"
-                    onClick={handleWishlistSearch}
-                  >
-                    Search & Add
-                  </Button>
-                </div> */}
+                
                 {wishlistedBooks.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {wishlistedBooks.map((book) => {
