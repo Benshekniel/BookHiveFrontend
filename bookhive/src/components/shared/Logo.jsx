@@ -9,13 +9,13 @@ const Logo = ({ size = 'md', variant = 'default' }) => {
   };
 
   const colorClasses = {
-    default: 'text-blue',
+    default: 'text-blue-900',
     light: 'text-white',
   };
 
   return (
     <div className={`flex items-center font-bold ${sizeClasses[size]} ${colorClasses[variant]}`} style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
-      <BookOpen className="mr-2 text-yellow" style={{ color: '#ffd639' }} />
+      <img src="/logo-blue.png" alt="BookHive Logo" className="mr-2" style={{ width: '1.5em', height: '1.5em' }} />
       <span>Book<span style={{ color: '#ffd639' }}>Hive</span></span>
     </div>
   );

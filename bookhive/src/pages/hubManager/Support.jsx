@@ -14,7 +14,7 @@ import {
   Send,
   RefreshCw
 } from 'lucide-react';
-import { deliveryApi, agentApi } from '../../services/apiService';
+import { deliveryApi, agentApi } from '../../services/HubmanagerService';
 
 const Support = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -393,13 +393,13 @@ const Support = () => {
           <Phone className="w-8 h-8 text-blue-500 mx-auto mb-3" />
           <h3 className="font-semibold text-slate-900 mb-2">Emergency Support</h3>
           <p className="text-sm text-gray-600 mb-3">24/7 emergency assistance</p>
-          <p className="font-medium text-blue-500">+1 (555) 123-4567</p>
+          <p className="font-medium text-blue-500">+94 (077) 871-3274</p>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
           <Mail className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
           <h3 className="font-semibold text-slate-900 mb-2">Email Support</h3>
           <p className="text-sm text-gray-600 mb-3">Response within 4 hours</p>
-          <p className="font-medium text-yellow-500">support@hubmanager.com</p>
+          <p className="font-medium text-yellow-500">manager@bookhive.lk</p>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
           <MessageSquare className="w-8 h-8 text-green-500 mx-auto mb-3" />
