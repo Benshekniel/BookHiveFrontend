@@ -374,11 +374,11 @@ const Dashboard = () => {
             </div>
             <div className="relative w-full h-[400px] bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
               {/* Temporary Image Placeholder */}
-              <img 
+              {/* <img 
                 src="/images/delivery-map.png" 
                 alt="Delivery Locations Map"
                 className="w-full h-full object-cover"
-              />
+              /> */}
               
               {/* Original Google Maps iframe - commented out */}
               {/* <iframe

@@ -615,7 +615,7 @@ const Routes = () => {
               </div>
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-lg">
+            {/* <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2 flex items-center">
                 <Map className="w-4 h-4 mr-2" />
                 Google Maps Integration
@@ -632,7 +632,7 @@ const Routes = () => {
                 <Navigation className="w-4 h-4" />
                 <span>Open Google Maps</span>
               </button>
-            </div>
+            </div> */}
 
             <div className="flex space-x-3 pt-4 border-t border-gray-200">
               <button
