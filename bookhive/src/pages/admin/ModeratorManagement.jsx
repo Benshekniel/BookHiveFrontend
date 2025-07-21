@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Eye, Shield, User, Search, X } from 'lucide-react';
+import axios from "axios";
 
 const ModeratorManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -164,6 +165,40 @@ const ModeratorManagement = () => {
     return colors[status] || colors.active;
   };
 
+const handleModeratorAdd = async (e) => {
+  e.preventDefault(); 
+  try {
+    const moderatorData = {
+      name: newModerator.name,
+      email: newModerator.email,
+      password: newModerator.password,
+      phone: parseInt(newModerator.phone, 10),  // parse phone to int if needed
+      dob: newModerator.dateOfBirth,            // assuming string like 'YYYY-MM-DD'
+      city: newModerator.city,
+      experience: parseInt(newModerator.experience, 10),
+      address: newModerator.address
+    };
+
+    // POST JSON data to your backend API
+    const response = await axios.post('http://localhost:9090/api/registerModerator', moderatorData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data.message === 'success') {
+      alert('Moderator added successfully!');
+      setShowAddModal(false);
+      // Optionally clear your form state or refresh list here
+    } else {
+      alert('Error: ' + (response.data.message || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error adding moderator:', error);
+    alert('Failed to add moderator: ' + (error.response?.data?.message || error.message));
+  }
+};
+
   const handleViewModerator = (moderator) => {
     setSelectedModerator(moderator);
     setShowViewModal(true);
@@ -183,42 +218,6 @@ const ModeratorManagement = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewModerator({ ...newModerator, [name]: value });
-  };
-
-  const handleSimpleAdd = (e) => {
-    e.preventDefault();
-    if (!newModerator.name || !newModerator.email) return; // Basic check
-
-    const newId = moderators.length + 1;
-    setModerators([
-      ...moderators,
-      {
-        ...newModerator,
-        id: newId,
-        lastActivity: new Date().toISOString(),
-        createdAt: new Date().toISOString().split('T')[0],
-        permissions: [], // Default empty
-        actionsCount: 0,
-        warningsIssued: 0
-      }
-    ]);
-
-    setNewModerator({
-      name: '',
-      email: '',
-      phone: '',
-      employeeId: '',
-      dateOfBirth: '',
-      address: '',
-      city: '',
-      emergencyContact: '',
-      emergencyPhone: '',
-      qualifications: '',
-      experience: '',
-      notes: '',
-      status: 'active'
-    });
-    setShowAddModal(false);
   };
 
   const handleUpdateModerator = (e) => {
@@ -408,7 +407,7 @@ const ModeratorManagement = () => {
       </div>
 
       {/* Add Moderator Modal */}
-      {showAddModal && (
+      {/* {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-center justify-center px-4">
             <div className="fixed inset-0 bg-black/30" onClick={() => setShowAddModal(false)}></div>
@@ -456,17 +455,6 @@ const ModeratorManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">Employee ID</label>
-                    <input
-                      type="text"
-                      name="employeeId"
-                      value={newModerator.employeeId}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter employee ID"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
                     <input
                       type="date"
@@ -499,73 +487,18 @@ const ModeratorManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Name</label>
-                    <input
-                      type="text"
-                      name="emergencyContact"
-                      value={newModerator.emergencyContact}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter emergency contact name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Phone</label>
-                    <input
-                      type="tel"
-                      name="emergencyPhone"
-                      value={newModerator.emergencyPhone}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter emergency phone"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Qualifications</label>
-                    <textarea
-                      name="qualifications"
-                      value={newModerator.qualifications}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter qualifications"
-                      rows="3"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-slate-700">Experience</label>
-                    <textarea
+                    <input
+                      type="number"
                       name="experience"
                       value={newModerator.experience}
                       onChange={handleInputChange}
                       className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter experience"
-                      rows="3"
+                      placeholder="Enter years of experience"
+                      min="0"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Notes</label>
-                    <textarea
-                      name="notes"
-                      value={newModerator.notes}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter notes"
-                      rows="3"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Status</label>
-                    <select
-                      name="status"
-                      value={newModerator.status}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
-                  </div>
+
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
@@ -586,7 +519,150 @@ const ModeratorManagement = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
+
+{showAddModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/30" onClick={() => setShowAddModal(false)}></div>
+
+    <div className="relative bg-white rounded-xl shadow-2xl max-w-xl w-full p-8 z-50">
+      <button
+        onClick={() => setShowAddModal(false)}
+        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <h3 className="text-2xl font-semibold text-slate-800 mb-6 text-center">
+        Add New Moderator
+      </h3>
+
+      <form onSubmit={handleModeratorAdd}>
+        <div className="grid grid-cols-1 gap-4">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Name</label>
+            <input
+              type="text"
+              name="name"
+              value={newModerator.name}
+              onChange={handleInputChange}
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+              placeholder="Enter name"
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={newModerator.email}
+              onChange={handleInputChange}
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+              placeholder="Enter email"
+            />
+          </div>
+          {/* Pass */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Password</label>
+            <input
+              type="password"
+              name="password"
+              value={newModerator.password}
+              onChange={handleInputChange}
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+              placeholder="Enter password"
+            />
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Phone</label>
+            <input
+              type="tel"
+              name="phone"
+              value={newModerator.phone}
+              onChange={handleInputChange}
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+              placeholder="Enter phone"
+            />
+          </div>
+
+          {/* DOB */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
+            <input
+              type="date"
+              name="dateOfBirth"
+              value={newModerator.dateOfBirth}
+              onChange={handleInputChange}
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+            />
+          </div>
+
+          {/* Address */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Address</label>
+            <input
+              type="text"
+              name="address"
+              value={newModerator.address}
+              onChange={handleInputChange}
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+              placeholder="Enter address"
+            />
+          </div>
+
+          {/* City */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">City</label>
+            <input
+              type="text"
+              name="city"
+              value={newModerator.city}
+              onChange={handleInputChange}
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+              placeholder="Enter city"
+            />
+          </div>
+
+          {/* Experience */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Experience (years)</label>
+            <input
+              type="number"
+              name="experience"
+              value={newModerator.experience}
+              onChange={handleInputChange}
+              min="0"
+              className="mt-1 w-full rounded-md border border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2"
+              placeholder="Enter years of experience"
+            />
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={() => setShowAddModal(false)}
+            className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-100"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+          >
+            Add
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {/* View Moderator Modal (Read-only) */}
       {showViewModal && selectedModerator && (
