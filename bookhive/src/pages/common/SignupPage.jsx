@@ -167,10 +167,88 @@ const SignupPage = () => {
         alert("Something went wrong: " + (error.response?.data?.message || error.message));
         setError("Something went wrong: " + (error.response?.data?.message || error.message));
       }
-    } else {
-      navigate('/login');
+    } 
+
+    if (selectedRole === 'user') {
+    const idFrontFile = allData.idFront?.[0];
+    const idBackFile = allData.idBack?.[0];
+    const billImageFile = allData.billImage?.[0];
+
+    // Validate file uploads
+    if (!idFrontFile || !idBackFile || !billImageFile) {
+      setError('ID Front, ID Back, and Bill Image are required');
+      alert('ID Front, ID Back, and Bill Image are required');
+      return;
     }
+
+    // 📦 Create FormData and append JSON + files
+    const formDataToSend = new FormData();
+
+    // Append files
+    formDataToSend.append('idFront', idFrontFile);
+    formDataToSend.append('idBack', idBackFile);
+    formDataToSend.append('billImage', billImageFile);
+
+    // Create JSON and append as Blob
+    const userData = {
+      email: allData.email,
+      password: allData.password,
+      fname: allData.firstName,
+      lname: allData.lastName,
+      phone: parseInt(allData.phone.slice(0, 10), 10),
+      dob: allData.dob,
+      idType: allData.idType,
+      gender: allData.gender,
+      address: allData.address,
+      city: allData.city,
+      state: allData.state,
+      zip: allData.zipCode,
+    };
+
+    const jsonBlob = new Blob([JSON.stringify(userData)], {
+      type: 'application/json',
+    });
+
+    formDataToSend.append('userData', jsonBlob);
+
+    try {
+      const response = await axios.post(
+        'http://localhost:9090/api/registerUser',
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      const result = response.data;
+
+      if (result.message === 'success') {
+        alert('Account created successfully. Login now ...');
+        setTimeout(() => navigate('/login'), 1500);
+      } else {
+        alert('Error: ' + result.message);
+        setError(result.message);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert(
+        'Something went wrong: ' +
+          (error.response?.data?.message || error.message)
+      );
+      setError(
+        'Something went wrong: ' +
+          (error.response?.data?.message || error.message)
+      );
+    }
+  } 
+  
+    else {
+    navigate('/login');
+  }
   };
+  
   
   
   
