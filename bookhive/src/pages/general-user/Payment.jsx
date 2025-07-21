@@ -452,7 +452,7 @@ const PaymentPage = () => {
                   </div>
                 </div>
 
-                <div
+                {/* <div
                   className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                     paymentMethod === PAYMENT_METHODS.DIGITAL_WALLET
                       ? 'border-blue-500 bg-blue-50'
@@ -475,7 +475,7 @@ const PaymentPage = () => {
                       <p className="text-sm text-gray-600">PayPal, Apple Pay, Google Pay</p>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* Card Details Form */}
@@ -599,7 +599,7 @@ const PaymentPage = () => {
               )}
 
               {/* Digital Wallet Options */}
-              {paymentMethod === PAYMENT_METHODS.DIGITAL_WALLET && (
+              {/* {paymentMethod === PAYMENT_METHODS.DIGITAL_WALLET && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Choose Wallet Provider
@@ -614,7 +614,7 @@ const PaymentPage = () => {
                     <option value="google_pay">Google Pay</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
 
@@ -679,7 +679,7 @@ const PaymentPage = () => {
                 )}
                 {paymentMethod !== PAYMENT_METHODS.CASH_ON_DELIVERY && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Processing Fee</span>
+                    <span className="text-gray-600">Delivery Fee</span>
                     <span className="text-gray-900">Rs. 50</span>
                   </div>
                 )}
