@@ -6,19 +6,22 @@ import {
   Menu, Home, Settings, Bell, User, ChevronLeft, ChevronRight,
   Download, Upload, BarChart3, Target, Bookmark, Gift
 } from "lucide-react";
-import { bookApi } from "../../services/bookApiService"; // Adjust the import path
+import { bookApi } from "../../services/bookApiService";
+import axios from "axios";
+
+// Adjust the import path
 // import { toast } from 'react-toastify'; // Optional: for notifications
 // import 'react-toastify/dist/ReactToastify.css';
 
 const BookListingManagementPage = () => {
   const [listings, setListings] = useState([]);
-  const [newBook, setNewBook] = useState({ 
-    title: "", author: "", genre: [], condition: "New", price: "",
-    forSale: true, forLend: false, forExchange: false,
-    lendingAmount: "", lendingPeriod: "", exchangePeriod: "",
-    description: "", location: "", publishYear: "", isbn: "",
-    language: "English", rating: 0, images: [], hashtags: [], cover: "", userId: "1" // Hardcoded for now
-  });
+  // const [newBook, setNewBook] = useState({ 
+  //   title: "", author: "", genre: [], condition: "New", price: "",
+  //   forSale: true, forLend: false, forExchange: false,
+  //   lendingAmount: "", lendingPeriod: "", exchangePeriod: "",
+  //   description: "", location: "", publishYear: "", isbn: "",
+  //   language: "English", rating: 0, images: [], hashtags: [], cover: "", userId: "1" // Hardcoded for now
+  // });
   const [editBook, setEditBook] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -30,75 +33,315 @@ const BookListingManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        setLoading(true);
-        const data = await bookApi.getAllBooks();
-        setListings(data.map(book => ({
-          ...book,
-          images: book.imageUrls || [book.cover || "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image"],
-          cover: book.imageUrls ? book.imageUrls[0] : book.cover || "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image"
-        })));
-      } catch (err) {
-        setError(err.message);
-        toast.error(`Failed to fetch books: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBooks();
-  }, []);
+  // useEffect(() => {
+  //   const fetchBooks = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const data = await bookApi.getAllBooks();
+  //       setListings(data.map(book => ({
+  //         ...book,
+  //         images: book.imageUrls || [book.cover || "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image"],
+  //         cover: book.imageUrls ? book.imageUrls[0] : book.cover || "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image"
+  //       })));
+  //     } catch (err) {
+  //       setError(err.message);
+  //       toast.error(`Failed to fetch books: ${err.message}`);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchBooks();
+  // }, []);
 
-  const handleAddBook = () => {
-    setNewBook({ 
-      title: "", author: "", genre: [], condition: "New", price: "",
-      forSale: true, forLend: false, forExchange: false,
-      lendingAmount: "", lendingPeriod: "", exchangePeriod: "",
-      description: "", location: "", publishYear: "", isbn: "",
-      language: "English", rating: 0, images: [], hashtags: [], cover: "", userId: "1"
-    });
-    setShowAddModal(true);
-  };
+// useEffect(() => {
+//     const fetchBooks = async () => {
+//       try {
+//         setLoading(true);
+//         const response = await axios.get('http://localhost:9090/api/getBooks', {
+//           headers: { 'Content-Type': 'application/json' },
+//         });
+//         setListings(
+//           response.data.map((book) => ({
+//             bookId: book.bookId || Date.now(), // Fallback for bookId if not provided
+//             userEmail: book.userEmail,
+//             title: book.title || '',
+//             authors: book.authors || [],
+//             genres: book.genres || [],
+//             condition: book.condition || 'New',
+//             forSale: book.forSale || false,
+//             price: book.price || 0,
+//             forLend: book.forLend || false,
+//             lendingAmount: book.lendingAmount || 0,
+//             lendingPeriod: book.lendingPeriod || '',
+//             forExchange: book.forExchange || false,
+//             exchangePeriod: book.exchangePeriod || '',
+//             description: book.description || '',
+//             location: book.location || '',
+//             publishYear: book.publishYear || '',
+//             isbn: book.isbn || '',
+//             language: book.language || 'English',
+//             hashtags: book.hashtags || [],
+//             createdAt: book.createdAt || new Date().toISOString(),
+//             updatedAt: book.updatedAt || new Date().toISOString(),
+//             images: book.imageUrls || ['https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image'],
+//             cover: book.imageUrls ? book.imageUrls[0] : 'https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image',
+//             // UI-specific fields with placeholders
+//             views: book.views || 0,
+//             wishlistedBy: book.wishlistedBy || 0,
+//             trustScore: book.trustScore || 0,
+//             reviews: book.reviews || 0,
+//             status: book.status || 'active',
+//           }))
+//         );
+//       } catch (err) {
+//         setError(err.message);
+//         toast.error(`Failed to fetch books: ${err.message}`);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchBooks();
+//   }, []);
 
-  const handleSaveBook = async (e) => {
-    e.preventDefault();
-    const bookData = { ...newBook, genre: newBook.genre || [], imageUrls: newBook.images };
+useEffect(() => {
+  const fetchBooks = async () => {
     try {
-      if (editBook) {
-        await bookApi.updateBook(editBook.bookId, bookData);
-        setListings(listings.map(b => b.bookId === editBook.bookId ? { ...b, ...bookData } : b));
-        toast.success("Book updated successfully!");
-      } else {
-        const response = await bookApi.createBook(bookData);
-        setListings([...listings, { ...response, images: response.imageUrls || [response.cover], cover: response.imageUrls ? response.imageUrls[0] : response.cover }]);
-        toast.success("Book added successfully!");
-      }
-      setShowAddModal(false);
-      setShowEditModal(false);
-      setNewBook({ 
-        title: "", author: "", genre: [], condition: "New", price: "",
-        forSale: true, forLend: false, forExchange: false,
-        lendingAmount: "", lendingPeriod: "", exchangePeriod: "",
-        description: "", location: "", publishYear: "", isbn: "",
-        language: "English", rating: 0, images: [], hashtags: [], cover: "", userId: "1"
+      setLoading(true);
+      const response = await axios.get('http://localhost:9090/api/getBooks', {
+        headers: { 'Content-Type': 'application/json' },
       });
-      setEditBook(null);
+      // Array of book cover image URLs (publicly accessible, book-themed)
+      const bookCoverImages = [
+        'https://cdn.europosters.eu/image/1300/214933.jpg', // Fantasy book
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Classic novel
+        'https://images.unsplash.com/photo-1589994965851-a8f0a1617a31?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Romance book
+        'https://images.unsplash.com/photo-1512820790803-2e00615cf763?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Adventure book
+        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Whimsical cover (Ghibli-like)
+        'https://images.unsplash.com/photo-1611676279444-5577698aa13c?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Sci-fi book
+        'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Vintage book
+        'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Mystery book
+      ];
+      setListings(
+        response.data.map((book, index) => {
+          // Select a random book cover image based on bookId or index
+          const imageIndex = (book.bookId || index) % bookCoverImages.length;
+          const selectedImage = bookCoverImages[imageIndex];
+          return {
+            bookId: book.bookId || Date.now() + index, // Fallback for bookId
+            userEmail: book.userEmail,
+            title: book.title || '',
+            authors: book.authors || [],
+            genres: book.genres || [],
+            condition: book.condition || 'New',
+            forSale: book.forSale || false,
+            price: book.price || 0,
+            forLend: book.forLend || false,
+            lendingAmount: book.lendingAmount || 0,
+            lendingPeriod: book.lendingPeriod || '',
+            forExchange: book.forExchange || false,
+            exchangePeriod: book.exchangePeriod || '',
+            description: book.description || '',
+            location: book.location || '',
+            publishYear: book.publishYear || '',
+            isbn: book.isbn || '',
+            language: book.language || 'English',
+            hashtags: book.hashtags || [],
+            createdAt: book.createdAt || new Date().toISOString(),
+            updatedAt: book.updatedAt || new Date().toISOString(),
+            images: [selectedImage], // Assign selected book cover image
+            cover: selectedImage, // Assign selected book cover as cover
+            // UI-specific fields
+            views: book.views || 0,
+            wishlistedBy: book.wishlistedBy || 0,
+            trustScore: book.trustScore || 0,
+            reviews: book.reviews || 0,
+            status: book.status || 'active',
+          };
+        })
+      );
     } catch (err) {
-      toast.error(`Failed to save book: ${err.message}`);
+      setError(err.message);
+      toast.error(`Failed to fetch books: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
   };
+  fetchBooks();
+}, []);
 
-  const handleEditBook = (book) => {
-    setNewBook({
-      ...book,
-      genre: book.genre || [],
-      images: book.imageUrls || [book.cover],
-      cover: book.imageUrls ? book.imageUrls[0] : book.cover
-    });
-    setEditBook(book);
-    setShowEditModal(true);
-  };
+  const [newBook, setNewBook] = useState({
+  userEmail: 'user@example.com', // Replace with authenticated user's email
+  title: '',
+  authors: [],
+  genres: [],
+  condition: 'New',
+  forSale: true,
+  price: '',
+  forLend: false,
+  lendingAmount: '',
+  lendingPeriod: '',
+  forExchange: false,
+  exchangePeriod: '',
+  description: '',
+  location: '',
+  publishYear: '',
+  isbn: '',
+  language: 'English',
+  hashtags: [],
+  images: [],
+});
+
+const handleAddBook = () => {
+  setNewBook({
+    userEmail: 'user@example.com', // Replace with authenticated user's email
+    title: '',
+    authors: [],
+    genres: [],
+    condition: 'New',
+    forSale: true,
+    price: '',
+    forLend: false,
+    lendingAmount: '',
+    lendingPeriod: '',
+    forExchange: false,
+    exchangePeriod: '',
+    description: '',
+    location: '',
+    publishYear: '',
+    isbn: '',
+    language: 'English',
+    hashtags: [],
+    images: [],
+  });
+  setShowAddModal(true);
+};
+
+const handleEditBook = (book) => {
+  setNewBook({
+    userEmail: book.userEmail,
+    title: book.title,
+    authors: book.authors || [],
+    genres: book.genres || [],
+    condition: book.condition,
+    forSale: book.forSale,
+    price: book.price || '',
+    forLend: book.forLend,
+    lendingAmount: book.lendingAmount || '',
+    lendingPeriod: book.lendingPeriod || '',
+    forExchange: book.forExchange,
+    exchangePeriod: book.exchangePeriod || '',
+    description: book.description,
+    location: book.location,
+    publishYear: book.publishYear,
+    isbn: book.isbn,
+    language: book.language,
+    hashtags: book.hashtags || [],
+    images: book.images || [],
+  });
+  setEditBook(book);
+  setShowEditModal(true);
+};
+
+  // const handleAddBook = () => {
+  //   setNewBook({ 
+  //     title: "", author: "", genre: [], condition: "New", price: "",
+  //     forSale: true, forLend: false, forExchange: false,
+  //     lendingAmount: "", lendingPeriod: "", exchangePeriod: "",
+  //     description: "", location: "", publishYear: "", isbn: "",
+  //     language: "English", rating: 0, images: [], hashtags: [], cover: "", userId: "1"
+  //   });
+  //   setShowAddModal(true);
+  // };
+
+  // const handleSaveBook = async (e) => {
+  //   e.preventDefault();
+  //   const bookData = { ...newBook, genre: newBook.genre || [], imageUrls: newBook.images };
+  //   try {
+  //     if (editBook) {
+  //       await bookApi.updateBook(editBook.bookId, bookData);
+  //       setListings(listings.map(b => b.bookId === editBook.bookId ? { ...b, ...bookData } : b));
+  //       toast.success("Book updated successfully!");
+  //     } else {
+  //       const response = await bookApi.createBook(bookData);
+  //       setListings([...listings, { ...response, images: response.imageUrls || [response.cover], cover: response.imageUrls ? response.imageUrls[0] : response.cover }]);
+  //       toast.success("Book added successfully!");
+  //     }
+  //     setShowAddModal(false);
+  //     setShowEditModal(false);
+  //     setNewBook({ 
+  //       title: "", author: "", genre: [], condition: "New", price: "",
+  //       forSale: true, forLend: false, forExchange: false,
+  //       lendingAmount: "", lendingPeriod: "", exchangePeriod: "",
+  //       description: "", location: "", publishYear: "", isbn: "",
+  //       language: "English", rating: 0, images: [], hashtags: [], cover: "", userId: "1"
+  //     });
+  //     setEditBook(null);
+  //   } catch (err) {
+  //     toast.error(`Failed to save book: ${err.message}`);
+  //   }
+  // };
+
+
+  const handleSaveBook = async (e) => {
+  e.preventDefault();
+
+    const bookData = {
+      userEmail: "user@gmail.com",          
+      title: newBook.title,
+      authors: newBook.author.split(",").map(a => a.trim()),
+      genres: newBook.genre,
+      condition: newBook.condition,
+      forSale: newBook.forSale,
+      price: newBook.forSale ? parseFloat(newBook.price || 0) : 0,
+      forLend: newBook.forLend,
+      lendingAmount: newBook.forLend ? parseFloat(newBook.lendingAmount || 0) : 0,
+      lendingPeriod: newBook.forLend ? newBook.lendingPeriod : "",
+      forExchange: newBook.forExchange,
+      exchangePeriod: newBook.forExchange ? newBook.exchangePeriod : "",
+      description: newBook.description,
+      location: newBook.location,
+      publishYear: newBook.publishYear,
+      isbn: newBook.isbn,
+      language: newBook.language,
+      hashtags: newBook.hashtags
+        
+    };
+
+  try {
+    const response = await axios.post(
+      "http://localhost:9090/api/saveBook-User",
+      bookData,   // send JSON object directly
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    if (response.data.message === "success") {
+      alert("Book Added successfully!");
+      setShowAddModal(false);
+      // reset form or other UI actions here
+    } else {
+      alert("Error: " + response.data.message);
+    }
+  } catch (error) {
+    console.error("Error saving book:", error);
+    alert("Something went wrong: " + (error.response?.data?.message || error.message));
+  }
+};
+
+
+  // const handleEditBook = (book) => {
+  //   setNewBook({
+  //     ...book,
+  //     genre: book.genre || [],
+  //     images: book.imageUrls || [book.cover],
+  //     cover: book.imageUrls ? book.imageUrls[0] : book.cover
+  //   });
+  //   setEditBook(book);
+  //   setShowEditModal(true);
+  // };
 
   const handleDeleteBook = async (id) => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
@@ -112,122 +355,227 @@ const BookListingManagementPage = () => {
     }
   };
 
+  // const filteredListings = listings.filter((book) => {
+  //   const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //                        book.author.toLowerCase().includes(searchQuery.toLowerCase());
+  //   const matchesGenre = !filterGenre || book.genre.includes(filterGenre);
+  //   const matchesCondition = !filterCondition || book.condition === filterCondition;
+  //   return matchesSearch && matchesGenre && matchesCondition;
+  // });
+
   const filteredListings = listings.filter((book) => {
-    const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         book.author.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGenre = !filterGenre || book.genre.includes(filterGenre);
-    const matchesCondition = !filterCondition || book.condition === filterCondition;
-    return matchesSearch && matchesGenre && matchesCondition;
-  });
+  const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       book.authors.some(author => author.toLowerCase().includes(searchQuery.toLowerCase()));
+  const matchesGenre = !filterGenre || book.genres.includes(filterGenre);
+  const matchesCondition = !filterCondition || book.condition === filterCondition;
+  return matchesSearch && matchesGenre && matchesCondition;
+});
 
   const sortedListings = [...filteredListings].sort((a, b) => {
     switch (sortBy) {
       case "price-low": return (a.price || 0) - (b.price || 0);
       case "price-high": return (b.price || 0) - (a.price || 0);
-      case "rating": return (b.rating || 0) - (a.rating || 0);
+      case "rating": return (b.rating || 0) - (a.rating || 0); // Placeholder
       case "popular": return (b.views || 0) - (a.views || 0);
-      default: return new Date(b.dateAdded || b.createdAt) - new Date(a.dateAdded || a.createdAt); // Adjust for backend field
+      default: return new Date(b.createdAt) - new Date(a.createdAt);
     }
   });
 
   const allGenres = [...new Set(listings.flatMap(book => book.genre || []))];
 
+  // const BookCard = ({ book }) => (
+  //   <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+  //     <div className="relative h-48 mb-4 overflow-hidden rounded-xl">
+  //       <img
+  //         src={book.cover || "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image"}
+  //         alt={book.title}
+  //         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+  //       />
+  //       <button
+  //         className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm"
+  //         title="Wishlist"
+  //       >
+  //         <Heart className="w-4 h-4" />
+  //       </button>
+  //       {(book.forSale || book.forLend || book.forExchange) && (
+  //         <div className="absolute top-2 left-2 flex flex-col space-y-1">
+  //           {book.forSale && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">For Sale</span>}
+  //           {book.forLend && <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium">For Lending</span>}
+  //           {book.forExchange && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">For Exchange</span>}
+  //         </div>
+  //       )}
+  //     </div>
+  //     <div className="flex justify-between items-start mb-4">
+  //       <div className="flex-1">
+  //         <div className="flex items-center gap-2 mb-2">
+  //           <h3 className="font-semibold text-gray-900 text-lg group-hover:text-blue-600 transition-colors line-clamp-1">{book.title}</h3>
+  //           {book.trustScore >= 90 && <Award className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
+  //         </div>
+  //         <p className="text-gray-600 text-sm mb-2">by {book.author}</p>
+  //         <div className="flex items-center gap-1 mb-3">
+  //           <div className="flex">{[...Array(5)].map((_, i) => (
+  //             <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+  //           ))}</div>
+  //           <span className="text-sm text-gray-600 ml-1">{book.rating || 0}</span>
+  //           <span className="text-xs text-gray-400">({book.reviews || 0} reviews)</span>
+  //         </div>
+  //       </div>
+  //       <div className="flex gap-2 ml-4">
+  //         <button onClick={() => handleEditBook(book)} className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Book">
+  //           <Edit className="w-4 h-4" />
+  //         </button>
+  //         <button onClick={() => handleDeleteBook(book.bookId)} className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Delete Book">
+  //           <Trash2 className="w-4 h-4" />
+  //         </button>
+  //       </div>
+  //     </div>
+  //     <div className="space-y-4">
+  //       <div className="flex flex-wrap gap-1">
+  //         {book.genre.slice(0, 3).map((g, idx) => (
+  //           <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{g}</span>
+  //         ))}
+  //         {book.genre.length > 3 && <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+{book.genre.length - 3}</span>}
+  //       </div>
+  //       <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed">{book.description}</p>
+  //       <div className="flex items-center justify-between text-xs text-gray-500">
+  //         <div className="flex items-center gap-1">
+  //           <MapPin className="w-3 h-3" />
+  //           <span className="truncate">{book.location}</span>
+  //         </div>
+  //         <div className="flex items-center gap-3">
+  //           <div className="flex items-center gap-1">
+  //             <Eye className="w-3 h-3" />
+  //             <span>{book.views || 0}</span>
+  //           </div>
+  //           <div className="flex items-center gap-1">
+  //             <Heart className="w-3 h-3" />
+  //             <span>{book.wishlistedBy || 0}</span>
+  //           </div>
+  //         </div>
+  //       </div>
+  //       <div className="flex items-center justify-between">
+  //         <div className="flex gap-2">
+  //           <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.condition === 'New' ? "bg-green-100 text-green-800" : book.condition === 'Like New' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`}>{book.condition}</span>
+  //         </div>
+  //         {book.forSale && book.price && <div className="text-right"><p className="text-lg font-bold text-green-600">Rs. {book.price}</p></div>}
+  //       </div>
+  //       <div className="flex flex-wrap gap-2">
+  //         <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forSale ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}`}>{book.forSale ? "For Sale" : "Not for Sale"}</span>
+  //         <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forLend ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>{book.forLend ? "For Lending" : "Not for Lending"}</span>
+  //         <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forExchange ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-600"}`}>{book.forExchange ? "For Exchange" : "Not for Exchange"}</span>
+  //       </div>
+  //       {(book.forLend || book.forExchange) && (
+  //         <div className="bg-gray-50 rounded-lg p-3 text-xs">
+  //           {book.forLend && book.lendingAmount && <div className="mb-1"><span className="font-medium text-gray-700">Lending Fee:</span> Rs. {book.lendingAmount}</div>}
+  //           {book.forLend && book.lendingPeriod && <div className="mb-1"><span className="font-medium text-gray-700">Lending Period:</span> {book.lendingPeriod}</div>}
+  //           {book.forExchange && book.exchangePeriod && <div><span className="font-medium text-gray-700">Exchange Period:</span> {book.exchangePeriod}</div>}
+  //         </div>
+  //       )}
+  //       <div className="flex gap-2 pt-2 border-t border-gray-100">
+  //         <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">View Details</button>
+  //         <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Share"><Share2 className="w-4 h-4 text-gray-600" /></button>
+  //         <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Message"><MessageCircle className="w-4 h-4 text-gray-600" /></button>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
+
   const BookCard = ({ book }) => (
-    <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
-      <div className="relative h-48 mb-4 overflow-hidden rounded-xl">
-        <img
-          src={book.cover || "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image"}
-          alt={book.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        <button
-          className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm"
-          title="Wishlist"
-        >
-          <Heart className="w-4 h-4" />
+  <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+    <div className="relative h-48 mb-4 overflow-hidden rounded-xl">
+      <img
+        src={book.cover || "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image"}
+        alt={book.title}
+        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+      />
+      <button
+        className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm"
+        title="Wishlist"
+      >
+        <Heart className="w-4 h-4" />
+      </button>
+      {(book.forSale || book.forLend || book.forExchange) && (
+        <div className="absolute top-2 left-2 flex flex-col space-y-1">
+          {book.forSale && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">For Sale</span>}
+          {book.forLend && <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium">For Lending</span>}
+          {book.forExchange && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">For Exchange</span>}
+        </div>
+      )}
+    </div>
+    <div className="flex justify-between items-start mb-4">
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="font-semibold text-gray-900 text-lg group-hover:text-blue-600 transition-colors line-clamp-1">{book.title}</h3>
+          {book.trustScore >= 90 && <Award className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
+        </div>
+        <p className="text-gray-600 text-sm mb-2">by {book.authors.join(', ')}</p>
+        <div className="flex items-center gap-1 mb-3">
+          <div className="flex">{[...Array(5)].map((_, i) => (
+            <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+          ))}</div>
+          <span className="text-sm text-gray-600 ml-1">{book.rating || 0}</span>
+          <span className="text-xs text-gray-400">({book.reviews || 0} reviews)</span>
+        </div>
+      </div>
+      <div className="flex gap-2 ml-4">
+        <button onClick={() => handleEditBook(book)} className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Book">
+          <Edit className="w-4 h-4" />
         </button>
-        {(book.forSale || book.forLend || book.forExchange) && (
-          <div className="absolute top-2 left-2 flex flex-col space-y-1">
-            {book.forSale && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">For Sale</span>}
-            {book.forLend && <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium">For Lending</span>}
-            {book.forExchange && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">For Exchange</span>}
-          </div>
-        )}
-      </div>
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-semibold text-gray-900 text-lg group-hover:text-blue-600 transition-colors line-clamp-1">{book.title}</h3>
-            {book.trustScore >= 90 && <Award className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
-          </div>
-          <p className="text-gray-600 text-sm mb-2">by {book.author}</p>
-          <div className="flex items-center gap-1 mb-3">
-            <div className="flex">{[...Array(5)].map((_, i) => (
-              <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
-            ))}</div>
-            <span className="text-sm text-gray-600 ml-1">{book.rating || 0}</span>
-            <span className="text-xs text-gray-400">({book.reviews || 0} reviews)</span>
-          </div>
-        </div>
-        <div className="flex gap-2 ml-4">
-          <button onClick={() => handleEditBook(book)} className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Book">
-            <Edit className="w-4 h-4" />
-          </button>
-          <button onClick={() => handleDeleteBook(book.bookId)} className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Delete Book">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-1">
-          {book.genre.slice(0, 3).map((g, idx) => (
-            <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{g}</span>
-          ))}
-          {book.genre.length > 3 && <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+{book.genre.length - 3}</span>}
-        </div>
-        <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed">{book.description}</p>
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            <span className="truncate">{book.location}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              <span>{book.views || 0}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Heart className="w-3 h-3" />
-              <span>{book.wishlistedBy || 0}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.condition === 'New' ? "bg-green-100 text-green-800" : book.condition === 'Like New' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`}>{book.condition}</span>
-          </div>
-          {book.forSale && book.price && <div className="text-right"><p className="text-lg font-bold text-green-600">Rs. {book.price}</p></div>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forSale ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}`}>{book.forSale ? "For Sale" : "Not for Sale"}</span>
-          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forLend ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>{book.forLend ? "For Lending" : "Not for Lending"}</span>
-          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forExchange ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-600"}`}>{book.forExchange ? "For Exchange" : "Not for Exchange"}</span>
-        </div>
-        {(book.forLend || book.forExchange) && (
-          <div className="bg-gray-50 rounded-lg p-3 text-xs">
-            {book.forLend && book.lendingAmount && <div className="mb-1"><span className="font-medium text-gray-700">Lending Fee:</span> Rs. {book.lendingAmount}</div>}
-            {book.forLend && book.lendingPeriod && <div className="mb-1"><span className="font-medium text-gray-700">Lending Period:</span> {book.lendingPeriod}</div>}
-            {book.forExchange && book.exchangePeriod && <div><span className="font-medium text-gray-700">Exchange Period:</span> {book.exchangePeriod}</div>}
-          </div>
-        )}
-        <div className="flex gap-2 pt-2 border-t border-gray-100">
-          <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">View Details</button>
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Share"><Share2 className="w-4 h-4 text-gray-600" /></button>
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Message"><MessageCircle className="w-4 h-4 text-gray-600" /></button>
-        </div>
+        <button onClick={() => handleDeleteBook(book.bookId)} className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Delete Book">
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </div>
-  );
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-1">
+        {book.genres.slice(0, 3).map((g, idx) => (
+          <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{g}</span>
+        ))}
+        {book.genres.length > 3 && <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+{book.genres.length - 3}</span>}
+      </div>
+      <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed">{book.description}</p>
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center gap-1">
+          <MapPin className="w-3 h-3" />
+          <span className="truncate">{book.location}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <Eye className="w-3 h-3" />
+            <span>{book.views || 0}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Heart className="w-3 h-3" />
+            <span>{book.wishlistedBy || 0}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.condition === 'New' ? "bg-green-100 text-green-800" : book.condition === 'Like New' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`}>{book.condition}</span>
+        </div>
+        {book.forSale && book.price && <div className="text-right"><p className="text-lg font-bold text-green-600">Rs. {book.price}</p></div>}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forSale ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}`}>{book.forSale ? "For Sale" : "Not for Sale"}</span>
+        <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forLend ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>{book.forLend ? "For Lending" : "Not for Lending"}</span>
+        <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forExchange ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-600"}`}>{book.forExchange ? "For Exchange" : "Not for Exchange"}</span>
+      </div>
+      {(book.forLend || book.forExchange) && (
+        <div className="bg-gray-50 rounded-lg p-3 text-xs">
+          {book.forLend && book.lendingAmount && <div className="mb-1"><span className="font-medium text-gray-700">Lending Fee:</span> Rs. {book.lendingAmount}</div>}
+          {book.forLend && book.lendingPeriod && <div className="mb-1"><span className="font-medium text-gray-700">Lending Period:</span> {book.lendingPeriod}</div>}
+          {book.forExchange && book.exchangePeriod && <div><span className="font-medium text-gray-700">Exchange Period:</span> {book.exchangePeriod}</div>}
+        </div>
+      )}
+      <div className="flex gap-2 pt-2 border-t border-gray-200">
+        <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">View Details</button>
+        <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Share"><Share2 className="w-4 h-4 text-gray-600" /></button>
+        <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Message"><MessageCircle className="w-4 h-4 text-gray-600" /></button>
+      </div>
+    </div>
+  </div>
+);
 
   const stats = {
     totalBooks: listings.length,
