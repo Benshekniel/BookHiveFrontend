@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Package, Clock, CheckCircle, Truck, MapPin, Calendar, 
-  Star, MessageSquare, RefreshCw, AlertCircle, Eye,
-  BookOpen, DollarSign, User, Phone, Mail, ArrowRight,
-  Download, FileText, Camera, ThumbsUp, ThumbsDown
-} from "lucide-react";
+import { Package, Clock, CheckCircle, Truck, MapPin, Calendar, Star, MessageSquare, RefreshCw, AlertCircle, Eye, BookOpen, DollarSign, User, Phone, Mail, ArrowRight, Download, FileText, Camera, ThumbsUp, ThumbsDown } from "lucide-react";
 import { books, users } from "../../data/mockData";
 
 const OrdersPage = () => {
@@ -19,7 +14,7 @@ const OrdersPage = () => {
     ownerRating: 5,
   });
 
-  // Mock orders data with real-time tracking
+  // Mock orders data with real-time tracking, including exchange orders
   const [orders, setOrders] = useState([
     {
       id: "ORD001",
@@ -105,6 +100,45 @@ const OrdersPage = () => {
         { status: "Overdue", timestamp: "2024-01-27 12:00 AM", description: "Book is now overdue" },
       ],
     },
+    // New mock exchange orders
+    {
+      id: "ORD005",
+      type: "exchange",
+      book: books[4] || books[0], // Fallback if books[4] not defined
+      exchanger: users[4] || users[0],
+      orderDate: "2024-02-01",
+      status: "active",
+      exchangePeriod: 30,
+      startDate: "2024-02-02",
+      returnDate: "2024-03-03",
+      deliveryMethod: "delivery",
+      deliveryAddress: "789 Main Street, Colombo 05",
+      trackingNumber: "BH001234571",
+      tracking: [
+        { status: "Exchange Approved", timestamp: "2024-02-01 10:00 AM", description: "Exchanger approved your request" },
+        { status: "Books Exchanged", timestamp: "2024-02-02 02:00 PM", description: "Books have been exchanged" },
+        { status: "Exchange Active", timestamp: "2024-02-02 02:00 PM", description: "Exchange period started" },
+      ],
+    },
+    {
+      id: "ORD006",
+      type: "exchange",
+      book: books[5] || books[1],
+      exchanger: users[5] || users[1],
+      orderDate: "2024-02-05",
+      status: "delivered",
+      exchangePeriod: 14,
+      startDate: "2024-02-06",
+      returnDate: "2024-02-20",
+      deliveryMethod: "pickup",
+      deliveryAddress: "Library Pickup Point, Colombo 03",
+      trackingNumber: "BH001234572",
+      tracking: [
+        { status: "Exchange Approved", timestamp: "2024-02-05 11:00 AM", description: "Exchanger approved your request" },
+        { status: "Books Picked Up", timestamp: "2024-02-06 09:00 AM", description: "Books exchanged via pickup" },
+        { status: "Exchange Completed", timestamp: "2024-02-20 05:00 PM", description: "Exchange period ended successfully" },
+      ],
+    },
   ]);
 
   const getStatusColor = (status) => {
@@ -147,6 +181,7 @@ const OrdersPage = () => {
     if (activeTab === "all") return true;
     if (activeTab === "borrowed") return order.type === "borrow";
     if (activeTab === "purchased") return order.type === "purchase";
+    if (activeTab === "exchanged") return order.type === "exchange";
     if (activeTab === "active") return ["active", "in_transit"].includes(order.status);
     if (activeTab === "completed") return order.status === "delivered";
     return true;
@@ -180,7 +215,6 @@ const OrdersPage = () => {
         })
       );
     }, 30000); // Update every 30 seconds
-
     return () => clearInterval(interval);
   }, []);
 
@@ -217,12 +251,11 @@ const OrdersPage = () => {
           )}
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <p className="text-sm text-gray-600">
-            <strong>{order.type === "purchase" ? "Seller:" : "Lender:"}</strong>{" "}
-            {(order.seller || order.lender).name}
+            <strong>{order.type === "purchase" ? "Seller:" : order.type === "borrow" ? "Lender:" : "Exchanger:"}</strong>{" "}
+            {(order.seller || order.lender || order.exchanger).name}
           </p>
           <p className="text-sm text-gray-600">
             <strong>Delivery:</strong>{" "}
@@ -235,7 +268,7 @@ const OrdersPage = () => {
           )}
         </div>
         <div>
-          {order.type === "borrow" && (
+          {(order.type === "borrow" || order.type === "exchange") && (
             <>
               <p className="text-sm text-gray-600">
                 <strong>Return Date:</strong> {order.returnDate}
@@ -254,7 +287,6 @@ const OrdersPage = () => {
           )}
         </div>
       </div>
-
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => {
@@ -266,7 +298,6 @@ const OrdersPage = () => {
           <Eye className="w-4 h-4" />
           <span>Track Order</span>
         </button>
-
         {order.status === "delivered" && (
           <button
             onClick={() => {
@@ -279,32 +310,12 @@ const OrdersPage = () => {
             <span>Write Review</span>
           </button>
         )}
-
-        {order.type === "borrow" && order.status === "active" && (
-          <button
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors"
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Extend Period</span>
-          </button>
-        )}
-
-        {order.status === "overdue" && (
-          <button
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors"
-          >
-            <CheckCircle className="w-4 h-4" />
-            <span>Mark as Returned</span>
-          </button>
-        )}
-
         <button
           className="bg-transparent border-2 border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
         >
           <MessageSquare className="w-4 h-4" />
-          <span>Contact {order.type === "purchase" ? "Seller" : "Lender"}</span>
+          <span>Contact {order.type === "purchase" ? "Seller" : order.type === "borrow" ? "Lender" : "Exchanger"}</span>
         </button>
-
         {order.status === "delivered" && (
           <button
             className="bg-transparent border-2 border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
@@ -325,7 +336,7 @@ const OrdersPage = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="mb-4 md:mb-0">
               <h1 className="text-3xl font-bold mb-2">My Orders</h1>
-              <p className="text-blue-100 text-lg">Track your borrowed and purchased books</p>
+              <p className="text-blue-100 text-lg">Track your borrowed, purchased, and exchanged books</p>
             </div>
             <button className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-800 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors">
               <ArrowRight className="w-5 h-5" />
@@ -333,9 +344,8 @@ const OrdersPage = () => {
             </button>
           </div>
         </div>
-
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
@@ -357,6 +367,19 @@ const OrdersPage = () => {
               </div>
               <div className="p-3 rounded-full bg-blue-100">
                 <BookOpen className="w-6 h-6 text-blue-500" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium mb-1">Currently Exchanged</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {orders.filter((o) => o.type === "exchange" && o.status === "active").length}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-purple-100">
+                <RefreshCw className="w-6 h-6 text-purple-500" />
               </div>
             </div>
           </div>
@@ -387,7 +410,6 @@ const OrdersPage = () => {
             </div>
           </div>
         </div>
-
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="flex flex-wrap border-b">
@@ -396,6 +418,7 @@ const OrdersPage = () => {
               { key: "active", label: "Active", count: orders.filter((o) => ["active", "in_transit"].includes(o.status)).length },
               { key: "borrowed", label: "Borrowed Books", count: orders.filter((o) => o.type === "borrow").length },
               { key: "purchased", label: "Purchased Books", count: orders.filter((o) => o.type === "purchase").length },
+              { key: "exchanged", label: "Exchanged Books", count: orders.filter((o) => o.type === "exchange").length },
               { key: "completed", label: "Completed", count: orders.filter((o) => o.status === "delivered").length },
             ].map((tab) => (
               <button
@@ -417,7 +440,6 @@ const OrdersPage = () => {
             ))}
           </div>
         </div>
-
         {/* Orders List */}
         <div className="space-y-6">
           {filteredOrders.length > 0 ? (
@@ -441,7 +463,6 @@ const OrdersPage = () => {
           )}
         </div>
       </div>
-
       {/* Order Tracking Modal */}
       {showTrackingModal && selectedOrder && (
         <div className="fixed inset-0 bg-transparent bg-opacity-100 flex items-center justify-center z-50 p-4">
@@ -459,7 +480,6 @@ const OrdersPage = () => {
                   ×
                 </button>
               </div>
-
               {/* Order Summary */}
               <div className="bg-gray-50 rounded-xl p-4 mb-6">
                 <div className="flex items-center space-x-4">
@@ -489,16 +509,15 @@ const OrdersPage = () => {
                   </div>
                 </div>
               </div>
-
               {/* Delivery Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h4 className="font-semibold mb-2 flex items-center text-gray-900">
                     <User className="mr-2 text-gray-600" size={16} />
-                    {selectedOrder.type === "purchase" ? "Seller" : "Lender"} Details
+                    {selectedOrder.type === "purchase" ? "Seller" : selectedOrder.type === "borrow" ? "Lender" : "Exchanger"} Details
                   </h4>
-                  <p className="text-sm">{(selectedOrder.seller || selectedOrder.lender).name}</p>
-                  <p className="text-sm text-gray-600">{(selectedOrder.seller || selectedOrder.lender).location}</p>
+                  <p className="text-sm">{(selectedOrder.seller || selectedOrder.lender || selectedOrder.exchanger).name}</p>
+                  <p className="text-sm text-gray-600">{(selectedOrder.seller || selectedOrder.lender || selectedOrder.exchanger).location}</p>
                   <div className="flex items-center mt-2 space-x-2">
                     <button
                       className="bg-transparent border-2 border-gray-300 text-gray-600 px-3 py-1 rounded-lg text-sm font-medium flex items-center space-x-1 hover:bg-gray-100 transition-colors"
@@ -514,7 +533,6 @@ const OrdersPage = () => {
                     </button>
                   </div>
                 </div>
-
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h4 className="font-semibold mb-2 flex items-center text-gray-900">
                     <MapPin className="mr-2 text-gray-600" size={16} />
@@ -529,7 +547,6 @@ const OrdersPage = () => {
                   )}
                 </div>
               </div>
-
               {/* Tracking Timeline */}
               <div className="mb-6">
                 <h4 className="font-semibold mb-4 flex items-center text-gray-900">
@@ -557,7 +574,6 @@ const OrdersPage = () => {
                   ))}
                 </div>
               </div>
-
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3">
                 <button
@@ -570,7 +586,7 @@ const OrdersPage = () => {
                   className="bg-transparent border-2 border-gray-300 text-gray-600 px-6 py-3 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
                 >
                   <MessageSquare className="w-5 h-5" />
-                  <span>Contact {selectedOrder.type === "purchase" ? "Seller" : "Lender"}</span>
+                  <span>Contact {selectedOrder.type === "purchase" ? "Seller" : selectedOrder.type === "borrow" ? "Lender" : "Exchanger"}</span>
                 </button>
                 {selectedOrder.status === "delivered" && (
                   <button
@@ -589,7 +605,6 @@ const OrdersPage = () => {
           </div>
         </div>
       )}
-
       {/* Review Modal */}
       {showReviewModal && selectedOrder && (
         <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -598,7 +613,6 @@ const OrdersPage = () => {
               <h3 className="text-xl font-bold mb-2 text-gray-900">Write a Review</h3>
               <p className="text-gray-600">{selectedOrder.book.title}</p>
             </div>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -616,7 +630,6 @@ const OrdersPage = () => {
                   ))}
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Book Condition Rating
@@ -633,10 +646,9 @@ const OrdersPage = () => {
                   ))}
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {selectedOrder.type === "purchase" ? "Seller" : "Lender"} Rating
+                  {selectedOrder.type === "purchase" ? "Seller" : selectedOrder.type === "borrow" ? "Lender" : "Exchanger"} Rating
                 </label>
                 <div className="flex space-x-1">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -650,7 +662,6 @@ const OrdersPage = () => {
                   ))}
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Your Review
@@ -664,7 +675,6 @@ const OrdersPage = () => {
                 />
               </div>
             </div>
-
             <div className="mt-6 flex space-x-3">
               <button
                 onClick={() => {
