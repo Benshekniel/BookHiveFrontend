@@ -673,18 +673,18 @@ const BookCircle = () => {
           {/* Main Content */}
           <div className="flex-1 space-y-6">
             {/* Header */}
-            <div className="bg-white/90 backdrop-blur-md rounded-xl p-4 md:p-6 shadow-lg border border-gray-200">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Book Circles</h1>
-                  <p className="text-gray-600">
+            <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-8 text-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="mb-4 md:mb-0">
+                  <h1 className="text-3xl font-bold mb-2">Book Circles</h1>
+                  <p className="text-blue-100 text-lg">
                     Join discussions and connect with fellow readers
                   </p>
                 </div>
                 <Button
                   variant="primary"
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-300 transition-colors"
+                  className="flex items-center space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
                   icon={<Plus size={16} />}
                 >
                   Create Circle
