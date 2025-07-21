@@ -49,16 +49,20 @@ const QuickActions = () => {
 
   const getColorClasses = (color) => {
     switch (color) {
-      case 'blue': return 'bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700 hover:shadow-lg';
-      case 'yellow': return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100 text-yellow-700 hover:shadow-lg';
-      case 'red': return 'bg-red-50 border-red-200 hover:bg-red-100 text-red-700 hover:shadow-lg';
-      default: return 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700 hover:shadow-lg';
+      case 'blue':
+        return 'bg-blue-50 border-blue-500 hover:bg-blue-100 text-blue-500 hover:shadow-lg';
+      case 'yellow':
+        return 'bg-yellow-50 border-yellow-400 hover:bg-yellow-400 text-yellow-400 hover:shadow-lg';
+      case 'red':
+        return 'bg-red-50 border-red-500 hover:bg-red-100 text-red-500 hover:shadow-lg';
+      default:
+        return 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700 hover:shadow-lg';
     }
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-      <h3 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h3>
+    <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
+      <h3 className="text-xl font-bold text-slate-900 mb-6">Quick Actions</h3>
       <div className="space-y-3">
         {actions.map((action, index) => {
           const Icon = action.icon;
@@ -69,10 +73,10 @@ const QuickActions = () => {
               className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 transform hover:scale-105 ${getColorClasses(action.color)}`}
             >
               <div className="flex items-center gap-3">
-                <Icon className="w-6 h-6" />
+                <Icon className={`w-6 h-6 ${getColorClasses(action.color).split(' ').find(c => c.startsWith('text-'))}`} />
                 <div>
-                  <p className="font-semibold text-sm">{action.title}</p>
-                  <p className="text-xs opacity-75">{action.description}</p>
+                  <p className="font-semibold text-sm text-slate-900">{action.title}</p>
+                  <p className="text-xs text-slate-600">{action.description}</p>
                 </div>
               </div>
             </button>

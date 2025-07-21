@@ -121,9 +121,9 @@ const Support = () => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'border-l-error';
-      case 'medium': return 'border-l-secondary';
-      case 'low': return 'border-l-success';
+      case 'high': return 'border-l-red-500';
+      case 'medium': return 'border-l-yellow-500';
+      case 'low': return 'border-l-green-500';
       default: return 'border-l-gray-300';
     }
   };
@@ -139,53 +139,42 @@ const Support = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-textPrimary">Support Center</h1>
-          <p className="text-gray-600 mt-1">Manage user support requests and resolve platform issues</p>
-        </div>
-        <button className="bg-secondary hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <Plus className="w-4 h-4" />
-          <span>Create Ticket</span>
-        </button>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+    
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Open Tickets</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">23</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">23</p>
             </div>
             <MessageSquare className="w-8 h-8 text-blue-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">In Progress</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">12</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
             </div>
             <Clock className="w-8 h-8 text-yellow-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Resolved Today</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">8</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">8</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Avg Response Time</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">2.5h</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">2.5h</p>
             </div>
             <AlertCircle className="w-8 h-8 text-purple-500" />
           </div>
@@ -193,41 +182,46 @@ const Support = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-cardBg rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
-            <button
-              onClick={() => setActiveTab('tickets')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'tickets'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Support Tickets
-            </button>
-            <button
-              onClick={() => setActiveTab('activity')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'activity'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Recent Activity
-            </button>
-            <button
-              onClick={() => setActiveTab('templates')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'templates'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Quick Responses
-            </button>
+          <nav className="flex justify-between items-center px-6">
+            
+            {/* Left: Tabs */}
+            <div className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('tickets')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'tickets'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Support Tickets
+              </button>
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'activity'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Recent Activity
+              </button>
+              <button
+                onClick={() => setActiveTab('templates')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'templates'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Quick Responses
+              </button>
+            </div>
           </nav>
         </div>
+
 
         <div className="p-6">
           {activeTab === 'tickets' && (
@@ -235,14 +229,14 @@ const Support = () => {
               {supportTickets.map((ticket) => (
                 <div 
                   key={ticket.id}
-                  className={`p-6 rounded-lg border-l-4 ${getPriorityColor(ticket.priority)} bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer`}
+                  className={`p-6 rounded-lg border-l-4 ${getPriorityColor(ticket.priority)} bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <span className="text-2xl">{getCategoryIcon(ticket.category)}</span>
                         <div>
-                          <h3 className="text-lg font-semibold text-textPrimary">{ticket.subject}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">{ticket.subject}</h3>
                           <p className="text-gray-600 text-sm">Ticket #{ticket.id}</p>
                         </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
@@ -257,43 +251,26 @@ const Support = () => {
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-3">
-                        <div>
-                          <span className="text-gray-500">User:</span>
-                          <p className="font-medium">{ticket.user}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Category:</span>
-                          <p className="font-medium">{ticket.category}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Created:</span>
-                          <p className="font-medium">{ticket.created}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Messages:</span>
-                          <p className="font-medium">{ticket.messages}</p>
-                        </div>
-                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        User: {ticket.user} • Category: {ticket.category} • Created: {ticket.created} • Messages: {ticket.messages}
+                      </p>
 
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>Assigned to: {ticket.assignedTo}</span>
-                        <span>•</span>
-                        <span>Last update: {ticket.lastUpdate}</span>
-                      </div>
+                      <p className="text-sm text-gray-500">
+                        Assigned to: {ticket.assignedTo} • Last update: {ticket.lastUpdate}
+                      </p>
                     </div>
                     
                     <div className="flex space-x-2 ml-4">
-                      <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Reply
                       </button>
                       {ticket.status === 'open' && (
-                        <button className="px-3 py-1 bg-secondary text-white rounded text-sm hover:bg-yellow-600 transition-colors">
+                        <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                           Assign
                         </button>
                       )}
                       {ticket.status === 'in-progress' && (
-                        <button className="px-3 py-1 bg-success text-white rounded text-sm hover:bg-green-700 transition-colors">
+                        <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
                           Resolve
                         </button>
                       )}
@@ -307,21 +284,17 @@ const Support = () => {
           {activeTab === 'activity' && (
             <div className="space-y-4">
               {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center">
+                <div key={activity.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-textPrimary font-medium">{activity.action}</p>
-                    <div className="text-sm text-gray-600">
-                      <span>User: {activity.user}</span>
-                      <span className="mx-2">•</span>
-                      <span>Ticket: {activity.ticket}</span>
-                      <span className="mx-2">•</span>
-                      <span>{activity.time}</span>
-                    </div>
+                    <p className="text-gray-900 font-medium">{activity.action}</p>
+                    <p className="text-sm text-gray-600">
+                      User: {activity.user} • Ticket: {activity.ticket} • {activity.time}
+                    </p>
                   </div>
-                  <button className="text-accent hover:text-primary text-sm font-medium">
+                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                     View
                   </button>
                 </div>
@@ -334,14 +307,14 @@ const Support = () => {
               {quickResponses.map((template) => (
                 <div key={template.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-textPrimary">{template.title}</h3>
-                    <button className="text-accent hover:text-primary text-sm font-medium">
+                    <h3 className="text-lg font-semibold text-gray-900">{template.title}</h3>
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                       Edit
                     </button>
                   </div>
                   <p className="text-gray-600 text-sm mb-4 leading-relaxed">{template.template}</p>
                   <div className="flex space-x-2">
-                    <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                    <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                       Use Template
                     </button>
                     <button className="px-3 py-1 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors">
@@ -354,6 +327,7 @@ const Support = () => {
           )}
         </div>
       </div>
+
     </div>
   );
 };

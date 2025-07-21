@@ -83,22 +83,8 @@ export default function Notification() {
   const unreadCount = notifications.filter(n => !n.read).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <h1 className="text-3xl font-bold text-[#0F172A]">
-            Notifications
-          </h1>
-          {unreadCount > 0 && (
-            <span className="bg-[#EF4444] text-white text-sm font-medium px-2 py-1 rounded-full">
-              {unreadCount}
-            </span>
-          )}
-        </div>
-        <button className="text-[#3B82F6] hover:text-[#1E3A8A] transition-colors text-sm font-medium">
-          Mark all as read
-        </button>
-      </div>
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -47,16 +47,7 @@ export default function Support() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-[#0F172A]">
-          Support Center
-        </h1>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-[#22C55E] rounded-full"></div>
-          <span className="text-sm text-[#0F172A]">Available 24/7</span>
-        </div>
-      </div>
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
 
       {/* Quick Contact Options */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

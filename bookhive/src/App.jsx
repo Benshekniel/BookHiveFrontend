@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { createContext, useContext, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import HomePage from './pages/common/HomePage';
@@ -12,9 +11,10 @@ import DeliveryManagerRoutes from './routes/DeliveryManager';
 import DeliveryAgentRoutes from './routes/DeliveryAgentRoutes';
 import OrganizationRoutes from './routes/OrganizationRoutes';
 import HubManagerRouters from './routes/HubManagerRoutes';
-import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
+import UserNavbar from './components/user/navbar';
 import './index.css';
+import UplaodPage from './pages/common/UploadForm';
 
 // Create Auth Context
 const AuthContext = createContext();
@@ -22,21 +22,19 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 const App = () => {
-  // Simulated user state (replace with actual auth logic)
-  const [user, setUser] = useState(null); // e.g., { name: 'Alex Johnson', role: 'admin' } after login
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [user, setUser] = useState(null); // e.g., { name: 'Alex Johnson', role: 'admin' }
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false); // Changed to false for full view by default
   const navigate = useNavigate();
 
-  // Function to simulate login
   const login = (userData) => setUser(userData);
 
-  // Function to simulate logout
   const logout = () => {
     setUser(null);
+    setIsMobileOpen(false); // Close sidebar on logout
     navigate('/');
   };
 
-  // Determine dashboard route based on role
   const getDashboardRoute = () => {
     switch (user?.role) {
       case 'admin':
@@ -58,28 +56,17 @@ const App = () => {
     }
   };
 
-  // Handle logout for Sidebar
-  const handleLogout = () => {
-    setUser(null); // Clear user state (if still using AuthContext elsewhere)
-    navigate('/');
-  };
-
-  // Render layout for authenticated routes
-  const renderLayout = (children) => (
-    <div className="flex h-screen bg-background">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
-        onLogout={handleLogout}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          sidebarCollapsed={sidebarCollapsed}
-          setSidebarCollapsed={setSidebarCollapsed}
-        />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
-    </div>
+  const renderLayout = (children, CustomHeader = Header) => (
+    <CustomHeader
+      isMobileOpen={isMobileOpen}
+      setIsMobileOpen={setIsMobileOpen}
+      collapsed={collapsed}
+      setCollapsed={setCollapsed}
+      onLogout={logout}
+      user={user}
+    >
+      {children}
+    </CustomHeader>
   );
 
   return (
@@ -91,7 +78,7 @@ const App = () => {
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard/*" element={renderLayout(<UserRoutes />)} />
+        <Route path="/user/*" element={renderLayout(<UserRoutes />, UserNavbar)} />
         <Route path="/admin/*" element={renderLayout(<AdminRoutes />)} />
         <Route path="/moderator/*" element={renderLayout(<ModeratorRoutes />)} />
         <Route path="/hubmanager/*" element={renderLayout(<HubManagerRouters />)} />
@@ -99,7 +86,10 @@ const App = () => {
         <Route path="/manager/*" element={renderLayout(<DeliveryManagerRoutes />)} />
         <Route path="/agent/*" element={renderLayout(<DeliveryAgentRoutes />)} />
         <Route path="/organization/*" element={renderLayout(<OrganizationRoutes />)} />
-        <Route path="*" element={<div>404: Page Not Found</div>} />
+        <Route path="*" element={renderLayout(<div>404: Page Not Found</div>)} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/upload" element={<UplaodPage />} />
+
       </Routes>
     </AuthContext.Provider>
   );

@@ -115,9 +115,9 @@ const Compliance = () => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'border-l-error';
-      case 'medium': return 'border-l-secondary';
-      case 'low': return 'border-l-success';
+      case 'high': return 'border-l-red-500';
+      case 'medium': return 'border-l-yellow-500';
+      case 'low': return 'border-l-green-500';
       default: return 'border-l-gray-300';
     }
   };
@@ -133,63 +133,49 @@ const Compliance = () => {
 
   const getSeverityColor = (severity) => {
     switch (severity) {
-      case 'high': return 'border-l-error';
-      case 'medium': return 'border-l-secondary';
-      case 'low': return 'border-l-success';
+      case 'high': return 'border-l-red-500';
+      case 'medium': return 'border-l-yellow-500';
+      case 'low': return 'border-l-green-500';
       default: return 'border-l-gray-300';
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-textPrimary">Compliance Monitoring</h1>
-          <p className="text-gray-600 mt-1">Monitor policy violations and ensure platform integrity</p>
-        </div>
-        <div className="flex space-x-2">
-          <button className="bg-accent hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-            <FileText className="w-4 h-4" />
-            <span>Generate Report</span>
-          </button>
-        </div>
-      </div>
-
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Active Reports</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">15</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">15</p>
             </div>
             <AlertTriangle className="w-8 h-8 text-yellow-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Policy Violations</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">8</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">8</p>
             </div>
             <Shield className="w-8 h-8 text-red-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Suspicious Activity</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">12</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
             </div>
             <Eye className="w-8 h-8 text-purple-500" />
           </div>
         </div>
-        <div className="bg-cardBg rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Resolved Today</p>
-              <p className="text-2xl font-bold text-textPrimary mt-1">6</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">6</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-500" />
           </div>
@@ -197,36 +183,33 @@ const Compliance = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-cardBg rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('reports')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'reports'
-                  ? 'border-accent text-accent'
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'reports'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               Recovery Reports
             </button>
             <button
               onClick={() => setActiveTab('violations')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'violations'
-                  ? 'border-accent text-accent'
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'violations'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               Policy Violations
             </button>
             <button
               onClick={() => setActiveTab('suspicious')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'suspicious'
-                  ? 'border-accent text-accent'
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'suspicious'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               Suspicious Activity
             </button>
@@ -237,63 +220,43 @@ const Compliance = () => {
           {activeTab === 'reports' && (
             <div className="space-y-4">
               {recoveryReports.map((report) => (
-                <div 
+                <div
                   key={report.id}
-                  className={`p-6 rounded-lg border-l-4 ${getPriorityColor(report.priority)} bg-gray-50 hover:bg-gray-100 transition-colors`}
+                  className={`p-6 rounded-lg border-l-4 ${getPriorityColor(report.priority)} bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-textPrimary">{report.reportedBook}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{report.reportedBook}</h3>
                         <span className="text-gray-600 text-sm">#{report.id}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
                           {report.status}
                         </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          report.priority === 'high' ? 'bg-red-100 text-red-700' :
-                          report.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${report.priority === 'high' ? 'bg-red-100 text-red-700' :
+                            report.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-green-100 text-green-700'
+                          }`}>
                           {report.priority}
                         </span>
                       </div>
-                      
-                      <p className="text-gray-600 mb-3">{report.reason}</p>
-                      
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-3">
-                        <div>
-                          <span className="text-gray-500">ISBN:</span>
-                          <p className="font-medium">{report.isbn}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Current Holder:</span>
-                          <p className="font-medium">{report.currentHolder}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Reported By:</span>
-                          <p className="font-medium">{report.reportedBy}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">TrustScore Impact:</span>
-                          <p className="font-medium text-error">{report.trustScoreImpact}</p>
-                        </div>
-                      </div>
 
-                      <div className="text-sm text-gray-500">
-                        Report Date: {report.reportDate}
-                      </div>
+                      <p className="text-gray-600 mb-3">{report.reason}</p>
+
+                      <p className="text-sm text-gray-600">
+                        ISBN: {report.isbn} • Current Holder: {report.currentHolder} • Reported By: {report.reportedBy} • TrustScore Impact: {report.trustScoreImpact} • Report Date: {report.reportDate}
+                      </p>
                     </div>
-                    
+
                     <div className="flex space-x-2 ml-4">
-                      <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Investigate
                       </button>
                       {report.status === 'investigating' && (
-                        <button className="px-3 py-1 bg-success text-white rounded text-sm hover:bg-green-700 transition-colors">
+                        <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
                           Resolve
                         </button>
                       )}
-                      <button className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-red-700 transition-colors">
+                      <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors">
                         Escalate
                       </button>
                     </div>
@@ -306,38 +269,35 @@ const Compliance = () => {
           {activeTab === 'violations' && (
             <div className="space-y-4">
               {policyViolations.map((violation) => (
-                <div 
+                <div
                   key={violation.id}
-                  className={`p-6 rounded-lg border-l-4 ${getSeverityColor(violation.severity)} bg-gray-50 hover:bg-gray-100 transition-colors`}
+                  className={`p-6 rounded-lg border-l-4 ${getSeverityColor(violation.severity)} bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-textPrimary">{violation.violationType}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{violation.violationType}</h3>
                         <span className="text-gray-600 text-sm">by {violation.user}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          violation.severity === 'high' ? 'bg-red-100 text-red-700' :
-                          violation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${violation.severity === 'high' ? 'bg-red-100 text-red-700' :
+                            violation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-green-100 text-green-700'
+                          }`}>
                           {violation.severity}
                         </span>
                       </div>
-                      
+
                       <p className="text-gray-600 mb-3">{violation.description}</p>
-                      
-                      <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
-                        <span>Date: {violation.date}</span>
-                        <span>•</span>
-                        <span>Action Taken: {violation.actionTaken}</span>
-                      </div>
+
+                      <p className="text-sm text-gray-600">
+                        Date: {violation.date} • Action Taken: {violation.actionTaken}
+                      </p>
                     </div>
-                    
+
                     <div className="flex space-x-2 ml-4">
-                      <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         View Details
                       </button>
-                      <button className="px-3 py-1 bg-secondary text-white rounded text-sm hover:bg-yellow-600 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Add Penalty
                       </button>
                     </div>
@@ -350,11 +310,12 @@ const Compliance = () => {
           {activeTab === 'suspicious' && (
             <div className="space-y-4">
               {suspiciousActivity.map((activity) => (
-                <div key={activity.id} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div key={activity.id} className={`p-6 rounded-lg border-l-4 ${getSeverityColor(activity.riskLevel)} bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200`}>
+
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-textPrimary">{activity.activity}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{activity.activity}</h3>
                         <span className="text-gray-600 text-sm">by {activity.user}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskColor(activity.riskLevel)}`}>
                           {activity.riskLevel} risk
@@ -365,22 +326,22 @@ const Compliance = () => {
                           </span>
                         )}
                       </div>
-                      
+
                       <p className="text-gray-600 mb-3">{activity.description}</p>
-                      
-                      <div className="text-sm text-gray-500">
+
+                      <p className="text-sm text-gray-600">
                         Detected: {activity.timestamp}
-                      </div>
+                      </p>
                     </div>
-                    
+
                     <div className="flex space-x-2 ml-4">
-                      <button className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Investigate
                       </button>
-                      <button className="px-3 py-1 bg-success text-white rounded text-sm hover:bg-green-700 transition-colors">
+                      <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
                         Clear
                       </button>
-                      <button className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-red-700 transition-colors">
+                      <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors">
                         Flag User
                       </button>
                     </div>
@@ -391,6 +352,7 @@ const Compliance = () => {
           )}
         </div>
       </div>
+
     </div>
   );
 };

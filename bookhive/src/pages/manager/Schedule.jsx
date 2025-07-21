@@ -1,255 +1,253 @@
 import { useState } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Filter,
-  RefreshCw,
+import {
+  Calendar,
+  Clock,
+  MapPin,
   DollarSign,
-  Fuel
+  Edit3,
+  Save
 } from 'lucide-react';
 
 const Schedule = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [mainHub, setMainHub] = useState({
+    name: 'Downtown Hub',
+    address: '123 Main Street, Downtown District',
+    city: 'New York',
+    zipCode: '10001',
+    phone: '+1 (555) 123-4567',
+    email: 'downtown.hub@company.com'
+  });
 
-  const schedules = [
-    {
-      id: 'S001',
-      pickup: '123 Main St',
-      dropoff: '456 Oak Ave',
-      time: '09:00 AM',
-      priority: 'High',
-      cost: 25.50,
-      distance: '5.2 km',
-      assignedAgent: null,
-      status: 'Available'
-    },
-    {
-      id: 'S002',
-      pickup: '789 Pine Rd',
-      dropoff: '321 Elm St',
-      time: '10:30 AM',
-      priority: 'Medium',
-      cost: 18.75,
-      distance: '3.8 km',
-      assignedAgent: 'John Smith',
-      status: 'Assigned'
-    },
-    {
-      id: 'S003',
-      pickup: '654 Cedar Ln',
-      dropoff: '987 Birch Dr',
-      time: '11:15 AM',
-      priority: 'Low',
-      cost: 32.00,
-      distance: '7.1 km',
-      assignedAgent: null,
-      status: 'Available'
-    },
-    {
-      id: 'S004',
-      pickup: '147 Maple St',
-      dropoff: '258 Willow Ave',
-      time: '02:00 PM',
-      priority: 'High',
-      cost: 28.25,
-      distance: '6.3 km',
-      assignedAgent: 'Sarah Johnson',
-      status: 'In Progress'
-    },
-  ];
+  const [variables, setVariables] = useState({
+    deliveryTimeBuffer: 15,
+    pickupTimeLimit: 60,         // in minutes
+    maxDeliveryTime: 10080       // in minutes (7 days)
+  });
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'High':
-        return 'bg-red-600 text-white';
-      case 'Medium':
-        return 'bg-yellow-400 text-white';
-      case 'Low':
-        return 'bg-green-600 text-white';
-      default:
-        return 'bg-gray-400 text-white';
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Available':
-        return 'bg-blue-600 text-white';
-      case 'Assigned':
-        return 'bg-yellow-400 text-white';
-      case 'In Progress':
-        return 'bg-green-600 text-white';
-      default:
-        return 'bg-gray-400 text-white';
-    }
-  };
-
-  const filteredSchedules = schedules.filter(schedule => {
-    if (selectedFilter === 'all') return true;
-    return schedule.status.toLowerCase() === selectedFilter.toLowerCase().replace(' ', '');
+  const [costFactors, setCostFactors] = useState({
+    fuelRate: 3.45,
+    baseCost: 15.0,
+    peakHourMultiplier: 1.5,
+    distanceRate: 2.5
   });
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-heading">Schedule Management</h2>
-          <p className="text-gray-600">Manage delivery schedules and assignments</p>
-        </div>
-        <div className="flex space-x-2">
-          <button className="bg-yellow-400 text-white px-4 py-2 rounded-lg hover:bg-yellow-500 transition-colors flex items-center space-x-2">
-            <RefreshCw size={20} />
-            <span>Auto-Pick</span>
-          </button>
-          <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
-            <Fuel size={20} />
-            <span>Optimize Routes</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex items-center space-x-2">
-          <Calendar size={20} className="text-gray-400" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-900 focus:border-transparent"
-          />
-        </div>
-        <div className="flex items-center space-x-2">
-          <Filter size={20} className="text-gray-400" />
-          <select
-            value={selectedFilter}
-            onChange={(e) => setSelectedFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-900 focus:border-transparent"
-          >
-            <option value="all">All Status</option>
-            <option value="available">Available</option>
-            <option value="assigned">Assigned</option>
-            <option value="in progress">In Progress</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Cost Factors Panel */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
-          Cost Factors & Optimization
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Travel Plan */}
+      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4 flex items-center gap-2">
+          <Calendar size={20} color="#3B82F6" /> Travel Plan
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <Fuel className="text-yellow-400" size={20} />
-              <span className="font-medium">Fuel Price</span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">$3.45/L</p>
-            <p className="text-sm text-gray-600">Updated 2 hours ago</p>
+        <div className="grid sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Travel Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+            />
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <Clock className="text-blue-600" size={20} />
-              <span className="font-medium">Peak Hours</span>
-            </div>
-            <p className="text-lg font-bold text-slate-900">9AM - 11AM</p>
-            <p className="text-sm text-gray-600">Higher rates apply</p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <MapPin className="text-green-600" size={20} />
-              <span className="font-medium">Main Routes</span>
-            </div>
-            <p className="text-lg font-bold text-slate-900">5 Active</p>
-            <p className="text-sm text-gray-600">Optimized paths</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Travel Time</label>
+            <input
+              type="time"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+            />
           </div>
         </div>
       </div>
 
-      {/* Schedule List */}
-      <div className="space-y-4">
-        {filteredSchedules.map((schedule) => (
-          <div key={schedule.id} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* Main Hub Location and Cost Factors */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Main Hub Location */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4 flex items-center gap-2">
+            <MapPin size={20} color="#FBBF24" /> Hub Information
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Hub Name</label>
+              <input
+                type="text"
+                value={mainHub.name}
+                onChange={(e) => setMainHub({ ...mainHub, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Address</label>
+              <input
+                type="text"
+                value={mainHub.address}
+                onChange={(e) => setMainHub({ ...mainHub, address: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+              />
+            </div>
+            <div className="flex gap-4">
               <div className="flex-1">
-                <div className="flex items-center space-x-4 mb-3">
-                  <h3 className="font-semibold text-slate-900">{schedule.id}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(schedule.priority)}`}>
-                    {schedule.priority}
-                  </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
-                    {schedule.status}
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-start space-x-2">
-                      <MapPin className="text-green-600 mt-1" size={16} />
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Pickup</p>
-                        <p className="text-sm text-gray-600">{schedule.pickup}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <MapPin className="text-red-600 mt-1" size={16} />
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Drop-off</p>
-                        <p className="text-sm text-gray-600">{schedule.dropoff}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="text-gray-400" size={16} />
-                      <span className="text-sm font-medium">{schedule.time}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="text-gray-400" size={16} />
-                      <span className="text-sm font-medium">${schedule.cost}</span>
-                      <span className="text-sm text-gray-600">({schedule.distance})</span>
-                    </div>
-                    {schedule.assignedAgent && (
-                      <div className="text-sm">
-                        <span className="text-gray-600">Assigned to: </span>
-                        <span className="font-medium text-slate-900">{schedule.assignedAgent}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <label className="block text-sm font-medium text-gray-700">City</label>
+                <input
+                  type="text"
+                  value={mainHub.city}
+                  onChange={(e) => setMainHub({ ...mainHub, city: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                />
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-2">
-                {schedule.status === 'Available' ? (
-                  <>
-                    <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors">
-                      Assign Agent
-                    </button>
-                    <button className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                      Edit
-                    </button>
-                  </>
-                ) : (
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                    View Details
-                  </button>
-                )}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
+                <input
+                  type="text"
+                  value={mainHub.zipCode}
+                  onChange={(e) => setMainHub({ ...mainHub, zipCode: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                />
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Phone</label>
+              <input
+                type="tel"
+                value={mainHub.phone}
+                onChange={(e) => setMainHub({ ...mainHub, phone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                value={mainHub.email}
+                onChange={(e) => setMainHub({ ...mainHub, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+              />
+            </div>
           </div>
-        ))}
+        </div>
+
+        {/* Cost Factors */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4 font-heading flex items-center gap-2">
+            <DollarSign size={20} color="#1E3A8A" /> Cost Factors
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Fuel Rate */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Fuel Rate (per liter)</label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="number"
+                  value={costFactors.fuelRate}
+                  onChange={(e) => setCostFactors({ ...costFactors, fuelRate: parseFloat(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            {/* Base Cost */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Base Delivery Cost</label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="number"
+                  value={costFactors.baseCost}
+                  onChange={(e) => setCostFactors({ ...costFactors, baseCost: parseFloat(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            {/* Distance Rate */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Distance Rate (per km)</label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="number"
+                  value={costFactors.distanceRate}
+                  onChange={(e) => setCostFactors({ ...costFactors, distanceRate: parseFloat(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            {/* Peak Hour Multiplier */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Peak Hour Multiplier</label>
+              <input
+                type="number"
+                value={costFactors.peakHourMultiplier}
+                onChange={(e) => setCostFactors({ ...costFactors, peakHourMultiplier: parseFloat(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+                step="0.1"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {filteredSchedules.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No schedules found for the selected criteria</p>
+      {/* Delivery Variables */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4 font-heading flex items-center gap-2">
+          <Clock size={20} color="#1E3A8A" /> Delivery Variables
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Delivery Time Buffer */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Time Buffer (minutes)</label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="number"
+                value={variables.deliveryTimeBuffer}
+                onChange={(e) => setVariables({ ...variables, deliveryTimeBuffer: parseInt(e.target.value) })}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Pickup Time Limit */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Time Limit (minutes)</label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1E3A8A]" size={16} />
+              <input
+                type="number"
+                value={variables.pickupTimeLimit}
+                onChange={(e) => setVariables({ ...variables, pickupTimeLimit: parseInt(e.target.value) })}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Max Delivery Time */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Max Delivery Time (minutes)</label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1E3A8A]" size={16} />
+              <input
+                type="number"
+                value={variables.maxDeliveryTime}
+                onChange={(e) => setVariables({ ...variables, maxDeliveryTime: parseInt(e.target.value) })}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+              />
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+      <div className="flex justify-end">
+        <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors flex items-center space-x-2">
+          <Save size={20} />
+          <span>Save</span>
+        </button>
+      </div>
     </div>
   );
 };

@@ -5,7 +5,6 @@ import AgentDashboard from '../pages/agent/AgentDashboard';
 import Delivery from '../pages/agent/Delivery';
 import Tasks from '../pages/agent/Tasks';
 import Performance from '../pages/agent/Performance';
-import Hub from '../pages/agent/Hub';
 import Notification from '../pages/agent/Notification';
 import Support from '../pages/agent/Support';
 
@@ -15,7 +14,6 @@ const AdminRoutes = () => (
       <Route path="/" element={<AgentDashboard />} />
       <Route path="delivery" element={<Delivery />} />
       <Route path="tasks" element={<Tasks />} />
-      <Route path="hub" element={<Hub />} />
       <Route path="performance" element={<Performance />} />
       <Route path="notification" element={<Notification />} />
       <Route path="support" element={<Support />} />

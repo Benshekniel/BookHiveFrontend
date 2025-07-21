@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { BookOpen } from 'lucide-react';
 import Button from '../../components/shared/Button';
+import axios from "axios";
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -13,15 +14,47 @@ const loginSchema = z.object({
 });
 
 const LoginPage = () => {
-  const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(loginSchema)
-  });
 
-  const onSubmit = (data) => {
-    console.log('Login data:', data);
-    navigate('/');
-  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+
+  // const navigate = useNavigate();
+  // const { register, handleSubmit, formState: { errors } } = useForm({
+  //   resolver: zodResolver(loginSchema)
+  // });
+
+  // const onSubmit = (data) => {
+  //   console.log('Login data:', data);
+  //   navigate('/');
+  // };
+
+    async function login(event) {
+    event.preventDefault();
+    try {
+      await axios.post("http://localhost:9090/api/login", {
+        email: email,
+        password: password,
+      }).then((res) => {
+        console.log(res.data);
+
+        if (res.data.message == "Email not exits") {
+          alert("Email not exits");
+        } else if (res.data.message == "Login Success") {
+            navigate('/' + res.data.role);
+        } else {
+          alert("Incorrect Email and Password not match"); //navigate(`/${res.data.role || 'default'}`);
+        }
+
+      }, fail => {
+        console.error(fail); // Error!
+      });
+    } catch (err) {
+      alert(err);
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
@@ -48,7 +81,7 @@ const LoginPage = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-md rounded-lg sm:px-10 transition-all duration-200">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <form className="space-y-6" >
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
@@ -57,7 +90,11 @@ const LoginPage = () => {
                 <input
                   id="email"
                   type="email"
-                  {...register('email')}
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                  }}
+                  
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                   style={{
                     borderColor: '#D1D5DB'
@@ -66,9 +103,9 @@ const LoginPage = () => {
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="you@example.com"
                 />
-                {errors.email && (
+                {/* {errors.email && (
                   <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                )}
+                )} */}
               </div>
             </div>
 
@@ -80,7 +117,11 @@ const LoginPage = () => {
                 <input
                   id="password"
                   type="password"
-                  {...register('password')}
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                  }}
+                  
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                   style={{
                     borderColor: '#D1D5DB'
@@ -89,9 +130,9 @@ const LoginPage = () => {
                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
                   placeholder="••••••••"
                 />
-                {errors.password && (
+                {/* {errors.password && (
                   <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                )}
+                )} */}
               </div>
             </div>
 
@@ -100,7 +141,7 @@ const LoginPage = () => {
                 <input
                   id="remember-me"
                   type="checkbox"
-                  {...register('rememberMe')}
+                  // {...register('rememberMe')}
                   className="h-4 w-4 border-gray-300 rounded focus:ring-2 focus:ring-yellow-500"
                   style={{
                     borderColor: '#D1D5DB',
@@ -121,7 +162,11 @@ const LoginPage = () => {
             </div>
 
             <div>
-              <Button type="submit" variant="primary" fullWidth>
+              <Button 
+                onClick={login}
+              type="submit" 
+              variant="primary" 
+              fullWidth>
                 Sign in
               </Button>
             </div>
@@ -137,13 +182,13 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6">
               <button className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                 Google
               </button>
-              <button className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              {/* <button className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                 Facebook
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

@@ -16,13 +16,14 @@ const Button = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    border: variant === 'outline' ? '2px solid #ffd639' : 'none',
   };
 
   const variantStyles = {
-    primary: { backgroundColor: '#ffd639', color: '#FFFFFF' }, // Updated to yellow, blue
-    secondary: { backgroundColor: '#407aff', color: '#FFFFFF' }, // Updated to blue
-    outline: { border: '2px solid #ffd639', color: '#ffd639', backgroundColor: 'transparent' }, // Updated to yellow
-    ghost: { color: '#407aff', backgroundColor: 'transparent' }, // Updated to blue
+    primary: { backgroundColor: '#ffd639', color: '#FFFFFF' },
+    secondary: { backgroundColor: '#407aff', color: '#FFFFFF' },
+    outline: { color: '#ffd639', backgroundColor: 'transparent' },
+    ghost: { color: '#407aff', backgroundColor: 'transparent' },
   };
 
   const sizeStyles = {
@@ -46,15 +47,29 @@ const Button = ({
       style={style}
       {...props}
       onMouseOver={(e) => {
-        if (variant === 'primary') e.target.style.backgroundColor = '#FFC107'; // Updated to yellow-dark
-        if (variant === 'secondary') e.target.style.backgroundColor = '#1A3AFF'; // Updated to blue-dark
-        if (variant === 'outline') (e.target.style.backgroundColor = '#ffd639', e.target.style.color = '#FFFFFF'); // Updated to yellow, white
-        if (variant === 'ghost') e.target.style.backgroundColor = 'rgba(64, 122, 255, 0.1)'; // Updated to blue/10
+        if (variant === 'primary') e.target.style.backgroundColor = '#FFC107';
+        if (variant === 'secondary') e.target.style.backgroundColor = '#1A3AFF';
+        if (variant === 'outline') {
+          e.target.style.backgroundColor = '#ffd639';
+          e.target.style.color = '#FFFFFF';
+          e.target.style.borderColor = '#ffd639';
+        }
+        if (variant === 'ghost') e.target.style.backgroundColor = 'rgba(64, 122, 255, 0.1)';
       }}
       onMouseOut={(e) => {
         e.target.style.backgroundColor = variantStyles[variant].backgroundColor;
-        if (variant === 'outline') e.target.style.color = '#ffd639'; // Updated to yellow
+        if (variant === 'outline') {
+          e.target.style.color = '#ffd639';
+          e.target.style.backgroundColor = 'transparent';
+          e.target.style.borderColor = '#ffd639';
+        }
         if (variant === 'ghost') e.target.style.backgroundColor = 'transparent';
+      }}
+      onFocus={(e) => {
+        if (variant === 'outline') e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)';
+      }}
+      onBlur={(e) => {
+        if (variant === 'outline') e.target.style.boxShadow = 'none';
       }}
     >
       {icon && <span style={{ marginRight: '0.5rem' }}>{icon}</span>}

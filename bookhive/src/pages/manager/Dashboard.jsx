@@ -6,9 +6,9 @@ import {
   TrendingUp, 
   Clock,
   CheckCircle,
-  XCircle,
-  Calendar
+  XCircle
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 const Dashboard = () => {
   const stats = [
@@ -53,11 +53,28 @@ const Dashboard = () => {
     { id: 'D004', agent: 'Lisa Brown', status: 'In Transit', time: '12 mins ago' },
   ];
 
-  const hubPerformance = [
-    { name: 'Downtown Hub', deliveries: 45, efficiency: '94%' },
-    { name: 'North Hub', deliveries: 38, efficiency: '91%' },
-    { name: 'South Hub', deliveries: 42, efficiency: '96%' },
-    { name: 'West Hub', deliveries: 31, efficiency: '88%' },
+  const agentCountData = [
+    { name: 'Downtown Hub', agents: 12 },
+    { name: 'North Hub', agents: 8 },
+    { name: 'South Hub', agents: 10 },
+    { name: 'West Hub', agents: 6 },
+    { name: 'East Hub', agents: 9 },
+  ];
+
+  const revenueData = [
+    { name: 'Downtown Hub', revenue: 12500 },
+    { name: 'North Hub', revenue: 9800 },
+    { name: 'South Hub', revenue: 11200 },
+    { name: 'West Hub', revenue: 7600 },
+    { name: 'East Hub', revenue: 10300 },
+  ];
+
+  const deliveryCountData = [
+    { name: 'Downtown Hub', deliveries: 245 },
+    { name: 'North Hub', deliveries: 189 },
+    { name: 'South Hub', deliveries: 223 },
+    { name: 'West Hub', deliveries: 156 },
+    { name: 'East Hub', deliveries: 201 },
   ];
 
   const getStatusIcon = (status) => {
@@ -74,13 +91,13 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
+            <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1 font-medium">{stat.title}</p>
@@ -98,7 +115,7 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Deliveries */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Recent Delivery Updates
           </h3>
@@ -121,46 +138,56 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Hub Performance */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        {/* Delivery Agents by Hub */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
-            Hub Performance
+            Delivery Agents by Hub
           </h3>
-          <div className="space-y-4">
-            {hubPerformance.map((hub, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-slate-900">{hub.name}</p>
-                  <p className="text-sm text-gray-600">{hub.deliveries} deliveries today</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-green-600">{hub.efficiency}</p>
-                  <p className="text-xs text-gray-500">Efficiency</p>
-                </div>
-              </div>
-            ))}
+          <div className='mt-8'>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={agentCountData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip formatter={(value) => [value, 'Agents']} />
+              <Bar dataKey="agents" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors">
-            <Users className="mb-2" size={20} />
-            <p className="font-medium">Manage Agents</p>
-          </button>
-          <button className="p-4 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors">
-            <Calendar className="mb-2" size={20} />
-            <p className="font-medium">View Schedule</p>
-          </button>
-          <button className="p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Truck className="mb-2" size={20} />
-            <p className="font-medium">Track Deliveries</p>
-          </button>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue by Hub */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
+            Revenue by Hub
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+              <Line type="monotone" dataKey="revenue" stroke="#FBBF24" strokeWidth={3} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Deliveries by Hub */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
+            Deliveries by Hub
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={deliveryCountData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip formatter={(value) => [value, 'Deliveries']} />
+              <Bar dataKey="deliveries" fill="#22C55E" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

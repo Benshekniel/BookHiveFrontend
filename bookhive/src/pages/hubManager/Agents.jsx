@@ -1,461 +1,317 @@
-import { useState } from 'react';
-import { Plus, Search, MoreVertical, CheckCircle, XCircle } from 'lucide-react';
-import Card from '../../components/hubmanager/Card';
+import { useState, useEffect } from 'react';
+import { Plus, Search, MoreVertical, CheckCircle, XCircle, Edit, Trash2, Eye, MessageSquare } from 'lucide-react';
+import { agentApi } from '../../services/HubmanagerService';
 
 const Agents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [riders, setRiders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const riders = [
-    { id: 1, name: 'Mike Johnson', email: 'mike@example.com', phone: '+1234567890', route: 'Route A', status: 'active', performance: 95 },
-    { id: 2, name: 'Alex Brown', email: 'alex@example.com', phone: '+1234567891', route: 'Route B', status: 'active', performance: 88 },
-    { id: 3, name: 'Emma Davis', email: 'emma@example.com', phone: '+1234567892', route: 'Route C', status: 'inactive', performance: 92 },
-  ];
+  // Fetch agents from backend
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        setLoading(true);
+        const response = await agentApi.getAllAgents();
+        
+        console.log('Backend response:', response); // Debug log
+        
+        // Transform backend data to match frontend structure
+        const transformedAgents = response.map(agent => {
+          console.log('Processing agent:', agent); // Debug log
+          
+          // Handle name field with multiple fallbacks
+          const getName = () => {
+            if (agent.name) return agent.name;
+            if (agent.userName) return agent.userName;
+            if (agent.firstName && agent.lastName) return `${agent.firstName} ${agent.lastName}`;
+            if (agent.firstName) return agent.firstName;
+            if (agent.lastName) return agent.lastName;
+            return 'Unknown Agent';
+          };
 
-  const pendingRequests = [
-    { id: 4, name: 'Tom Wilson', email: 'tom@example.com', phone: '+1234567893', appliedDate: '2024-01-15' },
-    { id: 5, name: 'Lisa Garcia', email: 'lisa@example.com', phone: '+1234567894', appliedDate: '2024-01-14' },
-  ];
+          // Handle email field with fallbacks
+          const getEmail = () => {
+            if (agent.email) return agent.email;
+            if (agent.userEmail) return agent.userEmail;
+            return 'No email';
+          };
 
-  const filteredRiders = riders.filter(rider =>
-    rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rider.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+          // Handle phone field with fallbacks
+          const getPhone = () => {
+            if (agent.phoneNumber) return agent.phoneNumber;
+            if (agent.userPhone) return agent.userPhone;
+            if (agent.phone) return agent.phone;
+            return 'No phone';
+          };
 
-  const containerStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px'
+          // Handle vehicle type with fallbacks
+          const getVehicleType = () => {
+            if (agent.vehicleType) {
+              // Handle enum values
+              if (typeof agent.vehicleType === 'string') {
+                return agent.vehicleType.toLowerCase().replace('_', ' ');
+              }
+              return agent.vehicleType.toString().toLowerCase().replace('_', ' ');
+            }
+            return 'Not specified';
+          };
+
+          // Handle availability status with fallbacks
+          const getStatus = () => {
+            if (agent.availabilityStatus) {
+              if (typeof agent.availabilityStatus === 'string') {
+                return agent.availabilityStatus.toLowerCase();
+              }
+              return agent.availabilityStatus.toString().toLowerCase();
+            }
+            return 'unavailable';
+          };
+
+          // Handle rating with fallbacks
+          const getRating = () => {
+            if (agent.trustScore !== undefined && agent.trustScore !== null) return agent.trustScore;
+            if (agent.trustScore !== undefined && agent.trustScore !== null) return agent.trustScore / 20.0;
+            return 0;
+          };
+
+          // Handle deliveries count with fallbacks
+          const getDeliveries = () => {
+            if (agent.totalDeliveries !== undefined && agent.totalDeliveries !== null) return agent.totalDeliveries;
+            if (agent.numberOfDelivery !== undefined && agent.numberOfDelivery !== null) return agent.numberOfDelivery;
+            if (agent.deliveries !== undefined && agent.deliveries !== null) return agent.deliveries;
+            return 0;
+          };
+
+          const transformedAgent = {
+            id: agent.agentId || agent.id,
+            agentId: agent.agentId || `A${String(agent.id || agent.agentId).padStart(3, '0')}`,
+            name: getName(),
+            email: getEmail(),
+            phone: getPhone(),
+            vehicle: getVehicleType(),
+            vehicleNumber: agent.vehicleNumber || 'N/A',
+            status: getStatus(),
+            rating: getRating(),
+            deliveries: getDeliveries(),
+            trustScore: agent.trustScore || 0,
+            hubName: agent.hubName || 'Unknown Hub'
+          };
+
+          console.log('Transformed agent:', transformedAgent); // Debug log
+          return transformedAgent;
+        });
+        
+        setRiders(transformedAgents);
+      } catch (err) {
+        console.error('Error fetching agents:', err);
+        setError('Failed to load agents');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgents();
+  }, []);
+
+  // Update agent status
+  const updateAgentStatus = async (agentId, newStatus) => {
+    try {
+      const statusEnum = newStatus.toUpperCase(); // Convert to enum format
+      await agentApi.updateAgentStatus(agentId, statusEnum);
+      
+      // Update local state with the new status
+      setRiders(prevRiders => 
+        prevRiders.map(rider => 
+          rider.id === agentId 
+            ? { ...rider, status: newStatus.toLowerCase() }
+            : rider
+        )
+      );
+    } catch (err) {
+      console.error('Error updating agent status:', err);
+      alert('Failed to update agent status');
+    }
   };
 
-  const headerStyles = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  };
+  // Fixed filtering logic with proper null checks
+  const filteredRiders = riders.filter(rider => {
+    // Safe string operations with null checks
+    const safeToLower = (str) => {
+      if (!str || typeof str !== 'string') return '';
+      return str.toLowerCase();
+    };
 
-  const titleStyles = {
-    fontSize: '30px',
-    fontFamily: 'Poppins, system-ui, sans-serif',
-    fontWeight: 'bold',
-    color: '#0f172a',
-    margin: 0
-  };
+    const name = safeToLower(rider.name);
+    const email = safeToLower(rider.email);
+    const phone = safeToLower(rider.phone);
+    const agentId = safeToLower(rider.agentId);
+    const searchLower = safeToLower(searchTerm);
 
-  const subtitleStyles = {
-    color: '#6b7280',
-    marginTop: '8px',
-    margin: 0
-  };
+    console.log('Filtering rider:', { name, email, phone, agentId, searchLower }); // Debug log
 
-  const addButtonStyles = {
-    backgroundColor: '#1e3a8a',
-    color: 'white',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    transition: 'background-color 0.2s ease'
-  };
-
-  const tabsContainerStyles = {
-    display: 'flex',
-    gap: '4px',
-    backgroundColor: '#f3f4f6',
-    padding: '4px',
-    borderRadius: '8px',
-    width: 'fit-content'
-  };
-
-  const getTabStyles = (isActive) => ({
-    padding: '8px 16px',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '500',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    backgroundColor: isActive ? 'white' : 'transparent',
-    color: isActive ? '#1e3a8a' : '#6b7280',
-    boxShadow: isActive ? '0 1px 3px 0 rgba(0, 0, 0, 0.1)' : 'none'
+    const matchesSearch = searchTerm === '' || 
+                         name.includes(searchLower) ||
+                         email.includes(searchLower) ||
+                         phone.includes(searchLower) ||
+                         agentId.includes(searchLower);
+    
+    const matchesStatus = statusFilter === 'all' || 
+                         rider.status === statusFilter;
+    
+    const result = matchesSearch && matchesStatus;
+    console.log('Filter result:', { matchesSearch, matchesStatus, result }); // Debug log
+    
+    return result;
   });
 
-  const searchContainerStyles = {
-    position: 'relative',
-    maxWidth: '384px'
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600">Loading agents...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const searchInputStyles = {
-    paddingLeft: '40px',
-    paddingRight: '16px',
-    paddingTop: '8px',
-    paddingBottom: '8px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    width: '100%',
-    fontSize: '14px',
-    outline: 'none'
-  };
-
-  const searchIconStyles = {
-    position: 'absolute',
-    left: '12px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    color: '#9ca3af',
-    width: '16px',
-    height: '16px'
-  };
-
-  const gridStyles = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '24px'
-  };
-
-  const riderCardContentStyles = {
-    padding: '24px'
-  };
-
-  const riderHeaderStyles = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '16px'
-  };
-
-  const riderInfoStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px'
-  };
-
-  const avatarStyles = {
-    width: '48px',
-    height: '48px',
-    backgroundColor: '#fbbf24',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  };
-
-  const avatarTextStyles = {
-    color: '#0f172a',
-    fontWeight: '600',
-    fontSize: '14px'
-  };
-
-  const riderNameStyles = {
-    fontWeight: '600',
-    color: '#0f172a',
-    margin: 0,
-    fontSize: '16px'
-  };
-
-  const getStatusBadgeStyles = (status) => ({
-    padding: '4px 8px',
-    borderRadius: '9999px',
-    fontSize: '12px',
-    fontWeight: '500',
-    marginTop: '4px',
-    backgroundColor: status === 'active' ? '#dcfce7' : '#f3f4f6',
-    color: status === 'active' ? '#166534' : '#6b7280'
-  });
-
-  const moreButtonStyles = {
-    color: '#9ca3af',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '4px'
-  };
-
-  const riderDetailsStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    fontSize: '14px'
-  };
-
-  const detailTextStyles = {
-    color: '#6b7280',
-    margin: 0
-  };
-
-  const performanceRowStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  };
-
-  const performanceValueStyles = {
-    fontWeight: '500',
-    color: '#22c55e'
-  };
-
-  const actionsStyles = {
-    marginTop: '16px',
-    display: 'flex',
-    gap: '8px'
-  };
-
-  const primaryButtonStyles = {
-    flex: 1,
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    padding: '8px 12px',
-    borderRadius: '8px',
-    border: 'none',
-    fontSize: '14px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s ease'
-  };
-
-  const secondaryButtonStyles = {
-    flex: 1,
-    border: '1px solid #d1d5db',
-    color: '#374151',
-    padding: '8px 12px',
-    borderRadius: '8px',
-    backgroundColor: 'white',
-    fontSize: '14px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s ease'
-  };
-
-  const pendingListStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px'
-  };
-
-  const pendingCardStyles = {
-    padding: '24px'
-  };
-
-  const pendingContentStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  };
-
-  const pendingInfoStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px'
-  };
-
-  const pendingDetailsStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px'
-  };
-
-  const pendingNameStyles = {
-    fontWeight: '600',
-    color: '#0f172a',
-    margin: 0,
-    fontSize: '16px'
-  };
-
-  const pendingTextStyles = {
-    color: '#6b7280',
-    margin: 0,
-    fontSize: '14px'
-  };
-
-  const pendingDateStyles = {
-    fontSize: '12px',
-    color: '#9ca3af',
-    margin: 0
-  };
-
-  const pendingActionsStyles = {
-    display: 'flex',
-    gap: '8px'
-  };
-
-  const approveButtonStyles = {
-    backgroundColor: '#22c55e',
-    color: 'white',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-    transition: 'background-color 0.2s ease'
-  };
-
-  const rejectButtonStyles = {
-    backgroundColor: '#ef4444',
-    color: 'white',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-    transition: 'background-color 0.2s ease'
-  };
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 text-lg">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={containerStyles}>
-      <div style={headerStyles}>
-        <div>
-          <h1 style={titleStyles}>Agents</h1>
-          <p style={subtitleStyles}>Manage your delivery riders and their assignments</p>
+    <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Search and Filter */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search agents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
-        <button 
-          style={addButtonStyles}
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#1e40af'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#1e3a8a'}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-blue-400 transition-colors"
         >
-          <Plus style={{ width: '16px', height: '16px' }} />
-          Add Rider
-        </button>
+          <option value="all">All Status</option>
+          <option value="available">Available</option>
+          <option value="unavailable">Unavailable</option>
+        </select>
       </div>
 
-      {/* Tabs */}
-      <div style={tabsContainerStyles}>
-        <button
-          onClick={() => setActiveTab('active')}
-          style={getTabStyles(activeTab === 'active')}
-        >
-          Active Riders
-        </button>
-        <button
-          onClick={() => setActiveTab('pending')}
-          style={getTabStyles(activeTab === 'pending')}
-        >
-          Pending Requests
-        </button>
-      </div>
-
-      {activeTab === 'active' && (
-        <>
-          {/* Search */}
-          <div style={searchContainerStyles}>
-            <Search style={searchIconStyles} />
-            <input
-              type="text"
-              placeholder="Search riders..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={searchInputStyles}
-              onFocus={(e) => e.target.style.outline = '2px solid #3b82f6'}
-              onBlur={(e) => e.target.style.outline = 'none'}
-            />
-          </div>
-
-          {/* Riders Grid */}
-          <div style={gridStyles}>
+      {/* Agents Table */}
+      <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+        <table className="w-full border-collapse min-w-[800px]">
+          <thead className="bg-slate-50 border-b border-gray-200">
+            <tr>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">AGENT</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">CONTACT</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">VEHICLE</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">STATUS</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">RATING</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">DELIVERIES</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
             {filteredRiders.map((rider) => (
-              <Card key={rider.id}>
-                <div style={riderCardContentStyles}>
-                  <div style={riderHeaderStyles}>
-                    <div style={riderInfoStyles}>
-                      <div style={avatarStyles}>
-                        <span style={avatarTextStyles}>
-                          {rider.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 style={riderNameStyles}>{rider.name}</h3>
-                        <span style={getStatusBadgeStyles(rider.status)}>
-                          {rider.status}
-                        </span>
-                      </div>
+              <tr
+                key={rider.id}
+                className="border-b border-gray-100 transition-colors hover:bg-slate-50"
+              >
+                <td className="px-3 py-4 align-middle">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-sm font-semibold text-slate-900 flex-shrink-0">
+                      {rider.name && rider.name.split(' ').length > 0 
+                        ? rider.name.split(' ').map(n => n[0]).join('').toUpperCase()
+                        : 'A'
+                      }
                     </div>
-                    <button style={moreButtonStyles}>
-                      <MoreVertical style={{ width: '16px', height: '16px' }} />
-                    </button>
-                  </div>
-                  
-                  <div style={riderDetailsStyles}>
-                    <p style={detailTextStyles}>{rider.email}</p>
-                    <p style={detailTextStyles}>{rider.phone}</p>
-                    <p style={detailTextStyles}>Route: <span style={{ fontWeight: '500' }}>{rider.route}</span></p>
-                    <div style={performanceRowStyles}>
-                      <span style={detailTextStyles}>Performance:</span>
-                      <span style={performanceValueStyles}>{rider.performance}%</span>
+                    <div className="flex flex-col">
+                      <p className="font-semibold text-slate-900 text-sm m-0">{rider.name}</p>
+                      {/* <p className="text-xs text-gray-500 m-0">ID: {rider.agentId}</p> */}
                     </div>
                   </div>
-
-                  <div style={actionsStyles}>
-                    <button 
-                      style={primaryButtonStyles}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#2563eb'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#3b82f6'}
+                </td>
+                <td className="px-3 py-4 align-middle">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[13px] text-gray-500 m-0">{rider.phone}</p>
+                    <p className="text-[13px] text-gray-500 m-0">{rider.email}</p>
+                  </div>
+                </td>
+                <td className="px-3 py-4 align-middle">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[14px] font-medium text-slate-900 m-0 capitalize">{rider.vehicle}</p>
+                    <p className="text-xs text-gray-500 m-0">{rider.vehicleNumber}</p>
+                  </div>
+                </td>
+                <td className="px-3 py-4 align-middle">
+                  <button
+                    onClick={() => updateAgentStatus(rider.id, rider.status === 'available' ? 'unavailable' : 'available')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
+                      rider.status === 'available' 
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                  >
+                    {rider.status}
+                  </button>
+                </td>
+                <td className="px-3 py-4 align-middle">
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-slate-900">{rider.rating.toFixed(1)}</span>
+                    <span className="text-yellow-400 text-sm">★</span>
+                  </div>
+                </td>
+                <td className="px-3 py-4 align-middle">
+                  <span className="font-semibold text-slate-900 text-base">{rider.deliveries}</span>
+                </td>
+                <td className="px-3 py-4 align-middle">
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="p-1.5 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                      title="Message"
+                      onClick={() => console.log('Message agent:', rider.id)}
                     >
-                      View Profile
-                    </button>
-                    <button 
-                      style={secondaryButtonStyles}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
-                    >
-                      Message
+                      <MessageSquare className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
-              </Card>
+                </td>
+              </tr>
             ))}
-          </div>
-        </>
-      )}
+          </tbody>
+        </table>
+      </div>
 
-      {activeTab === 'pending' && (
-        <div style={pendingListStyles}>
-          {pendingRequests.map((request) => (
-            <Card key={request.id}>
-              <div style={pendingCardStyles}>
-                <div style={pendingContentStyles}>
-                  <div style={pendingInfoStyles}>
-                    <div style={avatarStyles}>
-                      <span style={avatarTextStyles}>
-                        {request.name.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    </div>
-                    <div style={pendingDetailsStyles}>
-                      <h3 style={pendingNameStyles}>{request.name}</h3>
-                      <p style={pendingTextStyles}>{request.email}</p>
-                      <p style={pendingTextStyles}>{request.phone}</p>
-                      <p style={pendingDateStyles}>Applied: {request.appliedDate}</p>
-                    </div>
-                  </div>
-                  <div style={pendingActionsStyles}>
-                    <button 
-                      style={approveButtonStyles}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#16a34a'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#22c55e'}
-                    >
-                      <CheckCircle style={{ width: '16px', height: '16px' }} />
-                      Approve
-                    </button>
-                    <button 
-                      style={rejectButtonStyles}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
-                    >
-                      <XCircle style={{ width: '16px', height: '16px' }} />
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
+      {filteredRiders.length === 0 && !loading && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No agents found matching your search criteria.</p>
+          {searchTerm && (
+            <p className="text-gray-400 text-sm mt-2">
+              Try searching for: name, email, phone, or agent ID
+            </p>
+          )}
         </div>
       )}
     </div>

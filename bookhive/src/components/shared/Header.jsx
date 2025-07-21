@@ -1,153 +1,220 @@
-// src/components/shared/Header.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Bell, Search, User, Menu } from 'lucide-react';
-import { useAuth } from '../../App'; // Import AuthContext
+import { useAuth } from '../../App';
+import Sidebar from './Sidebar';
+import { useLocation, Link } from 'react-router-dom';
 
-const Header = ({ activeSection, sidebarCollapsed, setSidebarCollapsed }) => {
-  const { user, logout } = useAuth(); // Access user and logout function
+const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollapsed, onLogout }) => {
+  const { user } = useAuth();
+  const location = useLocation();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-  // Map activeSection to role-based titles
-  const getSectionTitle = () => {
-    const titles = {
-      home: 'Dashboard Overview',
-      dashboard: 'User Dashboard',
-      admin: 'Admin Panel',
-      moderator: 'Moderator Dashboard',
-      bookstore: 'Bookstore Management',
-      'delivery-hub': 'Delivery Hub',
-      'delivery-agent': 'Delivery Agent Portal',
-      organization: 'Organization Dashboard',
-    };
-    return titles[activeSection] || 'Dashboard';
+  console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
+
+  const pathLabels = {
+    '/admin': 'Dashboard',
+    '/admin/moderator': 'Moderators',
+    '/admin/content': 'Contents',
+    '/admin/analytics': 'Analytics',
+    '/admin/notification': 'Notification',
+    '/admin/security': 'Security',
+    '/admin/settings': 'Settings',
+    '/moderator': 'Dashboard',
+    '/moderator/charity': 'Charity',
+    '/moderator/bookcircle': 'BookCircle',
+    '/moderator/competitions': 'Competitions',
+    '/moderator/users': 'Users',
+    '/moderator/hub': 'Hub',
+    '/moderator/compliance': 'Compliance',
+    '/moderator/support': 'Support',
+    '/moderator/test': 'Testing',
+    '/moderator/settings': 'Settings',
+    '/bookstore': 'Dashboard',
+    '/bookstore/inventory': 'Inventory',
+    '/bookstore/listings': 'Listings',
+    '/bookstore/transactions': 'Transactions',
+    '/bookstore/finances': 'Finances',
+    '/bookstore/support': 'Support',
+    '/manager': 'Dashboard',
+    '/manager/agents': 'Delivery Agents',
+    '/manager/delivery': 'Delivery',
+    '/manager/hubs': 'Hubs',
+    '/manager/messages': 'Messages',
+    '/manager/support': 'Support',
+    '/manager/schedule': 'Settings',
+    '/agent': 'Dashboard',
+    '/agent/tasks': 'Tasks',
+    '/agent/delivery': 'Active Delivery',
+    '/agent/notification': 'Notification',
+    '/agent/performance': 'Performance',
+    '/agent/support': 'Support',
+    '/hubmanager': 'Dashboard',
+    '/hubmanager/deliveries': 'Delivery',
+    '/hubmanager/agents': 'Agents',
+    '/hubmanager/messages': 'Messages',
+    '/hubmanager/routes': 'Routes',
+    '/hubmanager/performance': 'Performance',
+    '/hubmanager/support': 'Support',
+    '/hubmanager/settings': 'Hub Settings',
+    '/organization': 'Dashboard',
+    '/organization/reports': 'Reports',
+    '/dashboard': 'Dashboard',
+    '/user': 'Dashboard',
+    '/user/browse-books': 'Browse Books',
+    '/user/orders': 'Orders',
+    '/user/competitions': 'Competitions',
+    '/user/messages': 'Messages',
+    '/user/profile-settings': 'Profile Settings',
   };
 
-  // Dynamic user details with fallback for unauthenticated users
-  const displayName = user?.name || 'Guest';
-  const displayRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
+  const normalize = (str) => str.replace(/\/+$/, '').toLowerCase();
+  const pathToCheck = normalize(location.pathname);
+
+  let label = pathLabels[pathToCheck];
+  if (!label) {
+    const found = Object.entries(pathLabels).find(([key]) =>
+      pathToCheck.startsWith(normalize(key))
+    );
+    label = found ? found[1] : 'Dashboard';
+  }
+
+  const displayName = user?.name || user?.username || 'Guest';
 
   return (
-    <header
-      className="shadow-sm border-b px-6 py-2"
-      style={{
-        backgroundColor: '#FFFFFF',
-        borderColor: '#E5E7EB',
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="lg:hidden p-2 rounded-lg transition-colors"
-            style={{ backgroundColor: 'transparent' }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#F3F4F6';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            <Menu className="w-5 h-5" style={{ color: '#0F172A' }} />
-          </button>
-          <div>
-            <h1
-              className="text-2xl font-bold"
-              style={{
-                color: '#0F172A',
-                fontFamily: 'Poppins, system-ui, sans-serif',
-              }}
-            >
-              {getSectionTitle()}
-            </h1>
-            <p className="text-sm" style={{ color: '#6B7280' }}>
-              Welcome back, {displayRole}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-              style={{ color: '#9CA3AF' }}
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-              style={{
-                borderColor: '#D1D5DB',
-                backgroundColor: '#FFFFFF',
-                color: '#0F172A',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'transparent';
-                e.target.style.boxShadow = '0 0 0 2px #3B82F6';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#D1D5DB';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-
-          {/* Notifications */}
-          <button
-            className="relative p-2 rounded-lg transition-colors"
+    <>
+      <div className="min-h-screen h-screen bg-background relative">
+        {/* Sidebar: fixed on desktop */}
+        <Sidebar
+          key="main-sidebar"
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          onLogout={onLogout}
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+        />
+        {/* Main content: only add left margin on desktop */}
+        <div
+          className={`flex-1 flex flex-col transition-all duration-300
+            lg:ml-0
+            ${collapsed ? 'lg:ml-16' : 'lg:ml-64'}
+          `}
+        >
+          <header
+            className="shadow-sm border-b px-6 py-4"
             style={{
-              color: '#6B7280',
-              backgroundColor: 'transparent',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.color = '#0F172A';
-              e.target.style.backgroundColor = '#F3F4F6';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.color = '#6B7280';
-              e.target.style.backgroundColor = 'transparent';
+              backgroundColor: '#FFFFFF',
+              borderColor: '#E5E7EB',
             }}
           >
-            <Bell className="w-5 h-5" />
-            <span
-              className="absolute top-1 right-1 w-2 h-2 rounded-full"
-              style={{ backgroundColor: '#EF4444' }}
-            ></span>
-          </button>
-
-          {/* Profile */}
-          <div className="flex items-center space-x-3">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: '#1E3A8A' }}
-            >
-              <User className="w-4 h-4 text-white" />
-            </div>
-            <div className="hidden md:block">
-              <p
-                className="text-sm font-medium"
-                style={{
-                  color: '#0F172A',
-                  fontFamily: 'Open Sans, system-ui, sans-serif',
-                }}
-              >
-                {displayName}
-              </p>
-              <p className="text-xs" style={{ color: '#6B7280' }}>
-                {displayRole}
-              </p>
-              {user && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
                 <button
-                  onClick={logout}
-                  className="text-xs text-red-500 hover:text-red-700"
+                  onClick={() => setIsMobileOpen(!isMobileOpen)}
+                  className="lg:hidden p-2 rounded-lg transition-colors"
+                  style={{ backgroundColor: 'transparent' }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#F3F4F6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                  }}
                 >
-                  Logout
+                  <Menu className="w-5 h-5" />
                 </button>
-              )}
+                <div>
+                  <h1
+                    className="text-2xl font-bold"
+                    style={{
+                      color: '#0F172A',
+                      fontFamily: 'Poppins, system-ui, sans-serif',
+                    }}
+                  >
+                    {label}
+                  </h1>
+                  <p className="text-sm" style={{ color: '#6B7280' }}></p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  className="relative p-2 rounded-lg transition-colors"
+                  style={{
+                    color: '#6B7280',
+                    backgroundColor: 'transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.color = '#0F172A';
+                    e.target.style.backgroundColor = '#F3F4F6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.color = '#6B7280';
+                    e.target.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <Bell className="w-5 h-5" />
+                  <span
+                    className="absolute top-0 right-0 w-2 h-2 rounded-full"
+                    style={{ backgroundColor: '#EF4444' }}
+                  ></span>
+                </button>
+                
+                {/* Profile Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                    className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <img
+                      src={user?.profileImage || "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full object-cover border-2 border-yellow-400"
+                    />
+                    <span className="text-sm font-medium text-gray-700 hidden xl:block">
+                      {displayName}
+                    </span>
+                  </button>
+
+                  {/* Profile Dropdown Menu */}
+                  {isProfileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <Link
+                        to="profile-settings"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <User size={16} className="inline mr-2" />
+                        Profile Settings
+                      </Link>
+                      <hr className="my-2" />
+                      <button
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          onLogout();
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <User size={16} className="inline mr-2" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          </header>
+          <main className="flex-1 p-4">
+            {children || <div className="text-gray-500">No content available</div>}
+          </main>
         </div>
       </div>
-    </header>
+      
+      {/* Click outside to close profile menu */}
+      {isProfileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsProfileMenuOpen(false)}
+        />
+      )}
+    </>
   );
 };
 

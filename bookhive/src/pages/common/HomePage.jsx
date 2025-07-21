@@ -10,7 +10,7 @@ import Testimonials from '../../components/home/Testimonials';
 
 const HomePage = () => {
   const honeycombBgStyle = {
-    backgroundImage: 'radial-gradient(transparent 0%, transparent 20%, rgba(255, 214, 57, 0.05) 20%), radial-gradient(transparent 0%, transparent 20%, rgba(64, 122, 255, 0.05) 20%)',
+    backgroundImage: 'radial-gradient(transparent 0%, transparent 20%, rgba(251, 191, 36, 0.05) 20%), radial-gradient(transparent 0%, transparent 20%, rgba(59, 130, 246, 0.05) 20%)', // Secondary, Accent
     backgroundPosition: '0 0, 20px 20px',
     backgroundSize: '40px 40px',
   };
@@ -30,20 +30,20 @@ const HomePage = () => {
         <BookCirclesSection />
         <Testimonials />
         
-        <div className="py-16" style={{ backgroundColor: '#ffd639' }}>
+        <div className="py-16" style={{ backgroundColor: '#FBBF24' }}> {/* Secondary */}
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#407aff' }}>
+            <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#0F172A' }}> {/* Text */}
               Ready to Join the BookHive Community?
             </h2>
-            <p className="max-w-2xl mx-auto mb-8" style={{ color: '#1A3AFF' }}>
+            <p className="max-w-2xl mx-auto mb-8" style={{ color: '#1E40AF' }}> {/* Darker Accent */}
               Sign up today and start connecting with book lovers across Sri Lanka. 
               Share, borrow, and discover your next favorite read.
             </p>
             <button
               className="px-4 py-2 font-semibold rounded-lg transition-all duration-200"
-              style={{ backgroundColor: '#407aff', color: '#FFFFFF', border: '2px solid #407aff' }}
-              onMouseOver={(e) => (e.target.style.backgroundColor = '#1A3AFF')}
-              onMouseOut={(e) => (e.target.style.backgroundColor = '#407aff')}
+              style={{ backgroundColor: '#3B82F6', color: '#FFFFFF', border: '2px solid #3B82F6' }} // Accent
+              onMouseOver={(e) => (e.target.style.backgroundColor = '#1E40AF')} // Darker Accent
+              onMouseOut={(e) => (e.target.style.backgroundColor = '#3B82F6')}
             >
               Join BookHive Now
             </button>
