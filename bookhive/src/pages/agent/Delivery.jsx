@@ -20,7 +20,7 @@ export default function Delivery() {
   const [deliveredTasks, setDeliveredTasks] = useState(new Set())
   const [messages, setMessages] = useState({})
   const [newMessage, setNewMessage] = useState('')
-  const [userLocation] = useState([40.7614, -73.9776]) // Agent's current location
+  const [userLocation] = useState([6.9271, 79.8612]) // Colombo coordinates
 
   // Get tasks from navigation state or use default
   const deliveryTasks = location.state?.tasks || []
@@ -36,8 +36,9 @@ export default function Delivery() {
     const initialMessages = {}
     deliveryTasks.forEach(task => {
       initialMessages[task.id] = [
-        { id: 1, sender: 'customer', text: 'Hi, are you on your way?', time: '2:30 PM' },
-        { id: 2, sender: 'agent', text: 'Yes, I\'ll be there in about 15 minutes!', time: '2:32 PM' },
+        { id: 1, sender: 'customer', text: 'Can you call before you come?', time: '2:30 PM' },
+        { id: 2, sender: 'agent', text: 'Sure, I will come in 15 minutes!', time: '2:32 PM' },
+        { id: 3, sender: 'customer', text: 'Thank you. Please call when you arrive.', time: '2:33 PM' },
       ]
     })
     setMessages(initialMessages)
@@ -97,7 +98,7 @@ export default function Delivery() {
   if (deliveryTasks.length === 0) {
     return (
       <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
-        
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="text-gray-400" size={32} />
@@ -120,7 +121,7 @@ export default function Delivery() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-[#0F172A]">Delivery Route</h1>
+        <h1 className="text-3xl font-bold text-[#0F172A]">Delivery Route - Colombo</h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-[#22C55E] rounded-full"></div>
@@ -162,16 +163,16 @@ export default function Delivery() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[#0F172A]/60">Earnings</p>
-              <p className="text-2xl font-semibold text-[#22C55E]">${totalEarnings.toFixed(2)}</p>
+              <p className="text-2xl font-semibold text-[#22C55E]">LKR {totalEarnings.toLocaleString()}</p>
             </div>
-            <div className="text-[#22C55E] text-xl font-bold">$</div>
+            <div className="text-[#22C55E] text-xl font-bold">₨</div>
           </div>
         </div>
       </div>
 
       {/* Map Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-[#0F172A] mb-4">Delivery Map</h2>
+        <h2 className="text-lg font-semibold text-[#0F172A] mb-4">Delivery Map - Colombo Metropolitan Area</h2>
         <div className="h-96 rounded-lg overflow-hidden border border-gray-200">
           <MapContainer
             center={userLocation}
@@ -182,14 +183,14 @@ export default function Delivery() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-            
-            {/* Agent's current location */}
+
+            {/* Agent's current location - Colombo */}
             <Marker position={userLocation} icon={createCustomIcon('#3B82F6')}>
               <Popup>
                 <div className="text-center">
                   <strong>Your Location</strong>
                   <br />
-                  <span className="text-sm text-gray-600">Current Position</span>
+                  <span className="text-sm text-gray-600">Colombo Central</span>
                 </div>
               </Popup>
             </Marker>
@@ -200,8 +201,8 @@ export default function Delivery() {
                 key={task.id}
                 position={task.coordinates}
                 icon={createCustomIcon(
-                  deliveredTasks.has(task.id) ? '#22C55E' : 
-                  selectedDelivery?.id === task.id ? '#EF4444' : '#FBBF24'
+                  deliveredTasks.has(task.id) ? '#22C55E' :
+                    selectedDelivery?.id === task.id ? '#EF4444' : '#FBBF24'
                 )}
                 eventHandlers={{
                   click: () => selectDeliveryLocation(task)
@@ -247,7 +248,7 @@ export default function Delivery() {
             )}
           </MapContainer>
         </div>
-        
+
         {/* Map Legend */}
         <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
           <div className="flex items-center space-x-2">
@@ -336,7 +337,7 @@ export default function Delivery() {
 
             <div className="mt-6 flex space-x-3">
               {!deliveredTasks.has(selectedDelivery.id) ? (
-                <button 
+                <button
                   onClick={() => markAsDelivered(selectedDelivery.id)}
                   className="flex-1 bg-[#22C55E] text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
                 >
@@ -364,15 +365,13 @@ export default function Delivery() {
               <div className="space-y-3">
                 {(messages[selectedDelivery.id] || []).map((message) => (
                   <div key={message.id} className={`flex ${message.sender === 'agent' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-xs px-3 py-2 rounded-lg ${
-                      message.sender === 'agent' 
-                        ? 'bg-[#3B82F6] text-white' 
+                    <div className={`max-w-xs px-3 py-2 rounded-lg ${message.sender === 'agent'
+                        ? 'bg-[#3B82F6] text-white'
                         : 'bg-white border border-gray-200 text-[#0F172A]'
-                    }`}>
-                      <p className="text-sm">{message.text}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.sender === 'agent' ? 'text-blue-100' : 'text-[#0F172A]/60'
                       }`}>
+                      <p className="text-sm">{message.text}</p>
+                      <p className={`text-xs mt-1 ${message.sender === 'agent' ? 'text-blue-100' : 'text-[#0F172A]/60'
+                        }`}>
                         {message.time}
                       </p>
                     </div>
@@ -412,7 +411,7 @@ export default function Delivery() {
           </h2>
           <p className="text-[#0F172A]/60 mb-6">
             Congratulations! You've successfully completed all {deliveryTasks.length} deliveries.
-            Total earnings: ${totalEarnings.toFixed(2)}
+            Total earnings: LKR {totalEarnings.toLocaleString()}
           </p>
           <button
             onClick={() => navigate('/')}

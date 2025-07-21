@@ -7,7 +7,7 @@ export default function Notification() {
       type: 'urgent',
       icon: AlertCircle,
       title: 'Route Change Alert',
-      message: 'Your delivery route has been updated due to road construction on Main Street.',
+      message: 'Your delivery route has been updated due to road construction on Galle Road, Colombo.',
       time: '5 minutes ago',
       read: false
     },
@@ -16,7 +16,7 @@ export default function Notification() {
       type: 'info',
       icon: Info,
       title: 'Schedule Update',
-      message: 'Your shift has been extended by 2 hours today. Please check your updated schedule.',
+      message: 'Your shift has been extended by 2 hours today due to Vesak Day deliveries. Please check your updated schedule.',
       time: '1 hour ago',
       read: false
     },
@@ -25,7 +25,7 @@ export default function Notification() {
       type: 'success',
       icon: CheckCircle,
       title: 'Performance Bonus',
-      message: 'Congratulations! You\'ve earned a performance bonus for excellent customer ratings.',
+      message: 'Congratulations! You\'ve earned a performance bonus for excellent customer ratings in Kandy district.',
       time: '3 hours ago',
       read: true
     },
@@ -34,7 +34,7 @@ export default function Notification() {
       type: 'info',
       icon: Bell,
       title: 'Hub Meeting',
-      message: 'Monthly hub meeting scheduled for tomorrow at 9:00 AM in Conference Room A.',
+      message: 'Monthly hub meeting scheduled for tomorrow at 9:00 AM at Colombo Central Hub.',
       time: '1 day ago',
       read: true
     },
@@ -43,7 +43,7 @@ export default function Notification() {
       type: 'urgent',
       icon: AlertCircle,
       title: 'Weather Alert',
-      message: 'Heavy rain expected in your delivery area. Please take necessary precautions.',
+      message: 'Heavy monsoon rain expected in Western Province. Please take necessary precautions during deliveries.',
       time: '2 days ago',
       read: true
     }
@@ -84,7 +84,6 @@ export default function Notification() {
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
-
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

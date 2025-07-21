@@ -48,6 +48,7 @@ export const sidebarMenuConfig = {
     { label: 'Tasks', icon: ClipboardList, path: '/agent/tasks' },
     { label: 'Delivery', icon: Truck, path: '/agent/delivery' },
     { label: 'Notification', icon: Bell, path: '/agent/notification' },
+    { label: 'Messages', icon: MessageSquare, path: '/agent/message' },
     { label: 'Performance', icon: LineChart, path: '/agent/performance' },
     { label: 'Support', icon: Headset, path: '/agent/support' },
   ],
