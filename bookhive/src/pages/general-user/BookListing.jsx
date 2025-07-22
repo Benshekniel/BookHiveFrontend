@@ -692,7 +692,7 @@ const handleEditBook = (book) => {
           </div>
         </div>
         {loading && <p className="text-center">Loading...</p>}
-        {error && <p className="text-red-500 text-center">{error}</p>}
+        {/* {error && <p className="text-red-500 text-center">{error}</p>} */}
         {sortedListings.length > 0 ? (
           <div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" : "grid-cols-1"}`}>
             {sortedListings.map((book) => <BookCard key={book.bookId} book={book} />)}

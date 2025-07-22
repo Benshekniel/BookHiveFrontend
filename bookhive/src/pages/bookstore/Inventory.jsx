@@ -1,30 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Upload, 
-  Edit, 
-  Trash2, 
-  Eye,
-  MoreHorizontal,
-  Package,
-  DollarSign,
-  BookOpen,
-  Heart,
-  Clock,
-  Users,
-  Star,
-  AlertCircle,
-  CheckCircle,
-  Calendar,
-  FileText,
-  Camera,
-  Download,
-  Settings,
-  Shield,
-  Award
+  Search, Filter, Plus, Upload, Edit, Trash2, Eye, MoreHorizontal,Package,DollarSign,BookOpen,Heart,Clock,Users,Star,AlertCircle,CheckCircle,Calendar,FileText,Camera,Download,Settings, Shield,Award
 } from 'lucide-react';
+import AddBookPopup from '../../components/bookStore/AddBookPopup';
 
 const InventoryPage = () => {
   const [activeTab, setActiveTab] = useState('sales');
@@ -185,61 +163,6 @@ const InventoryPage = () => {
 
   const renderSalesContent = () => (
     <div className="space-y-6">
-      {/* Add Book Form */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Add New Book</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <input
-            type="text"
-            placeholder="Book Title"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <input
-            type="text"
-            placeholder="Author"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <input
-            type="text"
-            placeholder="ISBN"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <input
-            type="number"
-            placeholder="Price ($)"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <select className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option>Select Condition</option>
-            <option>New</option>
-            <option>Used - Like New</option>
-            <option>Used - Good</option>
-            <option>Used - Fair</option>
-          </select>
-          <textarea
-            placeholder="Condition notes (e.g., highlighted pages, worn cover)"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            rows="1"
-          />
-        </div>
-        <div className="flex space-x-3 mt-4">
-          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-            <Plus className="w-4 h-4" />
-            <span>Add Book</span>
-          </button>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-amber-400 text-slate-800 rounded-lg hover:bg-amber-500 transition-colors duration-200">
-            <Upload className="w-4 h-4" />
-            <span>Bulk Upload CSV</span>
-          </button>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
-            <Camera className="w-4 h-4" />
-            <span>Barcode Scan</span>
-          </button>
-        </div>
-      </div>
-
       {/* Books Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -519,14 +442,11 @@ const InventoryPage = () => {
               </div>
             </div>
             <div className="flex space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+              {/* <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
                 <Download className="w-4 h-4" />
                 <span className="font-medium">Export</span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-amber-400 text-slate-800 rounded-lg hover:bg-amber-500 transition-colors duration-200 font-medium">
-                <Plus className="w-4 h-4" />
-                <span>Add Book</span>
-              </button>
+              </button> */}
+              <AddBookPopup />
             </div>
           </div>
         </div>
