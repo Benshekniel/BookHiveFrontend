@@ -113,7 +113,7 @@ useEffect(() => {
       // Array of book cover image URLs (publicly accessible, book-themed)
       const bookCoverImages = [
         'https://cdn.europosters.eu/image/1300/214933.jpg', // Fantasy book
-        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Classic novel
+        'https://bookholics.lk/wp-content/uploads/2025/01/The-Hobbit-Film-tie-in-edition.jpg', // Classic novel
         'https://images.unsplash.com/photo-1589994965851-a8f0a1617a31?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Romance book
         'https://images.unsplash.com/photo-1512820790803-2e00615cf763?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Adventure book
         'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=200&q=80', // Whimsical cover (Ghibli-like)
