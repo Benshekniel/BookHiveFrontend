@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, Users, Clock, AlertTriangle, MapPin, TrendingUp, RefreshCw, Timer, Archive, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { deliveryApi, agentApi, hubApi } from '../../services/HubmanagerService';
+import { deliveryApi, agentApi, hubApi } from '../../services/deliveryService';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
