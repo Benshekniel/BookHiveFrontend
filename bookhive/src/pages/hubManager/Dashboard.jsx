@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, Users, Clock, AlertTriangle, MapPin, TrendingUp, RefreshCw, Timer, Archive, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { deliveryApi, agentApi, hubApi } from '../../services/HubmanagerService';
+import { deliveryApi, agentApi, hubApi } from '../../services/deliveryService';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -374,11 +374,11 @@ const Dashboard = () => {
             </div>
             <div className="relative w-full h-[400px] bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
               {/* Temporary Image Placeholder */}
-              <img 
+              {/* <img 
                 src="/images/delivery-map.png" 
                 alt="Delivery Locations Map"
                 className="w-full h-full object-cover"
-              />
+              /> */}
               
               {/* Original Google Maps iframe - commented out */}
               {/* <iframe

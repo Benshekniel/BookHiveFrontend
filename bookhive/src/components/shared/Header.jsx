@@ -67,6 +67,58 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/user/profile-settings': 'Profile Settings',
   };
 
+  // Sri Lankan dummy data based on route
+  const getDummyUserData = () => {
+    const path = location.pathname.toLowerCase();
+    
+    if (path.startsWith('/admin')) {
+      return {
+        name: 'Kasun',
+        image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg'
+      };
+    } else if (path.startsWith('/moderator')) {
+      return {
+        name: 'Nimali',
+        image: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg'
+      };
+    } else if (path.startsWith('/bookstore')) {
+      return {
+        name: 'Rohan',
+        image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg'
+      };
+    } else if (path.startsWith('/manager')) {
+      return {
+        name: 'Priya',
+        image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg'
+      };
+    } else if (path.startsWith('/agent')) {
+      return {
+        name: 'Chaminda',
+        image: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg'
+      };
+    } else if (path.startsWith('/hubmanager')) {
+      return {
+        name: 'Sanduni',
+        image: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg'
+      };
+    } else if (path.startsWith('/organization')) {
+      return {
+        name: 'Mahesh',
+        image: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg'
+      };
+    } else if (path.startsWith('/user')) {
+      return {
+        name: 'Tharushi',
+        image: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg'
+      };
+    } else {
+      return {
+        name: 'Amal',
+        image: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg'
+      };
+    }
+  };
+
   const normalize = (str) => str.replace(/\/+$/, '').toLowerCase();
   const pathToCheck = normalize(location.pathname);
 
@@ -78,7 +130,9 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     label = found ? found[1] : 'Dashboard';
   }
 
-  const displayName = user?.name || user?.username || 'Guest';
+  const dummyData = getDummyUserData();
+  const displayName = user?.name || user?.username || dummyData.name;
+  const profileImage = user?.profileImage || dummyData.image;
 
   return (
     <>
@@ -134,7 +188,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
                   <p className="text-sm" style={{ color: '#6B7280' }}></p>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
                 <button
                   className="relative p-2 rounded-lg transition-colors"
                   style={{
@@ -152,7 +206,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
                 >
                   <Bell className="w-5 h-5" />
                   <span
-                    className="absolute top-0 right-0 w-2 h-2 rounded-full"
+                    className="absolute top-1 right-1 w-2 h-2 rounded-full"
                     style={{ backgroundColor: '#EF4444' }}
                   ></span>
                 </button>
@@ -164,9 +218,12 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
                     className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <img
-                      src={user?.profileImage || "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"}
+                      src={profileImage}
                       alt="Profile"
                       className="h-8 w-8 rounded-full object-cover border-2 border-yellow-400"
+                      onError={(e) => {
+                        e.target.src = 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg';
+                      }}
                     />
                     <span className="text-sm font-medium text-gray-700 hidden xl:block">
                       {displayName}
@@ -176,6 +233,12 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
                   {/* Profile Dropdown Menu */}
                   {isProfileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                        <p className="text-xs text-gray-500 capitalize">
+                          {location.pathname.split('/')[1] || 'User'}
+                        </p>
+                      </div>
                       <Link
                         to="profile-settings"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"

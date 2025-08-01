@@ -14,23 +14,23 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Active Agents',
-      value: '24',
-      change: '+2 from yesterday',
+      value: '89',
+      change: '+5 from yesterday',
       icon: Users,
       color: 'text-blue-600',
       bg: 'bg-blue-50'
     },
     {
       title: 'Active Deliveries',
-      value: '156',
-      change: '+12 from yesterday',
+      value: '234',
+      change: '+18 from yesterday',
       icon: Truck,
       color: 'text-yellow-600',
       bg: 'bg-yellow-50'
     },
     {
       title: 'Total Hubs',
-      value: '8',
+      value: '12',
       change: 'All operational',
       icon: Building2,
       color: 'text-green-600',
@@ -38,7 +38,7 @@ const Dashboard = () => {
     },
     {
       title: 'Pending Issues',
-      value: '3',
+      value: '7',
       change: 'Needs attention',
       icon: AlertTriangle,
       color: 'text-red-600',
@@ -47,34 +47,53 @@ const Dashboard = () => {
   ];
 
   const recentDeliveries = [
-    { id: 'D001', agent: 'John Smith', status: 'In Transit', time: '2 mins ago' },
-    { id: 'D002', agent: 'Sarah Johnson', status: 'Delivered', time: '5 mins ago' },
-    { id: 'D003', agent: 'Mike Wilson', status: 'Pickup', time: '8 mins ago' },
-    { id: 'D004', agent: 'Lisa Brown', status: 'In Transit', time: '12 mins ago' },
+    { id: 'D001', agent: 'Nuwan Perera', status: 'In Transit', time: '3 mins ago' },
+    { id: 'D002', agent: 'Sanduni Fernando', status: 'Delivered', time: '7 mins ago' },
+    { id: 'D003', agent: 'Kasun Silva', status: 'Pickup', time: '12 mins ago' },
+    { id: 'D004', agent: 'Dilani Rajapaksa', status: 'In Transit', time: '15 mins ago' },
+    { id: 'D005', agent: 'Chamara Wickramasinghe', status: 'Delivered', time: '18 mins ago' },
   ];
 
   const agentCountData = [
-    { name: 'Downtown Hub', agents: 12 },
-    { name: 'North Hub', agents: 8 },
-    { name: 'South Hub', agents: 10 },
-    { name: 'West Hub', agents: 6 },
-    { name: 'East Hub', agents: 9 },
+    { name: 'Colombo Hub', agents: 28 },
+    { name: 'Kandy Hub', agents: 18 },
+    { name: 'Galle Hub', agents: 15 },
+    { name: 'Negombo Hub', agents: 12 },
+    { name: 'Matara Hub', agents: 16 },
+    { name: 'Kandy Hub', agents: 18 },
+    { name: 'Galle Hub', agents: 15 },
+    { name: 'Negombo Hub', agents: 12 },
+    { name: 'Matara Hub', agents: 16 },
+    { name: 'Kandy Hub', agents: 18 },
+    { name: 'Galle Hub', agents: 15 },
+    { name: 'Negombo Hub', agents: 12 },
+    { name: 'Matara Hub', agents: 16 },
   ];
 
   const revenueData = [
-    { name: 'Downtown Hub', revenue: 12500 },
-    { name: 'North Hub', revenue: 9800 },
-    { name: 'South Hub', revenue: 11200 },
-    { name: 'West Hub', revenue: 7600 },
-    { name: 'East Hub', revenue: 10300 },
+    { name: 'Colombo Hub', revenue: 450000 },
+    { name: 'Kandy Hub', revenue: 280000 },
+    { name: 'Galle Hub', revenue: 320000 },
+    { name: 'Negombo Hub', revenue: 195000 },
+    { name: 'Matara Hub', revenue: 240000 },
+    { name: 'Colombo Hub', revenue: 450000 },
+    { name: 'Kandy Hub', revenue: 280000 },
+    { name: 'Galle Hub', revenue: 320000 },
+    { name: 'Negombo Hub', revenue: 195000 },
+    { name: 'Matara Hub', revenue: 240000 },
   ];
 
   const deliveryCountData = [
-    { name: 'Downtown Hub', deliveries: 245 },
-    { name: 'North Hub', deliveries: 189 },
-    { name: 'South Hub', deliveries: 223 },
-    { name: 'West Hub', deliveries: 156 },
-    { name: 'East Hub', deliveries: 201 },
+    { name: 'Colombo Hub', deliveries: 567 },
+    { name: 'Kandy Hub', deliveries: 345 },
+    { name: 'Galle Hub', deliveries: 398 },
+    { name: 'Negombo Hub', deliveries: 234 },
+    { name: 'Matara Hub', deliveries: 289 },
+    { name: 'Colombo Hub', deliveries: 567 },
+    { name: 'Kandy Hub', deliveries: 345 },
+    { name: 'Galle Hub', deliveries: 398 },
+    { name: 'Negombo Hub', deliveries: 234 },
+    { name: 'Matara Hub', deliveries: 289 },
   ];
 
   const getStatusIcon = (status) => {
@@ -143,8 +162,8 @@ const Dashboard = () => {
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
             Delivery Agents by Hub
           </h3>
-          <div className='mt-8'>
-          <ResponsiveContainer width="100%" height={300}>
+          <div className='mt-15'>
+          <ResponsiveContainer width="100%" height={350}>
             <BarChart data={agentCountData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -161,14 +180,14 @@ const Dashboard = () => {
         {/* Revenue by Hub */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-4 font-heading">
-            Revenue by Hub
+            Revenue by Hub (LKR)
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+              <YAxis tickFormatter={(value) => `Rs.${(value/1000).toFixed(0)}K`} />
+              <Tooltip formatter={(value) => [`Rs.${value.toLocaleString()}`, 'Revenue']} />
               <Line type="monotone" dataKey="revenue" stroke="#FBBF24" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>

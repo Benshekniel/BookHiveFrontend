@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Send, Search, RefreshCw, Radio } from 'lucide-react';
-import { agentApi, messageApi } from '../../services/HubmanagerService';
+import { agentApi, messageApi } from '../../services/deliveryService';
 
 const Messages = () => {
   const [selectedChat, setSelectedChat] = useState(null);

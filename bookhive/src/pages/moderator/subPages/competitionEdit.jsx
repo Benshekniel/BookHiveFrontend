@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
+const CompetitionEdit = ({ competition, onCancel, onUpdate }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     prize: '',
-    deadline: '',
+    startDate: '',
+    endDate: '',
     maxParticipants: '',
     rules: '',
     judgingCriteria: ''
   });
+
+  useEffect(() => {
+    setFormData(competition);
+  }, [competition]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -17,34 +22,17 @@ const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.description || !formData.deadline) {
+    if (!formData.title || !formData.description || !formData.startDate || !formData.endDate) {
       alert("Please complete all required fields.");
       return;
     }
-
-    const newCompetition = {
-      ...formData,
-      id: Date.now(),
-      participants: 0
-    };
-
-    if (onCreate) onCreate(newCompetition);
-    setFormData({
-      title: '',
-      description: '',
-      prize: '',
-      deadline: '',
-      maxParticipants: '',
-      rules: '',
-      judgingCriteria: ''
-    });
-    setShowCreateEvent(false);
+    onUpdate(formData);
   };
 
   return (
     <>
-      <h2 className="text-2xl font-bold mb-4">Create New Writing Competition</h2>
-      <p className="text-sm text-gray-500 mb-6">Fill in the competition details below to create a new event.</p>
+      <h2 className="text-2xl font-bold mb-4">Edit Writing Competition</h2>
+      <p className="text-sm text-gray-500 mb-6">Update the competition details below.</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Title */}
@@ -53,7 +41,7 @@ const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
           <input
             type="text"
             value={formData.title}
-            onChange={e => handleChange('title', e.target.value)}
+            onChange={(e) => handleChange('title', e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             placeholder="e.g. Short Story Contest"
             required
@@ -66,7 +54,7 @@ const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
           <textarea
             rows={3}
             value={formData.description}
-            onChange={e => handleChange('description', e.target.value)}
+            onChange={(e) => handleChange('description', e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             placeholder="Brief summary or details of the event..."
             required
@@ -79,35 +67,47 @@ const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
           <input
             type="text"
             value={formData.prize}
-            onChange={e => handleChange('prize', e.target.value)}
+            onChange={(e) => handleChange('prize', e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             placeholder="e.g. Rs. 10,000 + certificate"
           />
         </div>
 
-        {/* Deadline & Max Participants */}
+        {/* Start Date & End Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium">Deadline ✱</label>
+            <label className="block text-sm font-medium">Start Date ✱</label>
             <input
               type="date"
-              value={formData.deadline}
-              onChange={e => handleChange('deadline', e.target.value)}
+              value={formData.startDate}
+              onChange={(e) => handleChange('startDate', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Max Participants</label>
+            <label className="block text-sm font-medium">End Date ✱</label>
             <input
-              type="number"
-              min="1"
-              value={formData.maxParticipants}
-              onChange={e => handleChange('maxParticipants', parseInt(e.target.value))}
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => handleChange('endDate', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-              placeholder="e.g. 100"
+              required
             />
           </div>
+        </div>
+
+        {/* Max Participants */}
+        <div>
+          <label className="block text-sm font-medium">Max Participants</label>
+          <input
+            type="number"
+            min="1"
+            value={formData.maxParticipants}
+            onChange={(e) => handleChange('maxParticipants', parseInt(e.target.value))}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            placeholder="e.g. 100"
+          />
         </div>
 
         {/* Rules */}
@@ -116,7 +116,7 @@ const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
           <textarea
             rows={3}
             value={formData.rules}
-            onChange={e => handleChange('rules', e.target.value)}
+            onChange={(e) => handleChange('rules', e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             placeholder="e.g. Word count 800-1200, originality required..."
           />
@@ -128,19 +128,26 @@ const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
           <textarea
             rows={3}
             value={formData.judgingCriteria}
-            onChange={e => handleChange('judgingCriteria', e.target.value)}
+            onChange={(e) => handleChange('judgingCriteria', e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             placeholder="e.g. Creativity (40%), Language (30%)..."
           />
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded-md text-sm"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
             className="bg-blue-700 hover:bg-blue-800 px-4 py-2 text-white rounded-md text-sm"
           >
-            Create Competition
+            Save Changes
           </button>
         </div>
       </form>
@@ -148,4 +155,4 @@ const CompetitionCreate = ({ setShowCreateEvent, onCreate }) => {
   );
 };
 
-export default CompetitionCreate;
+export default CompetitionEdit;

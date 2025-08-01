@@ -24,134 +24,160 @@ const Agents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('agents');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const agents = [
     {
       id: 'A001',
-      name: 'John Smith',
-      phone: '+1 234-567-8901',
-      email: 'john.smith@email.com',
+      name: 'Nuwan Perera',
+      phone: '+94 71 234 5678',
+      email: 'nuwan.perera@email.com',
       vehicle: 'Motorcycle',
-      vehicleId: 'ABC-123',
+      vehicleId: 'CAB-1234',
       status: 'Active',
       rating: 4.8,
       completedDeliveries: 247,
-      avatar: 'JS'
+      avatar: 'NP'
     },
     {
       id: 'A002',
-      name: 'Sarah Johnson',
-      phone: '+1 234-567-8902',
-      email: 'sarah.j@email.com',
+      name: 'Sanduni Fernando',
+      phone: '+94 77 345 6789',
+      email: 'sanduni.f@email.com',
       vehicle: 'Car',
-      vehicleId: 'XYZ-456',
+      vehicleId: 'WP-AB-1567',
       status: 'Pending',
       rating: 4.6,
       completedDeliveries: 189,
-      avatar: 'SJ'
+      avatar: 'SF'
     },
     {
       id: 'A003',
-      name: 'Mike Wilson',
-      phone: '+1 234-567-8903',
-      email: 'mike.w@email.com',
+      name: 'Kasun Silva',
+      phone: '+94 76 456 7890',
+      email: 'kasun.s@email.com',
       vehicle: 'Bicycle',
       vehicleId: 'BIC-789',
       status: 'Offline',
       rating: 4.9,
       completedDeliveries: 156,
-      avatar: 'MW'
+      avatar: 'KS'
     },
     {
       id: 'A004',
-      name: 'Lisa Brown',
-      phone: '+1 234-567-8904',
-      email: 'lisa.brown@email.com',
+      name: 'Dilani Rajapaksa',
+      phone: '+94 70 567 8901',
+      email: 'dilani.rajapaksa@email.com',
       vehicle: 'Motorcycle',
-      vehicleId: 'MOT-321',
+      vehicleId: 'CBK-4567',
       status: 'Active',
       rating: 4.7,
       completedDeliveries: 278,
-      avatar: 'LB'
+      avatar: 'DR'
     },
+    {
+      id: 'A005',
+      name: 'Chamara Wickramasinghe',
+      phone: '+94 75 678 9012',
+      email: 'chamara.w@email.com',
+      vehicle: 'Car',
+      vehicleId: 'WP-CD-2890',
+      status: 'Active',
+      rating: 4.5,
+      completedDeliveries: 205,
+      avatar: 'CW'
+    },
+    {
+      id: 'A006',
+      name: 'Tharaka Bandara',
+      phone: '+94 78 789 0123',
+      email: 'tharaka.b@email.com',
+      vehicle: 'Motorcycle',
+      vehicleId: 'GAL-8901',
+      status: 'Offline',
+      rating: 4.6,
+      completedDeliveries: 167,
+      avatar: 'TB'
+    }
   ];
 
   const superAgents = [
     {
-      id: 'A001',
-      name: 'John Smith',
-      phone: '+1 234-567-8901',
-      email: 'john.smith@email.com',
+      id: 'SA001',
+      name: 'Pradeep Gunasekara',
+      phone: '+94 71 234 5678',
+      email: 'pradeep.gunasekara@email.com',
       vehicle: 'Truck',
-      vehicleId: 'ABC-123',
-      hub: 'Central Hub',
+      vehicleId: 'WP-EF-3456',
+      hub: 'Colombo Central Hub',
       status: 'Active',
-      avatar: 'JS'
+      avatar: 'PG'
     },
     {
-      id: 'A002',
-      name: 'Sarah Johnson',
-      phone: '+1 234-567-8902',
-      email: 'sarah.j@email.com',
-      vehicle: 'Car',
-      vehicleId: 'XYZ-456',
-      hub: 'West Hub',
+      id: 'SA002',
+      name: 'Malini Wijesinghe',
+      phone: '+94 77 345 6789',
+      email: 'malini.w@email.com',
+      vehicle: 'Van',
+      vehicleId: 'KE-GH-7890',
+      hub: 'Kandy Hub',
       status: 'Pending',
-      avatar: 'SJ'
-    },
-    {
-      id: 'A003',
-      name: 'Mike Wilson',
-      phone: '+1 234-567-8903',
-      email: 'mike.w@email.com',
-      vehicle: 'Truck',
-      vehicleId: 'BIC-789',
-      hub: 'North Hub',
-      status: 'Offline',
       avatar: 'MW'
     },
     {
-      id: 'A004',
-      name: 'Lisa Brown',
-      phone: '+1 234-567-8904',
-      email: 'lisa.brown@email.com',
-      vehicle: 'Car',
-      vehicleId: 'MOT-321',
-      hub: 'East Hub',
+      id: 'SA003',
+      name: 'Roshan Karunaratne',
+      phone: '+94 76 456 7890',
+      email: 'roshan.k@email.com',
+      vehicle: 'Truck',
+      vehicleId: 'GL-IJ-2345',
+      hub: 'Galle Hub',
+      status: 'Offline',
+      avatar: 'RK'
+    },
+    {
+      id: 'SA004',
+      name: 'Nayomi Dissanayake',
+      phone: '+94 70 567 8901',
+      email: 'nayomi.dissanayake@email.com',
+      vehicle: 'Van',
+      vehicleId: 'MT-KL-6789',
+      hub: 'Matara Hub',
       status: 'Active',
-      avatar: 'LB'
+      avatar: 'ND'
     },
   ];
 
   const stats = [
     {
       title: 'Total Agents',
-      value: '50', // Placeholder value
-      change: '+5 this week',
+      value: '147',
+      change: '+12 this week',
       icon: Users,
       color: 'text-blue-600',
       bg: 'bg-blue-50'
     },
     {
       title: 'Active Agents',
-      value: '42',
-      change: '+3 from yesterday',
+      value: '125',
+      change: '+8 from yesterday',
       icon: CheckCircle,
       color: 'text-green-600',
       bg: 'bg-green-50'
     },
     {
       title: 'Pending Verification',
-      value: '8',
-      change: '2 awaiting review',
+      value: '22',
+      change: '7 awaiting review',
       icon: Clock,
       color: 'text-yellow-400',
       bg: 'bg-yellow-50'
     },
     {
       title: 'Online Now',
-      value: '35',
-      change: 'Updated 5 mins ago',
+      value: '89',
+      change: 'Updated 2 mins ago',
       icon: UserCheck,
       color: 'text-blue-600',
       bg: 'bg-blue-50'
@@ -161,23 +187,33 @@ const Agents = () => {
   const pendingApplications = [
     {
       id: 'PA001',
-      name: 'David Chen',
-      phone: '+1 234-567-8905',
-      email: 'david.chen@email.com',
+      name: 'Lahiru Jayasinghe',
+      phone: '+94 75 123 4567',
+      email: 'lahiru.jayasinghe@email.com',
       vehicle: 'Car',
-      vehicleId: 'NEW-001',
-      appliedDate: '2024-01-15',
+      vehicleId: 'WP-MN-0123',
+      appliedDate: '2025-01-18',
       documents: 'Complete'
     },
     {
       id: 'PA002',
-      name: 'Emma Davis',
-      phone: '+1 234-567-8906',
-      email: 'emma.davis@email.com',
+      name: 'Sachini Rathnayake',
+      phone: '+94 78 234 5678',
+      email: 'sachini.rathnayake@email.com',
       vehicle: 'Motorcycle',
-      vehicleId: 'NEW-002',
-      appliedDate: '2024-01-14',
+      vehicleId: 'CP-OP-4567',
+      appliedDate: '2025-01-17',
       documents: 'Pending'
+    },
+    {
+      id: 'PA003',
+      name: 'Darshana Kumara',
+      phone: '+94 76 345 6789',
+      email: 'darshana.kumara@email.com',
+      vehicle: 'Car',
+      vehicleId: 'SG-QR-8901',
+      appliedDate: '2025-01-16',
+      documents: 'Complete'
     }
   ];
 
@@ -185,7 +221,10 @@ const Agents = () => {
     switch (vehicle) {
       case 'Motorcycle':
       case 'Bike':
+      case 'Bicycle':
         return <Bike size={16} />;
+      case 'Truck':
+        return <Truck size={16} />;
       default:
         return <Car size={16} />;
     }
@@ -203,8 +242,6 @@ const Agents = () => {
         return 'bg-gray-400 text-white';
     }
   };
-
-  
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -226,11 +263,6 @@ const Agents = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const totalAgents = agents.length;
-  const activeAgents = agents.filter(a => a.status === 'Active').length;
-  const pendingVerification = agents.filter(a => a.status === 'Pending').length + pendingApplications.length;
-  const onlineNow = agents.filter(a => a.status === 'Active').length;
-
   const filteredSuperAgents = superAgents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       agent.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -238,10 +270,115 @@ const Agents = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // Pagination logic for agents
+  const totalPages = Math.ceil(filteredAgents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAgents = filteredAgents.slice(startIndex, endIndex);
+
+  // Pagination logic for super agents
+  const totalSuperPages = Math.ceil(filteredSuperAgents.length / itemsPerPage);
+  const startSuperIndex = (currentPage - 1) * itemsPerPage;
+  const endSuperIndex = startSuperIndex + itemsPerPage;
+  const currentSuperAgents = filteredSuperAgents.slice(startSuperIndex, endSuperIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1); // Reset to first page when switching tabs
+  };
+
+  const totalAgents = agents.length;
+  const activeAgents = agents.filter(a => a.status === 'Active').length;
+  const pendingVerification = agents.filter(a => a.status === 'Pending').length + pendingApplications.length;
+  const onlineNow = agents.filter(a => a.status === 'Active').length;
+
   const totalsuperAgents = superAgents.length;
   const activeSuperAgents = superAgents.filter(a => a.status === 'Active').length;
   const pendingVerificationSuper = superAgents.filter(a => a.status === 'Pending').length + pendingApplications.length;
   const onlineNowSuper = superAgents.filter(a => a.status === 'Active').length;
+
+  const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+        <span>
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, activeTab === 'agents' ? filteredAgents.length : filteredSuperAgents.length)} of {activeTab === 'agents' ? filteredAgents.length : filteredSuperAgents.length} {activeTab === 'agents' ? 'agents' : 'super agents'}
+        </span>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 border rounded hover:bg-gray-50 transition-colors ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Previous
+          </button>
+          
+          {startPage > 1 && (
+            <>
+              <button 
+                onClick={() => onPageChange(1)}
+                className="px-3 py-1 border rounded hover:bg-gray-50 transition-colors"
+              >
+                1
+              </button>
+              {startPage > 2 && <span className="px-2">...</span>}
+            </>
+          )}
+          
+          {pageNumbers.map(number => (
+            <button 
+              key={number}
+              onClick={() => onPageChange(number)}
+              className={`px-3 py-1 rounded transition-colors ${
+                currentPage === number 
+                  ? 'bg-blue-900 text-white' 
+                  : 'border hover:bg-gray-50'
+              }`}
+            >
+              {number}
+            </button>
+          ))}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-2">...</span>}
+              <button 
+                onClick={() => onPageChange(totalPages)}
+                className="px-3 py-1 border rounded hover:bg-gray-50 transition-colors"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+          
+          <button 
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 border rounded hover:bg-gray-50 transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
@@ -271,7 +408,7 @@ const Agents = () => {
         <div className="border-b bg-white border-gray-200">
           <nav className="flex space-x-8 px-6">
             <button
-              onClick={() => setActiveTab('agents')}
+              onClick={() => handleTabChange('agents')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'agents'
                 ? 'border-blue-900 text-blue-900'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -280,7 +417,7 @@ const Agents = () => {
               Delivery Agents
             </button>
             <button
-              onClick={() => setActiveTab('superagents')}
+              onClick={() => handleTabChange('superagents')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'superagents'
                 ? 'border-blue-900 text-blue-900'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -289,7 +426,7 @@ const Agents = () => {
               Super Agents
             </button>
             <button
-              onClick={() => setActiveTab('verification')}
+              onClick={() => handleTabChange('verification')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'verification'
                 ? 'border-blue-900 text-blue-900'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -351,7 +488,7 @@ const Agents = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAgents.map((agent) => (
+                    {currentAgents.map((agent) => (
                       <tr key={agent.id} className="border-b hover:bg-gray-50 bg-white rounded-lg border-gray-200">
                         <td className="py-4">
                           <div className="flex items-center space-x-3">
@@ -412,16 +549,11 @@ const Agents = () => {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
-                <span>Showing 1 to {filteredAgents.length} of {totalAgents} agents</span>
-                <div className="flex items-center space-x-2">
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">Previous</button>
-                  <button className="px-3 py-1 bg-blue-900 text-white rounded">1</button>
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">2</button>
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">3</button>
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
-                </div>
-              </div>
+              <PaginationComponent 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             </>
           )}
 
@@ -452,9 +584,9 @@ const Agents = () => {
                   </select>
                   <select className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-900 focus:border-transparent">
                     <option value="all">All Vehicles</option>
-                    <option value="motorcycle">Motorcycle</option>
+                    <option value="truck">Truck</option>
+                    <option value="van">Van</option>
                     <option value="car">Car</option>
-                    <option value="bicycle">Bicycle</option>
                   </select>
                 </div>
               </div>
@@ -474,7 +606,7 @@ const Agents = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAgents.map((superAgent) => (
+                    {filteredSuperAgents.map((superAgent) => (
                       <tr key={superAgent.id} className="border-b hover:bg-gray-50 bg-white rounded-lg border-gray-200">
                         <td className="py-4">
                           <div className="flex items-center space-x-3">
@@ -516,7 +648,7 @@ const Agents = () => {
                         <td className="py-4">
                           <div className="flex items-center space-x-1">
                             <Star className="text-yellow-400 fill-current" size={14} />
-                            <span className="text-sm font-medium">{superAgent.rating}</span>
+                            <span className="text-sm font-medium">4.7</span>
                           </div>
                         </td>
                         <td className="py-4">
@@ -535,16 +667,11 @@ const Agents = () => {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
-                <span>Showing 1 to {filteredSuperAgents.length} of {totalsuperAgents} super agents</span>
-                <div className="flex items-center space-x-2">
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">Previous</button>
-                  <button className="px-3 py-1 bg-blue-900 text-white rounded">1</button>
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">2</button>
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">3</button>
-                  <button className="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
-                </div>
-              </div>
+              <PaginationComponent 
+                currentPage={currentPage}
+                totalPages={totalSuperPages}
+                onPageChange={handlePageChange}
+              />
             </>
           )}
 

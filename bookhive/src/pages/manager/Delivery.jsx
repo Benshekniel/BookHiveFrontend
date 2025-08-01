@@ -27,273 +27,255 @@ const Delivery = () => {
   const hubs = [
     {
       id: 'H001',
-      name: 'Downtown Hub',
-      location: 'Business District',
-      activeDeliveries: 12,
-      completedToday: 45,
-      totalDeliveries: 156
+      name: 'Colombo Central Hub',
+      location: 'Fort, Colombo 01',
+      activeDeliveries: 45,
+      completedToday: 125,
+      totalDeliveries: 567
     },
     {
       id: 'H002',
-      name: 'North Hub',
-      location: 'Industrial Park',
-      activeDeliveries: 8,
-      completedToday: 38,
-      totalDeliveries: 124
+      name: 'Kandy Hub',
+      location: 'Kandy City Centre',
+      activeDeliveries: 28,
+      completedToday: 89,
+      totalDeliveries: 345
     },
     {
       id: 'H003',
-      name: 'South Hub',
-      location: 'Commerce District',
-      activeDeliveries: 15,
-      completedToday: 42,
-      totalDeliveries: 189
+      name: 'Galle Hub',
+      location: 'Galle Fort Area',
+      activeDeliveries: 32,
+      completedToday: 98,
+      totalDeliveries: 398
     },
     {
       id: 'H004',
-      name: 'West Hub',
-      location: 'Logistics Avenue',
-      activeDeliveries: 6,
-      completedToday: 31,
-      totalDeliveries: 98
+      name: 'Negombo Hub',
+      location: 'Negombo Commercial District',
+      activeDeliveries: 19,
+      completedToday: 67,
+      totalDeliveries: 234
     },
+    {
+      id: 'H005',
+      name: 'Matara Hub',
+      location: 'Matara Town',
+      activeDeliveries: 24,
+      completedToday: 78,
+      totalDeliveries: 289
+    },
+    {
+      id: 'H006',
+      name: 'Jaffna Hub',
+      location: 'Jaffna City',
+      activeDeliveries: 15,
+      completedToday: 52,
+      totalDeliveries: 198
+    }
   ];
 
 const deliveries = [
   {
     id: 'D001',
     hubId: 'H001',
-    customer: 'John Smith',
-    pickup: '123 Main St',
-    dropoff: '456 Oak Ave',
-    rider: 'Jane Doe',
+    customer: 'Priyanka Wijesinghe',
+    pickup: 'Pettah Market, Colombo 11',
+    dropoff: 'Bambalapitiya, Colombo 04',
+    rider: 'Nuwan Perera',
     status: 'in-transit',
-    estimatedTime: '30 min',
+    estimatedTime: '25 min',
     orderTime: '09:15 AM',
     priority: 'high',
     trackingNumber: 'D001',
-    description: 'Standard package',
-    weight: '2.5 kg',
-    dimensions: '30x20x10 cm',
-    paymentMethod: 'Credit Card'
+    description: 'Electronics package',
+    weight: '3.2 kg',
+    dimensions: '35x25x15 cm',
+    paymentMethod: 'Card Payment'
   },
   {
     id: 'D002',
     hubId: 'H001',
-    customer: 'Sarah Johnson',
-    pickup: '789 Pine Rd',
-    dropoff: '321 Elm St',
-    rider: 'Mike Wilson',
+    customer: 'Sunil Rathnayake',
+    pickup: 'Liberty Plaza, Colombo 03',
+    dropoff: 'Dehiwala, Colombo',
+    rider: 'Sanduni Fernando',
     status: 'delivered',
     estimatedTime: 'Completed',
     orderTime: '08:45 AM',
     priority: 'medium',
     trackingNumber: 'D002',
-    description: 'Fragile package',
+    description: 'Clothing items',
     weight: '1.8 kg',
-    dimensions: '25x15x8 cm',
+    dimensions: '30x20x8 cm',
     paymentMethod: 'Cash on Delivery'
   },
   {
     id: 'D003',
     hubId: 'H002',
-    customer: 'Mike Wilson',
-    pickup: '654 Cedar Ln',
-    dropoff: '987 Birch Dr',
-    rider: 'Lisa Brown',
+    customer: 'Chamari Dissanayake',
+    pickup: 'Kandy Market, Kandy',
+    dropoff: 'Peradeniya, Kandy',
+    rider: 'Kasun Silva',
     status: 'picked-up',
-    estimatedTime: '45 min',
+    estimatedTime: '40 min',
     orderTime: '10:00 AM',
     priority: 'low',
     trackingNumber: 'D003',
     description: 'Documents',
     weight: '0.5 kg',
-    dimensions: '22x28x1 cm',
-    paymentMethod: 'Credit Card'
+    dimensions: '25x18x2 cm',
+    paymentMethod: 'Card Payment'
   },
   {
     id: 'D004',
     hubId: 'H003',
-    customer: 'Lisa Brown',
-    pickup: '147 Maple St',
-    dropoff: '258 Willow Ave',
-    rider: 'Tom Smith',
+    customer: 'Mahesh Gunasekara',
+    pickup: 'Galle Fort, Galle',
+    dropoff: 'Unawatuna, Galle',
+    rider: 'Dilani Rajapaksa',
     status: 'delayed',
     estimatedTime: 'Overdue',
     orderTime: '09:30 AM',
     priority: 'high',
     trackingNumber: 'D004',
-    description: 'Urgent package',
-    weight: '3.2 kg',
-    dimensions: '35x25x15 cm',
-    paymentMethod: 'Credit Card'
+    description: 'Urgent medical supplies',
+    weight: '2.5 kg',
+    dimensions: '30x20x12 cm',
+    paymentMethod: 'Card Payment'
   },
   {
     id: 'D005',
     hubId: 'H004',
-    customer: 'Emily Davis',
-    pickup: '369 Spruce St',
-    dropoff: '741 Pine Rd',
-    rider: 'Alex Carter',
+    customer: 'Nayomi Jayawardena',
+    pickup: 'Negombo Fish Market',
+    dropoff: 'Katunayake, Negombo',
+    rider: 'Chamara Wickramasinghe',
     status: 'in-transit',
-    estimatedTime: '25 min',
+    estimatedTime: '30 min',
     orderTime: '10:45 AM',
     priority: 'medium',
     trackingNumber: 'D005',
-    description: 'Electronics',
-    weight: '4.0 kg',
+    description: 'Fresh seafood',
+    weight: '5.0 kg',
     dimensions: '40x30x20 cm',
-    paymentMethod: 'PayPal'
+    paymentMethod: 'Cash on Delivery'
   },
   {
     id: 'D006',
     hubId: 'H005',
-    customer: 'David Lee',
-    pickup: '852 Oak Ln',
-    dropoff: '963 Cedar Dr',
-    rider: 'Sophie Turner',
+    customer: 'Thilak Perera',
+    pickup: 'Matara Main Street',
+    dropoff: 'Mirissa, Matara',
+    rider: 'Tharaka Bandara',
     status: 'delivered',
     estimatedTime: 'Completed',
     orderTime: '07:30 AM',
     priority: 'low',
     trackingNumber: 'D006',
-    description: 'Clothing',
+    description: 'Ayurvedic medicines',
     weight: '1.2 kg',
-    dimensions: '30x25x5 cm',
-    paymentMethod: 'Credit Card'
+    dimensions: '25x15x8 cm',
+    paymentMethod: 'Card Payment'
   },
   {
     id: 'D007',
     hubId: 'H001',
-    customer: 'Anna Taylor',
-    pickup: '159 Elm Ave',
-    dropoff: '753 Maple St',
-    rider: 'James Brown',
+    customer: 'Anura Kumara',
+    pickup: 'Maradana Station, Colombo',
+    dropoff: 'Mount Lavinia, Colombo',
+    rider: 'Pradeep Gunasekara',
     status: 'picked-up',
-    estimatedTime: '40 min',
+    estimatedTime: '35 min',
     orderTime: '11:00 AM',
     priority: 'high',
     trackingNumber: 'D007',
-    description: 'Medical supplies',
-    weight: '2.0 kg',
-    dimensions: '25x20x10 cm',
+    description: 'Important documents',
+    weight: '0.8 kg',
+    dimensions: '22x28x3 cm',
     paymentMethod: 'Cash on Delivery'
   },
   {
     id: 'D008',
     hubId: 'H001',
-    customer: 'Robert Wilson',
-    pickup: '426 Birch Rd',
-    dropoff: '582 Pine St',
-    rider: 'Emma White',
+    customer: 'Lakshika Silva',
+    pickup: 'Keells Super, Nugegoda',
+    dropoff: 'Kotte, Sri Jayawardenepura',
+    rider: 'Malini Wijesinghe',
     status: 'in-transit',
-    estimatedTime: '35 min',
+    estimatedTime: '20 min',
     orderTime: '09:50 AM',
     priority: 'medium',
     trackingNumber: 'D008',
-    description: 'Books',
-    weight: '3.5 kg',
-    dimensions: '35x25x10 cm',
-    paymentMethod: 'Credit Card'
+    description: 'Grocery items',
+    weight: '4.5 kg',
+    dimensions: '45x35x25 cm',
+    paymentMethod: 'Card Payment'
   },
   {
     id: 'D009',
     hubId: 'H001',
-    customer: 'Laura Martinez',
-    pickup: '741 Cedar Ave',
-    dropoff: '369 Oak St',
-    rider: 'Chris Evans',
+    customer: 'Ruwan Jayasuriya',
+    pickup: 'One Galle Face, Colombo 02',
+    dropoff: 'Rajagiriya, Colombo',
+    rider: 'Roshan Karunaratne',
     status: 'delivered',
     estimatedTime: 'Completed',
     orderTime: '08:00 AM',
     priority: 'low',
     trackingNumber: 'D009',
-    description: 'Household items',
-    weight: '5.0 kg',
-    dimensions: '45x30x25 cm',
-    paymentMethod: 'PayPal'
+    description: 'Books and stationery',
+    weight: '2.8 kg',
+    dimensions: '35x25x10 cm',
+    paymentMethod: 'Card Payment'
   },
   {
     id: 'D010',
     hubId: 'H001',
-    customer: 'Michael Chen',
-    pickup: '987 Willow Dr',
-    dropoff: '123 Spruce Ln',
-    rider: 'Olivia Green',
+    customer: 'Geethika Fernando',
+    pickup: 'Crescat Boulevard, Colombo 03',
+    dropoff: 'Wellawatte, Colombo 06',
+    rider: 'Nayomi Dissanayake',
     status: 'delayed',
     estimatedTime: 'Overdue',
     orderTime: '10:15 AM',
     priority: 'high',
     trackingNumber: 'D010',
-    description: 'Urgent documents',
-    weight: '0.8 kg',
-    dimensions: '30x20x2 cm',
-    paymentMethod: 'Credit Card'
-  },
-  {
-    id: 'D011',
-    hubId: 'H001',
-    customer: 'Sophia Adams',
-    pickup: '258 Maple Rd',
-    dropoff: '654 Elm Ave',
-    rider: 'Liam Parker',
-    status: 'in-transit',
-    estimatedTime: '20 min',
-    orderTime: '11:30 AM',
-    priority: 'medium',
-    trackingNumber: 'D011',
-    description: 'Groceries',
-    weight: '6.0 kg',
-    dimensions: '50x35x20 cm',
-    paymentMethod: 'Cash on Delivery'
-  },
-  {
-    id: 'D012',
-    hubId: 'H001',
-    customer: 'Daniel Kim',
-    pickup: '321 Pine St',
-    dropoff: '789 Cedar Ln',
-    rider: 'Mia Johnson',
-    status: 'picked-up',
-    estimatedTime: '50 min',
-    orderTime: '09:00 AM',
-    priority: 'low',
-    trackingNumber: 'D012',
-    description: 'Office supplies',
-    weight: '2.8 kg',
-    dimensions: '40x30x15 cm',
-    paymentMethod: 'Credit Card'
+    description: 'Fashion accessories',
+    weight: '1.5 kg',
+    dimensions: '30x20x5 cm',
+    paymentMethod: 'Card Payment'
   }
 ];
 
 const statics = [
     {
       title: 'Total Today',
-      value: '50', // Placeholder value
-      change: '+5 from yesterday',
+      value: '234', 
+      change: '+18 from yesterday',
       icon: Package,
       color: 'text-blue-500',
       bg: 'bg-blue-50'
     },
     {
       title: 'In Transit',
-      value: '15',
-      change: '+2 in last hour',
+      value: '67',
+      change: '+8 in last hour',
       icon: Truck,
       color: 'text-blue-500',
       bg: 'bg-blue-50'
     },
     {
       title: 'Delivered',
-      value: '30',
-      change: '+8 today',
+      value: '156',
+      change: '+23 today',
       icon: CheckCircle,
       color: 'text-green-500',
       bg: 'bg-green-50'
     },
     {
       title: 'Delayed',
-      value: '5',
+      value: '11',
       change: 'Needs attention',
       icon: AlertTriangle,
       color: 'text-red-500',
@@ -344,7 +326,7 @@ const statics = [
 
   const filteredDeliveries = hubDeliveries.filter(delivery => {
     const matchesSearch = delivery.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      delivery.customer.toLowerCase().includes(searchTerm.tostoichiometry) ||
+      delivery.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
       delivery.rider.toLowerCase().includes(searchTerm.toLowerCase()) ||
       delivery.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || delivery.status === statusFilter;
@@ -616,7 +598,7 @@ const statics = [
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {hubs.map((hub) => (
             <div
               key={hub.id}
@@ -658,25 +640,6 @@ const statics = [
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
-      {/* <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setSelectedHub(null)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft size={20} className="text-gray-600" />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 font-heading">{selectedHub.name} Deliveries</h2>
-            <p className="text-gray-600">Monitor deliveries from {selectedHub.location}</p>
-          </div>
-        </div>
-        <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2">
-          <Eye size={20} />
-          <span>Analytics</span>
-        </button>
-      </div> */}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statics.map((stat, index) => {
         const Icon = stat.icon;

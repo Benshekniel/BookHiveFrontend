@@ -9,23 +9,23 @@ export default function Hub() {
   ]
 
   const hubActivities = [
-    { id: 1, agent: 'Mike Johnson', action: 'Package sorted', time: '5 min ago', status: 'completed' },
-    { id: 2, agent: 'Sarah Davis', action: 'Joined hub shift', time: '15 min ago', status: 'active' },
-    { id: 3, agent: 'Tom Wilson', action: 'Request to join hub', time: '30 min ago', status: 'pending' },
-    { id: 4, agent: 'Lisa Brown', action: 'Completed delivery route', time: '1 hour ago', status: 'completed' },
+    { id: 1, agent: 'Kasun Perera', action: 'Package sorted', time: '5 min ago', status: 'completed' },
+    { id: 2, agent: 'Nimali Fernando', action: 'Joined hub shift', time: '15 min ago', status: 'active' },
+    { id: 3, agent: 'Chaminda Silva', action: 'Request to join hub', time: '30 min ago', status: 'pending' },
+    { id: 4, agent: 'Sanduni Jayawardena', action: 'Completed delivery route', time: '1 hour ago', status: 'completed' },
   ]
 
   const joinRequests = [
-    { id: 1, name: 'Alex Rodriguez', experience: '2 years', rating: 4.8 },
-    { id: 2, name: 'Emma Thompson', experience: '1.5 years', rating: 4.9 },
-    { id: 3, name: 'David Chen', experience: '3 years', rating: 4.7 },
+    { id: 1, name: 'Tharindu Wickramasinghe', experience: '2 years', rating: 4.8 },
+    { id: 2, name: 'Priyanka Rajapaksa', experience: '1.5 years', rating: 4.9 },
+    { id: 3, name: 'Nuwan Bandara', experience: '3 years', rating: 4.7 },
   ]
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-[#0F172A]">
-          Downtown Hub
+          Colombo Central Hub
         </h1>
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 bg-[#22C55E] rounded-full"></div>
