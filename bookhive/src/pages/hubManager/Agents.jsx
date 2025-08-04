@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, MoreVertical, CheckCircle, XCircle, Edit, Trash2, Eye, MessageSquare } from 'lucide-react';
-import { agentApi } from '../../services/HubmanagerService';
+import { agentApi } from '../../services/deliveryService';
 
 const Agents = () => {
   const [searchTerm, setSearchTerm] = useState('');

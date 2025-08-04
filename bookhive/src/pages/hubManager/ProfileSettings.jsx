@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Building, Mail, Phone, MapPin, FileText, Camera, Save, Edit, RefreshCw } from 'lucide-react';
-import { hubApi } from '../../services/HubmanagerService';
+import { hubApi } from '../../services/deliveryService';
 
 const ProfileSettings = () => {
   const [isEditing, setIsEditing] = useState(false);

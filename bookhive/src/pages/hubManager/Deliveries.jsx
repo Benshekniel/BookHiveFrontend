@@ -19,7 +19,7 @@ import {
   Truck,
   Home
 } from 'lucide-react';
-import { deliveryApi, agentApi } from '../../services/HubmanagerService';
+import { deliveryApi, agentApi } from '../../services/deliveryService';
 
 const Deliveries = () => {
   const [searchTerm, setSearchTerm] = useState('');

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { BookOpen } from 'lucide-react';
 import Button from '../../components/shared/Button';
 import axios from "axios";
+import { showMessageCard } from './MessageCard'; 
 
 const signupSchemaStep1 = z.object({
   firstName: z.string().min(2, 'First Name must be at least 2 characters'),
@@ -126,7 +127,6 @@ const SignupPage = () => {
       const orgData = {
         type: allData.organizationType,
         reg_no: allData.registrationNo,
-        status: 'active',
         fname: allData.firstName,
         lname: allData.lastName,
         email: allData.email,
@@ -153,20 +153,40 @@ const SignupPage = () => {
         });
   
         const result = response.data;
-  
-        if (result.message === "success") {
-          alert("Account created successfully. Login now ...");
-          setTimeout(() => navigate('/login'), 1500);
+
+        if (result.message === 'success&pending') {
+          // Show card for pending verification
+          showMessageCard(
+            'Your account request has been received!',
+            'We are currently verifying your information. Please check your email for updates.',
+            'info'
+          );
+        } else if (result.message === 'success&active') {
+          // Show card for successful account creation
+          showMessageCard(
+            'Account Created Successfully!',
+            'You can now log in to your account.',
+            'success'
+          );
+          setTimeout(() => navigate('/login'), 2000);
         } else {
-          alert("Error: " + result.message);
+          // Any other response, treat as error
+          showMessageCard(
+            'Error',
+            'Something went wrong: ' + result.message,
+            'error'
+          );
           setError(result.message);
         }
-  
       } catch (error) {
-        console.error("Error:", error);
-        alert("Something went wrong: " + (error.response?.data?.message || error.message));
-        setError("Something went wrong: " + (error.response?.data?.message || error.message));
+        console.error('Error:', error);
+        const errMsg =
+          'Something went wrong: ' +
+          (error.response?.data?.message || error.message);
+        showMessageCard('Error', errMsg, 'error');
+        setError(errMsg);
       }
+    
     } 
 
     if (selectedRole === 'user') {
@@ -224,23 +244,37 @@ const SignupPage = () => {
 
       const result = response.data;
 
-      if (result.message === 'success') {
-        alert('Account created successfully. Login now ...');
-        setTimeout(() => navigate('/login'), 1500);
+      if (result.message === 'success&pending') {
+        // Show card for pending verification
+        showMessageCard(
+          'Your account request has been received!',
+          'We are currently verifying your information. Please check your email for updates.',
+          'info'
+        );
+      } else if (result.message === 'success&active') {
+        // Show card for successful account creation
+        showMessageCard(
+          'Account Created Successfully!',
+          'You can now log in to your account.',
+          'success'
+        );
+        setTimeout(() => navigate('/login'), 2000);
       } else {
-        alert('Error: ' + result.message);
+        // Any other response, treat as error
+        showMessageCard(
+          'Error',
+          'Something went wrong: ' + result.message,
+          'error'
+        );
         setError(result.message);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(
+      const errMsg =
         'Something went wrong: ' +
-          (error.response?.data?.message || error.message)
-      );
-      setError(
-        'Something went wrong: ' +
-          (error.response?.data?.message || error.message)
-      );
+        (error.response?.data?.message || error.message);
+      showMessageCard('Error', errMsg, 'error');
+      setError(errMsg);
     }
   } 
   
