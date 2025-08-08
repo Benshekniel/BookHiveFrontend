@@ -50,14 +50,13 @@ const Dashboard = () => {
 
     // Create script element
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU&libraries=geometry,places`;
-    script.async = true;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU&libraries=geometry,places`; script.async = true;
     script.defer = true;
-    
+
     script.onload = () => {
       setMapLoaded(true);
     };
-    
+
     script.onerror = () => {
       console.error('Error loading Google Maps');
       setError('Failed to load Google Maps');
@@ -72,7 +71,7 @@ const Dashboard = () => {
 
     // Default center (Colombo, Sri Lanka)
     const defaultCenter = { lat: 6.9271, lng: 79.8612 };
-    
+
     // Initialize map
     const map = new window.google.maps.Map(mapElement, {
       zoom: 12,
@@ -151,11 +150,11 @@ const Dashboard = () => {
 
   const geocodeAndAddMarker = (map, delivery, bounds) => {
     const geocoder = new window.google.maps.Geocoder();
-    
+
     geocoder.geocode({ address: delivery.deliveryAddress }, (results, status) => {
       if (status === 'OK' && results[0]) {
         const position = results[0].geometry.location;
-        
+
         const icon = {
           url: getMarkerIcon(delivery.status),
           scaledSize: new window.google.maps.Size(30, 30),
@@ -188,7 +187,7 @@ const Dashboard = () => {
   const getMarkerIcon = (status) => {
     // Return different colored markers based on delivery status
     const baseUrl = 'https://maps.google.com/mapfiles/ms/icons/';
-    
+
     switch (status) {
       case 'PICKED_UP':
         return `${baseUrl}blue-dot.png`;
@@ -269,24 +268,24 @@ const Dashboard = () => {
       // Filter today's deliveries that have been picked up
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0]; // Get YYYY-MM-DD format
-      
+
       const todayPickedDeliveries = deliveriesResponse.filter(delivery => {
         if (!delivery.pickupTime) return false;
-        
+
         const pickupDate = new Date(delivery.pickupTime);
         const pickupDateStr = pickupDate.toISOString().split('T')[0];
-        
+
         return pickupDateStr === todayStr;
       });
 
       setTodayDeliveries(todayPickedDeliveries);
 
       // Calculate stats
-      const activeDeliveries = deliveriesResponse.filter(d => 
+      const activeDeliveries = deliveriesResponse.filter(d =>
         ['IN_TRANSIT', 'PICKED_UP'].includes(d.status)
       ).length;
-      
-      const availableRiders = agentsResponse.filter(a => 
+
+      const availableRiders = agentsResponse.filter(a =>
         a.availabilityStatus === 'AVAILABLE'
       ).length;
 
@@ -296,7 +295,7 @@ const Dashboard = () => {
       // Calculate total delivery time (sum of all delivery times)
       const deliveredOrders = deliveriesResponse.filter(d => d.status === 'DELIVERED');
       let totalDeliveryTime = 0;
-      
+
       if (deliveredOrders.length > 0) {
         totalDeliveryTime = deliveredOrders.reduce((acc, delivery) => {
           if (delivery.createdAt && delivery.deliveryTime) {
@@ -370,7 +369,7 @@ const Dashboard = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMinutes = Math.floor((now - date) / (1000 * 60));
-    
+
     if (diffMinutes < 60) {
       return `${diffMinutes} min ago`;
     } else if (diffMinutes < 1440) {
@@ -382,7 +381,7 @@ const Dashboard = () => {
 
   const generateAlerts = (deliveries, agents) => {
     const alerts = [];
-    
+
     // Check for delayed deliveries
     const delayedDeliveries = deliveries.filter(d => d.status === 'DELAYED');
     delayedDeliveries.forEach(delivery => {
@@ -404,7 +403,7 @@ const Dashboard = () => {
     }
 
     // Check for pending deliveries without agents
-    const unassignedDeliveries = deliveries.filter(d => 
+    const unassignedDeliveries = deliveries.filter(d =>
       d.status === 'PENDING' && !d.agentId
     );
     if (unassignedDeliveries.length > 0) {
@@ -422,27 +421,27 @@ const Dashboard = () => {
     // Generate weekly performance data for the last 7 days
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const today = new Date();
-    
+
     const weeklyData = days.map((day, index) => {
       const date = new Date(today);
       date.setDate(today.getDate() - (6 - index)); // Get the date for each day
-      
+
       // Filter deliveries for this specific day
       const dayDeliveries = deliveries.filter(delivery => {
         const deliveryDate = new Date(delivery.createdAt || delivery.updatedAt);
         return deliveryDate.toDateString() === date.toDateString();
       });
-      
+
       // Calculate metrics for this day
       const totalDeliveries = dayDeliveries.length;
       const successfulDeliveries = dayDeliveries.filter(d => d.status === 'DELIVERED').length;
       const failedDeliveries = dayDeliveries.filter(d => d.status === 'CANCELLED' || d.status === 'DELAYED').length;
-      
+
       // If no real data, generate demo data for visualization
       const deliveries_count = totalDeliveries > 0 ? totalDeliveries : Math.floor(Math.random() * 50) + 20;
       const successful = successfulDeliveries > 0 ? successfulDeliveries : Math.floor(deliveries_count * 0.8);
       const failed = failedDeliveries > 0 ? failedDeliveries : deliveries_count - successful;
-      
+
       return {
         day,
         date: date.toISOString().split('T')[0],
@@ -452,7 +451,7 @@ const Dashboard = () => {
         efficiency: Math.round((successful / deliveries_count) * 100)
       };
     });
-    
+
     return weeklyData;
   };
 
@@ -492,7 +491,7 @@ const Dashboard = () => {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-600">{error}</p>
-          <button 
+          <button
             onClick={fetchDashboardData}
             className="mt-2 text-red-600 hover:text-red-800 underline"
           >
@@ -503,29 +502,29 @@ const Dashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          title="Active Deliveries" 
-          value={stats.activeDeliveries} 
-          icon={Package} 
-          color="text-blue-500" 
+        <StatCard
+          title="Active Deliveries"
+          value={stats.activeDeliveries}
+          icon={Package}
+          color="text-blue-500"
         />
-        <StatCard 
-          title="Available Riders" 
-          value={stats.availableRiders} 
-          icon={Users} 
-          color="text-green-500" 
+        <StatCard
+          title="Available Riders"
+          value={stats.availableRiders}
+          icon={Users}
+          color="text-green-500"
         />
-        <StatCard 
-          title="Total Deliveries" 
-          value={stats.totalDeliveries} 
-          icon={Archive} 
-          color="text-purple-500" 
+        <StatCard
+          title="Total Deliveries"
+          value={stats.totalDeliveries}
+          icon={Archive}
+          color="text-purple-500"
         />
-        <StatCard 
-          title="Today's Pickups" 
-          value={todayDeliveries.length} 
-          icon={Timer} 
-          color="text-orange-500" 
+        <StatCard
+          title="Today's Pickups"
+          value={todayDeliveries.length}
+          icon={Timer}
+          color="text-orange-500"
         />
       </div>
 
@@ -547,8 +546,8 @@ const Dashboard = () => {
                         `px-2 py-1 rounded-full text-xs font-medium
                         ${delivery.status === 'Delivered' ? 'bg-green-100 text-green-800' :
                           delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-                          delivery.status === 'Picked Up' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'}`
+                            delivery.status === 'Picked Up' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'}`
                       }>
                         {delivery.status}
                       </span>
@@ -576,7 +575,7 @@ const Dashboard = () => {
                       p-3 rounded-lg border-l-4 mb-4
                       ${alert.type === 'error' ? 'bg-red-50 border-red-400' :
                         alert.type === 'warning' ? 'bg-yellow-50 border-yellow-400' :
-                        'bg-blue-50 border-blue-400'}
+                          'bg-blue-50 border-blue-400'}
                     `}
                   >
                     <p className="text-sm text-slate-900 m-0">{alert.message}</p>
@@ -616,7 +615,7 @@ const Dashboard = () => {
               ) : (
                 <div id="delivery-map" className="w-full h-full"></div>
               )}
-              
+
               {todayDeliveries.length === 0 && mapLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90">
                   <div className="text-center">
@@ -630,40 +629,40 @@ const Dashboard = () => {
         </Card>
 
         {/* Weekly Performance Chart */}
-      <div className="grid gap-6 grid-cols-1">
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="w- h-5 text-green-500" />
-              <h2 className="text-xl font-poppins font-semibold text-slate-900 m-0">Weekly Delivery Performance</h2>
+        <div className="grid gap-6 grid-cols-1">
+          <Card>
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="w- h-5 text-green-500" />
+                <h2 className="text-xl font-poppins font-semibold text-slate-900 m-0">Weekly Delivery Performance</h2>
+              </div>
+              <div className="relative w-full h-[300px] mt-24">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyData} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="day"
+
+                    />
+                    <YAxis
+
+                    />
+                    <Tooltip
+
+                    />
+                    <Bar
+                      dataKey="deliveries"
+                      fill="#3b82f6"
+                      name="deliveries"
+                      radius={[4, 4, 0, 0]}
+                    />
+
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="relative w-full h-[300px] mt-24">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="day" 
-                    
-                  />
-                  <YAxis 
-                    
-                  />
-                  <Tooltip 
-                    
-                  />
-                  <Bar 
-                    dataKey="deliveries" 
-                    fill="#3b82f6" 
-                    name="deliveries"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

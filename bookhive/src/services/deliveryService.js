@@ -776,6 +776,31 @@ export const routeHelpers = {
       }
     };
   },
+
+  // Add this to the routeHelpers object
+calculatePolygonPerimeter: (coordinates) => {
+  if (!coordinates || coordinates.length < 3) return 0;
+  
+  let perimeter = 0;
+  for (let i = 0; i < coordinates.length; i++) {
+    const current = coordinates[i];
+    const next = coordinates[(i + 1) % coordinates.length];
+    
+    // Use Haversine formula for distance
+    const R = 6371; // Earth radius in kilometers
+    const dLat = (next.lat - current.lat) * Math.PI / 180;
+    const dLng = (next.lng - current.lng) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(current.lat * Math.PI / 180) * Math.cos(next.lat * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    
+    perimeter += distance;
+  }
+  
+  return parseFloat(perimeter.toFixed(2));
+},
   
   // Format boundary coordinates for display
   formatBoundaryDisplay: (boundaryCoordinates) => {
@@ -800,6 +825,8 @@ export const routeHelpers = {
       console.log(`Route "${routeName}" has no boundary coordinates`);
     }
   }
+
+  
 };
 
 // Export default API client

@@ -1,4 +1,4 @@
-// Routes.jsx - Complete file with infinite loop fix and all original content
+// Routes.jsx - Complete file with RouteEditor integration
 import { useState, useEffect, useRef } from 'react';
 import {
   Plus,
@@ -23,6 +23,7 @@ import {
   Info
 } from 'lucide-react';
 import { routeApi, agentApi, routeAssignmentApi, routeHelpers } from '../../services/deliveryService';
+import RouteEditor from '../../components/hubmanager/RouteEditor';
 
 const Routes = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,10 +32,11 @@ const Routes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hubId] = useState(1); // Hardcoded; consider making dynamic
-  const [showAddRoute, setShowAddRoute] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [showRouteMap, setShowRouteMap] = useState(false);
   const [showFullscreenMap, setShowFullscreenMap] = useState(false);
+  const [showRouteEditor, setShowRouteEditor] = useState(false);
+  const [editingRouteId, setEditingRouteId] = useState(null);
   const [boundaryStats, setBoundaryStats] = useState({});
   const mapRef = useRef(null);
   const fullscreenMapRef = useRef(null);
@@ -425,490 +427,21 @@ const Routes = () => {
     }
   };
 
-  const AddRouteModal = () => {
-    const [routeData, setRouteData] = useState({
-      name: '',
-      description: '',
-      postalCodes: '',
-      coordinates: { lat: 6.9271, lng: 79.8612 },
-      routeType: 'RESIDENTIAL',
-      trafficPattern: 'MODERATE',
-      coverageArea: '',
-      estimatedDeliveryTime: 30,
-      maxDailyDeliveries: 50,
-      priorityLevel: 3,
-      neighborhoods: [],
-      landmarks: [],
-      boundaryCoordinates: []
-    });
-    const [validationErrors, setValidationErrors] = useState([]);
-    const [creating, setCreating] = useState(false);
-    const [boundaryMode, setBoundaryMode] = useState('manual'); // 'manual', 'generated', 'map'
+  // Route Editor Functions
+  const openRouteEditor = (routeId = null) => {
+    setEditingRouteId(routeId);
+    setShowRouteEditor(true);
+  };
 
-    const handleBoundaryCoordinatesChange = (value) => {
-      try {
-        let parsed;
-        if (typeof value === 'string') {
-          parsed = JSON.parse(value);
-        } else {
-          parsed = value;
-        }
-        
-        const validation = routeHelpers.validateBoundaryCoordinates(parsed);
-        if (validation.isValid) {
-          setRouteData(prev => ({ ...prev, boundaryCoordinates: parsed }));
-          setValidationErrors(prev => prev.filter(error => !error.includes('boundary')));
-        } else {
-          setValidationErrors(prev => [...prev.filter(error => !error.includes('boundary')), ...validation.errors]);
-        }
-      } catch (e) {
-        setValidationErrors(prev => [...prev.filter(error => !error.includes('boundary')), 'Invalid boundary coordinates JSON format']);
-      }
-    };
+  const closeRouteEditor = () => {
+    setShowRouteEditor(false);
+    setEditingRouteId(null);
+  };
 
-    const generateSampleBoundary = () => {
-      const sampleBoundary = routeHelpers.generateSampleBoundary(routeData.coordinates, 1);
-      setRouteData(prev => ({ ...prev, boundaryCoordinates: sampleBoundary }));
-      setBoundaryMode('generated');
-      console.log('Generated sample boundary:', sampleBoundary);
-    };
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setCreating(true);
-
-      try {
-        const validation = routeHelpers.validateRouteData({
-          ...routeData,
-          hubId,
-          centerLatitude: routeData.coordinates.lat,
-          centerLongitude: routeData.coordinates.lng
-        });
-
-        if (!validation.isValid) {
-          setValidationErrors(validation.errors);
-          setCreating(false);
-          return;
-        }
-
-        const apiRouteData = {
-          name: routeData.name,
-          description: routeData.description,
-          hubId,
-          centerLatitude: routeData.coordinates.lat,
-          centerLongitude: routeData.coordinates.lng,
-          postalCodes: routeData.postalCodes,
-          neighborhoods: routeData.neighborhoods,
-          landmarks: routeData.landmarks,
-          boundaryCoordinates: routeData.boundaryCoordinates, // Include boundary coordinates
-          routeType: routeData.routeType,
-          trafficPattern: routeData.trafficPattern,
-          coverageArea: routeData.coverageArea,
-          estimatedDeliveryTime: routeData.estimatedDeliveryTime,
-          maxDailyDeliveries: routeData.maxDailyDeliveries,
-          priorityLevel: routeData.priorityLevel
-        };
-
-        const createdRoute = await routeApi.createRoute(apiRouteData);
-        
-        // Parse boundary coordinates in the response
-        const formattedRoute = {
-          id: createdRoute.routeId,
-          name: createdRoute.name,
-          description: createdRoute.description || 'No description available',
-          coordinates: {
-            lat: createdRoute.centerLatitude || 6.9271,
-            lng: createdRoute.centerLongitude || 79.8612
-          },
-          postalCodes: routeHelpers.parsePostalCodes(createdRoute.postalCodes),
-          neighborhoods: routeHelpers.parseJsonField(createdRoute.neighborhoods),
-          landmarks: routeHelpers.parseJsonField(createdRoute.landmarks),
-          boundaryCoordinates: routeHelpers.parseBoundaryCoordinates(createdRoute.boundaryCoordinates),
-          routeType: createdRoute.routeType || 'RESIDENTIAL',
-          trafficPattern: createdRoute.trafficPattern || 'MODERATE',
-          status: createdRoute.status?.toLowerCase() || 'active',
-          coverageArea: createdRoute.coverageArea || '0 km²',
-          estimatedDeliveryTime: createdRoute.estimatedDeliveryTime || 30,
-          maxDailyDeliveries: createdRoute.maxDailyDeliveries || 0,
-          priorityLevel: createdRoute.priorityLevel || 3,
-          assignedRiders: 0,
-          totalRiders: 0,
-          performance: { trend: 'up', change: '+0.0%' },
-          agents: []
-        };
-
-        setRoutes(prev => [...prev, formattedRoute]);
-        
-        // Update boundary stats
-        if (formattedRoute.boundaryCoordinates) {
-          const stats = routeHelpers.getBoundaryStats(formattedRoute.boundaryCoordinates);
-          setBoundaryStats(prev => ({
-            ...prev,
-            [formattedRoute.id]: stats
-          }));
-        }
-
-        setShowAddRoute(false);
-        
-        // Reset form including boundary coordinates
-        setRouteData({
-          name: '',
-          description: '',
-          postalCodes: '',
-          coordinates: { lat: 6.9271, lng: 79.8612 },
-          routeType: 'RESIDENTIAL',
-          trafficPattern: 'MODERATE',
-          coverageArea: '',
-          estimatedDeliveryTime: 30,
-          maxDailyDeliveries: 50,
-          priorityLevel: 3,
-          neighborhoods: [],
-          landmarks: [],
-          boundaryCoordinates: []
-        });
-        
-        setValidationErrors([]);
-        setBoundaryMode('manual');
-        alert('Route created successfully!');
-      } catch (err) {
-        console.error('Error creating route:', err);
-        setValidationErrors(['Failed to create route: ' + err.message]);
-      } finally {
-        setCreating(false);
-      }
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Add New Route</h2>
-              <button
-                onClick={() => {
-                  setShowAddRoute(false);
-                  setValidationErrors([]);
-                  setBoundaryMode('manual');
-                }}
-                className="text-gray-400 hover:text-gray-600"
-                disabled={creating}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {validationErrors.length > 0 && (
-              <div className="bg-red-50 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
-                  <h4 className="text-red-800 font-medium">Validation Errors</h4>
-                </div>
-                <ul className="text-red-600 text-sm">
-                  {validationErrors.map((error, index) => (
-                    <li key={index} className="mb-1">• {error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Basic Information</h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Route Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={routeData.name}
-                      onChange={(e) => setRouteData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., Colombo 07 - Cinnamon Gardens"
-                      disabled={creating}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Route Type
-                    </label>
-                    <select
-                      value={routeData.routeType}
-                      onChange={(e) => setRouteData(prev => ({ ...prev, routeType: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      disabled={creating}
-                    >
-                      <option value="RESIDENTIAL">Residential</option>
-                      <option value="COMMERCIAL">Commercial</option>
-                      <option value="INDUSTRIAL">Industrial</option>
-                      <option value="MIXED">Mixed</option>
-                      <option value="UNIVERSITY">University</option>
-                      <option value="DOWNTOWN">Downtown</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      value={routeData.description}
-                      onChange={(e) => setRouteData(prev => ({ ...prev, description: e.target.value }))}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Describe the route coverage area..."
-                      disabled={creating}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Coverage Area
-                      </label>
-                      <input
-                        type="text"
-                        value={routeData.coverageArea}
-                        onChange={(e) => setRouteData(prev => ({ ...prev, coverageArea: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="e.g., 2.5 km²"
-                        disabled={creating}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Traffic Pattern
-                      </label>
-                      <select
-                        value={routeData.trafficPattern}
-                        onChange={(e) => setRouteData(prev => ({ ...prev, trafficPattern: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled={creating}
-                      >
-                        <option value="LOW">Low Traffic</option>
-                        <option value="MODERATE">Moderate Traffic</option>
-                        <option value="HIGH">High Traffic</option>
-                        <option value="VARIABLE">Variable Traffic</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Location & Coordinates */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Location & Coordinates</h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Postal Codes (comma-separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={routeData.postalCodes}
-                      onChange={(e) => setRouteData(prev => ({ ...prev, postalCodes: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., 00700, 00701, 00702"
-                      disabled={creating}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Center Latitude
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={routeData.coordinates.lat}
-                        onChange={(e) => setRouteData(prev => ({
-                          ...prev,
-                          coordinates: { ...prev.coordinates, lat: parseFloat(e.target.value) || 0 }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled={creating}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Center Longitude
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={routeData.coordinates.lng}
-                        onChange={(e) => setRouteData(prev => ({
-                          ...prev,
-                          coordinates: { ...prev.coordinates, lng: parseFloat(e.target.value) || 0 }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled={creating}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Est. Delivery Time (min)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={routeData.estimatedDeliveryTime}
-                        onChange={(e) => setRouteData(prev => ({ ...prev, estimatedDeliveryTime: parseInt(e.target.value) || 30 }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled={creating}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max Daily Deliveries
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={routeData.maxDailyDeliveries}
-                        onChange={(e) => setRouteData(prev => ({ ...prev, maxDailyDeliveries: parseInt(e.target.value) || 50 }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled={creating}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Priority Level (1-5)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={routeData.priorityLevel}
-                        onChange={(e) => setRouteData(prev => ({ ...prev, priorityLevel: parseInt(e.target.value) || 3 }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled={creating}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Boundary Coordinates Section */}
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-3 flex items-center">
-                  <Map className="w-5 h-5 mr-2" />
-                  Route Boundary Coordinates (Optional)
-                </h4>
-                <p className="text-sm text-blue-700 mb-4">
-                  Define precise route boundaries for accurate delivery assignment and map visualization.
-                </p>
-
-                <div className="mb-4">
-                  <div className="flex space-x-4 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setBoundaryMode('manual')}
-                      className={`px-3 py-1 rounded text-sm font-medium ${
-                        boundaryMode === 'manual' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                      disabled={creating}
-                    >
-                      Manual Input
-                    </button>
-                    <button
-                      type="button"
-                      onClick={generateSampleBoundary}
-                      className={`px-3 py-1 rounded text-sm font-medium ${
-                        boundaryMode === 'generated' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                      disabled={creating}
-                    >
-                      Generate Sample
-                    </button>
-                  </div>
-
-                  {boundaryMode === 'manual' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Boundary Coordinates JSON
-                      </label>
-                      <textarea
-                        value={routeData.boundaryCoordinates ? JSON.stringify(routeData.boundaryCoordinates, null, 2) : ''}
-                        onChange={(e) => handleBoundaryCoordinatesChange(e.target.value)}
-                        rows={6}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                        placeholder='[{"lat": 6.947, "lng": 79.853}, {"lat": 6.944, "lng": 79.859}, ...]'
-                        disabled={creating}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Enter an array of coordinate objects with 'lat' and 'lng' properties (minimum 3 points)
-                      </p>
-                    </div>
-                  )}
-
-                  {routeData.boundaryCoordinates && routeData.boundaryCoordinates.length > 0 && (
-                    <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
-                      <div className="flex items-center text-green-700 mb-2">
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        <span className="text-sm font-medium">Boundary Coordinates Valid</span>
-                      </div>
-                      <div className="text-sm text-green-600">
-                        <p>Points: {routeData.boundaryCoordinates.length}</p>
-                        {routeHelpers.getBoundaryStats(routeData.boundaryCoordinates) && (
-                          <p>Estimated Area: {routeHelpers.getBoundaryStats(routeData.boundaryCoordinates).area} km²</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex space-x-3 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddRoute(false);
-                    setValidationErrors([]);
-                    setBoundaryMode('manual');
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  disabled={creating}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center"
-                  disabled={creating}
-                >
-                  {creating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create Route'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
+  const handleRouteSaved = (savedRoute) => {
+    console.log('Route saved:', savedRoute);
+    closeRouteEditor();
+    fetchRoutesData(); // Refresh the routes list
   };
 
   // Fixed RouteDetailsModal to prevent infinite loop
@@ -996,35 +529,6 @@ const Routes = () => {
                   </div>
                 )}
               </div>
-
-              {/* Boundary Statistics */}
-              {routeStats && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Boundary Statistics</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-blue-700">Points:</span>
-                      <span className="ml-2 font-medium">{routeStats.pointCount}</span>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Area:</span>
-                      <span className="ml-2 font-medium">{routeStats.area} km²</span>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Center:</span>
-                      <span className="ml-2 font-medium">
-                        {routeStats.center.lat.toFixed(4)}, {routeStats.center.lng.toFixed(4)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Bounds:</span>
-                      <span className="ml-2 font-medium text-xs">
-                        {(routeStats.bounds.north - routeStats.bounds.south).toFixed(3)}° × {(routeStats.bounds.east - routeStats.bounds.west).toFixed(3)}°
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1115,28 +619,6 @@ const Routes = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
                     Assigned Agents ({selectedRoute.agents?.length || 0})
                   </h3>
-
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700">Available</span>
-                      </div>
-                      <p className="text-2xl font-semibold text-green-900 mt-1">
-                        {selectedRoute.agents?.filter(agent => agent.availabilityStatus === 'AVAILABLE').length || 0}
-                      </p>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-yellow-700">Busy</span>
-                      </div>
-                      <p className="text-2xl font-semibold text-yellow-900 mt-1">
-                        {selectedRoute.agents?.filter(agent => agent.availabilityStatus === 'BUSY').length || 0}
-                      </p>
-                    </div>
-                  </div>
-
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {selectedRoute.agents?.map((agent) => (
                       <div key={agent.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
@@ -1198,7 +680,7 @@ const Routes = () => {
                 Close
               </button>
               <button
-                onClick={() => console.log('Edit route:', selectedRoute.id)}
+                onClick={() => openRouteEditor(selectedRoute.id)}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
               >
                 <Edit className="w-4 h-4" />
@@ -1218,11 +700,11 @@ const Routes = () => {
           <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>
             Colombo Hub - Routes Overview
           </h2>
-          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+          {/* <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
             <span>Total Routes: {routes.length}</span>
             <span>With Boundaries: {Object.keys(boundaryStats).length}</span>
             <span>Active: {routes.filter(r => r.status === 'active').length}</span>
-          </div>
+          </div> */}
         </div>
         <div className="flex space-x-2">
           <button
@@ -1342,7 +824,7 @@ const Routes = () => {
           />
         </div>
         <button
-          onClick={() => setShowAddRoute(true)}
+          onClick={() => openRouteEditor()}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
         >
           <Plus className="w-4 h-4" />
@@ -1359,11 +841,6 @@ const Routes = () => {
                 <div>
                   <h3 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>{route.name}</h3>
                   <p className="text-gray-600 mt-1">{route.description}</p>
-                  {route.boundaryCoordinates && routeStat && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Boundary: {routeStat.pointCount} points, {routeStat.area} km²
-                    </p>
-                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${route.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
@@ -1446,7 +923,7 @@ const Routes = () => {
                   <span>View Details</span>
                 </button>
                 <button
-                  onClick={() => console.log('Edit route:', route.id)}
+                  onClick={() => openRouteEditor(route.id)}
                   className="bg-gray-50 text-slate-900 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <Edit className="w-4 h-4" />
@@ -1520,8 +997,22 @@ const Routes = () => {
         )}
       </div>
 
-      {showAddRoute && <AddRouteModal />}
       {selectedRoute && <RouteDetailsModal />}
+
+      {/* Route Editor Modal */}
+      {showRouteEditor && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[95vh] overflow-hidden">
+            <RouteEditor
+              routeId={editingRouteId}
+              hubId={hubId}
+              mode={editingRouteId ? 'edit' : 'create'}
+              onSave={handleRouteSaved}
+              onCancel={closeRouteEditor}
+            />
+          </div>
+        </div>
+      )}
 
       {showFullscreenMap && (
         <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
