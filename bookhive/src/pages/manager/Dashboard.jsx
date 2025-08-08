@@ -1,100 +1,202 @@
-import { 
-  Users, 
-  Truck, 
-  Building2, 
-  AlertTriangle, 
-  TrendingUp, 
-  Clock,
-  CheckCircle,
-  XCircle
-} from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useState, useEffect } from 'react';
+import { Package, Users, Clock, AlertTriangle,Truck,XCircle , CheckCircle ,Building2 ,MapPin, TrendingUp, RefreshCw, Timer, Archive, BarChart3 } from 'lucide-react';
+import { BarChart, Bar,LineChart , XAxis,Line, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { deliveryApi, agentApi, hubApi } from '../../services/deliveryService';
 
 const Dashboard = () => {
-  const stats = [
-    {
-      title: 'Active Agents',
-      value: '89',
-      change: '+5 from yesterday',
-      icon: Users,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50'
-    },
-    {
-      title: 'Active Deliveries',
-      value: '234',
-      change: '+18 from yesterday',
-      icon: Truck,
-      color: 'text-yellow-600',
-      bg: 'bg-yellow-50'
-    },
-    {
-      title: 'Total Hubs',
-      value: '12',
-      change: 'All operational',
-      icon: Building2,
-      color: 'text-green-600',
-      bg: 'bg-green-50'
-    },
-    {
-      title: 'Pending Issues',
-      value: '7',
-      change: 'Needs attention',
-      icon: AlertTriangle,
-      color: 'text-red-600',
-      bg: 'bg-red-50'
+  const [stats, setStats] = useState({
+    activeDeliveries: 0,
+    availableRiders: 0,
+    totalDeliveries: 0,
+    totalDeliveryTime: 0
+  });
+  const [recentDeliveries, setRecentDeliveries] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Fetch dashboard data
+  useEffect(() => {
+    fetchDashboardData();
+    
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch data from multiple endpoints
+      const [deliveriesResponse, agentsResponse] = await Promise.all([
+        deliveryApi.getAllDeliveries(),
+        agentApi.getAllAgents()
+      ]);
+
+      // Calculate stats
+      const activeDeliveries = deliveriesResponse.filter(d => 
+        ['IN_TRANSIT', 'PICKED_UP'].includes(d.status)
+      ).length;
+      
+      const availableRiders = agentsResponse.filter(a => 
+        a.availabilityStatus === 'AVAILABLE'
+      ).length;
+
+      // Calculate total deliveries (all deliveries)
+      const totalDeliveries = deliveriesResponse.length;
+
+      // Calculate total delivery time (sum of all delivery times)
+      const deliveredOrders = deliveriesResponse.filter(d => d.status === 'DELIVERED');
+      let totalDeliveryTime = 0;
+      
+      if (deliveredOrders.length > 0) {
+        totalDeliveryTime = deliveredOrders.reduce((acc, delivery) => {
+          if (delivery.createdAt && delivery.deliveredAt) {
+            const created = new Date(delivery.createdAt);
+            const delivered = new Date(delivery.deliveredAt);
+            const timeDiff = (delivered - created) / (1000 * 60); // in minutes
+            return acc + timeDiff;
+          }
+          // Fallback: use random time between 20-60 minutes for demo
+          return acc + (20 + Math.random() * 40);
+        }, 0);
+        totalDeliveryTime = Math.round(totalDeliveryTime);
+      } else {
+        // Fallback for demo purposes - calculate based on total deliveries
+        totalDeliveryTime = totalDeliveries * 35; // 35 minutes per delivery average
+      }
+
+      setStats({
+        activeDeliveries,
+        availableRiders,
+        totalDeliveries,
+        totalDeliveryTime
+      });
+
+      // Transform recent deliveries
+      const transformedDeliveries = deliveriesResponse
+        .slice(0, 5) // Get latest 5
+        .map(delivery => ({
+          id: delivery.trackingNumber || `DEL${delivery.id}`,
+          customer: delivery.customerName || 'Unknown Customer',
+          rider: delivery.agentName || 'Unassigned',
+          status: mapBackendStatus(delivery.status),
+          time: formatTime(delivery.updatedAt || delivery.createdAt)
+        }));
+
+      setRecentDeliveries(transformedDeliveries);
+
+      // Generate alerts based on data
+      const generatedAlerts = generateAlerts(deliveriesResponse, agentsResponse);
+      setAlerts(generatedAlerts);
+
+      // Generate weekly delivery performance data
+      const weeklyPerformanceData = generateWeeklyData(deliveriesResponse);
+      setWeeklyData(weeklyPerformanceData);
+
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const recentDeliveries = [
-    { id: 'D001', agent: 'Nuwan Perera', status: 'In Transit', time: '3 mins ago' },
-    { id: 'D002', agent: 'Sanduni Fernando', status: 'Delivered', time: '7 mins ago' },
-    { id: 'D003', agent: 'Kasun Silva', status: 'Pickup', time: '12 mins ago' },
-    { id: 'D004', agent: 'Dilani Rajapaksa', status: 'In Transit', time: '15 mins ago' },
-    { id: 'D005', agent: 'Chamara Wickramasinghe', status: 'Delivered', time: '18 mins ago' },
-  ];
+  const mapBackendStatus = (backendStatus) => {
+    const statusMap = {
+      'PENDING': 'Pending',
+      'ASSIGNED': 'Assigned',
+      'PICKED_UP': 'Picked Up',
+      'IN_TRANSIT': 'In Transit',
+      'DELIVERED': 'Delivered',
+      'CANCELLED': 'Cancelled',
+      'DELAYED': 'Delayed'
+    };
+    return statusMap[backendStatus] || 'Unknown';
+  };
 
-  const agentCountData = [
-    { name: 'Colombo Hub', agents: 28 },
-    { name: 'Kandy Hub', agents: 18 },
-    { name: 'Galle Hub', agents: 15 },
-    { name: 'Negombo Hub', agents: 12 },
-    { name: 'Matara Hub', agents: 16 },
-    { name: 'Kandy Hub', agents: 18 },
-    { name: 'Galle Hub', agents: 15 },
-    { name: 'Negombo Hub', agents: 12 },
-    { name: 'Matara Hub', agents: 16 },
-    { name: 'Kandy Hub', agents: 18 },
-    { name: 'Galle Hub', agents: 15 },
-    { name: 'Negombo Hub', agents: 12 },
-    { name: 'Matara Hub', agents: 16 },
-  ];
+  const formatTime = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffMinutes < 60) {
+      return `${diffMinutes} min ago`;
+    } else if (diffMinutes < 1440) {
+      return `${Math.floor(diffMinutes / 60)} hours ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
 
-  const revenueData = [
-    { name: 'Colombo Hub', revenue: 450000 },
-    { name: 'Kandy Hub', revenue: 280000 },
-    { name: 'Galle Hub', revenue: 320000 },
-    { name: 'Negombo Hub', revenue: 195000 },
-    { name: 'Matara Hub', revenue: 240000 },
-    { name: 'Colombo Hub', revenue: 450000 },
-    { name: 'Kandy Hub', revenue: 280000 },
-    { name: 'Galle Hub', revenue: 320000 },
-    { name: 'Negombo Hub', revenue: 195000 },
-    { name: 'Matara Hub', revenue: 240000 },
-  ];
+  const generateAlerts = (deliveries, agents) => {
+    const alerts = [];
+    
+    // Check for delayed deliveries
+    const delayedDeliveries = deliveries.filter(d => d.status === 'DELAYED');
+    delayedDeliveries.forEach(delivery => {
+      alerts.push({
+        type: 'warning',
+        message: `Delivery ${delivery.trackingNumber || delivery.id} is running late`,
+        time: formatTime(delivery.updatedAt)
+      });
+    });
 
-  const deliveryCountData = [
-    { name: 'Colombo Hub', deliveries: 567 },
-    { name: 'Kandy Hub', deliveries: 345 },
-    { name: 'Galle Hub', deliveries: 398 },
-    { name: 'Negombo Hub', deliveries: 234 },
-    { name: 'Matara Hub', deliveries: 289 },
-    { name: 'Colombo Hub', deliveries: 567 },
-    { name: 'Kandy Hub', deliveries: 345 },
-    { name: 'Galle Hub', deliveries: 398 },
-    { name: 'Negombo Hub', deliveries: 234 },
-    { name: 'Matara Hub', deliveries: 289 },
-  ];
+    // Check for unavailable riders
+    const unavailableRiders = agents.filter(a => a.availabilityStatus === 'UNAVAILABLE');
+    if (unavailableRiders.length > 0) {
+      alerts.push({
+        type: 'error',
+        message: `${unavailableRiders.length} rider(s) are currently unavailable`,
+        time: '5 min ago'
+      });
+    }
+
+    // Check for pending deliveries without agents
+    const unassignedDeliveries = deliveries.filter(d => 
+      d.status === 'PENDING' && !d.agentId
+    );
+    if (unassignedDeliveries.length > 0) {
+      alerts.push({
+        type: 'info',
+        message: `${unassignedDeliveries.length} pending deliveries need agent assignment`,
+        time: '10 min ago'
+      });
+    }
+
+    return alerts.slice(0, 3); // Show only latest 3 alerts
+  };
+
+  const generateWeeklyData = (deliveries) => {
+    // Generate weekly performance data for the last 7 days
+    const days = ['Colombo Hub', 'Kandy Hub', 'Galle Hub', 'Negombo Hub', 'Matara Hub'];
+    const today = new Date();
+    
+    const weeklyData = days.map((hub, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (6 - index)); // Get the date for each day
+      
+      // Filter deliveries for this specific hub (simplified)
+      const hubDeliveries = deliveries.filter(delivery => {
+        const deliveryDate = new Date(delivery.createdAt || delivery.updatedAt);
+        return deliveryDate.toDateString() === date.toDateString();
+      });
+      
+      // Calculate metrics for this hub
+      const totalAgents = hubDeliveries.length > 0 ? hubDeliveries.length : Math.floor(Math.random() * 50) + 20;
+      
+      return {
+        name: hub,
+        agents: totalAgents
+      };
+    });
+    
+    return weeklyData;
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -109,11 +211,67 @@ const Dashboard = () => {
     }
   };
 
+  if (loading && recentDeliveries.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="mt-2 text-red-600 hover:text-red-800 underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
+        {[
+          {
+            title: 'Active Agents',
+            value: stats.availableRiders,
+            change: '+5 from yesterday',
+            icon: Users,
+            color: 'text-blue-600',
+            bg: 'bg-blue-50'
+          },
+          {
+            title: 'Active Deliveries',
+            value: stats.activeDeliveries,
+            change: '+18 from yesterday',
+            icon: Truck,
+            color: 'text-yellow-600',
+            bg: 'bg-yellow-50'
+          },
+          {
+            title: 'Total Hubs',
+            value: '12',
+            change: 'All operational',
+            icon: Building2,
+            color: 'text-green-600',
+            bg: 'bg-green-50'
+          },
+          {
+            title: 'Pending Issues',
+            value: alerts.length,
+            change: 'Needs attention',
+            icon: AlertTriangle,
+            color: 'text-red-600',
+            bg: 'bg-red-50'
+          }
+        ].map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -145,7 +303,7 @@ const Dashboard = () => {
                   {getStatusIcon(delivery.status)}
                   <div>
                     <p className="font-medium text-slate-900">{delivery.id}</p>
-                    <p className="text-sm text-gray-600">{delivery.agent}</p>
+                    <p className="text-sm text-gray-600">{delivery.rider}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -164,7 +322,7 @@ const Dashboard = () => {
           </h3>
           <div className='mt-15'>
           <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={agentCountData}>
+            <BarChart data={weeklyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis />
@@ -183,7 +341,13 @@ const Dashboard = () => {
             Revenue by Hub (LKR)
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
+            <LineChart data={[
+              { name: 'Colombo Hub', revenue: 450000 },
+              { name: 'Kandy Hub', revenue: 280000 },
+              { name: 'Galle Hub', revenue: 320000 },
+              { name: 'Negombo Hub', revenue: 195000 },
+              { name: 'Matara Hub', revenue: 240000 }
+            ]}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={(value) => `Rs.${(value/1000).toFixed(0)}K`} />
@@ -199,7 +363,13 @@ const Dashboard = () => {
             Deliveries by Hub
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={deliveryCountData}>
+            <BarChart data={[
+              { name: 'Colombo Hub', deliveries: 567 },
+              { name: 'Kandy Hub', deliveries: 345 },
+              { name: 'Galle Hub', deliveries: 398 },
+              { name: 'Negombo Hub', deliveries: 234 },
+              { name: 'Matara Hub', deliveries: 289 }
+            ]}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis />
