@@ -1713,7 +1713,7 @@ const RouteEditor = ({
               <button
                 onClick={onCancel}
                 disabled={isSaving}
-                className="flex items-center px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center mb-8 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <X className="w-4 h-4 mr-2" />
                 Cancel
