@@ -1,4 +1,4 @@
-// src/services/apiService.js
+// src/services/deliveryService.js - Complete file with boundary coordinate support
 const API_BASE_URL = 'http://localhost:9090/api';
 
 // Generic API client
@@ -284,8 +284,14 @@ export const routeApi = {
       trafficPattern: routeData.trafficPattern || 'MODERATE',
       routeType: routeData.routeType || 'RESIDENTIAL',
       vehicleRestrictions: JSON.stringify(routeData.vehicleRestrictions || []),
-      boundaryCoordinates: JSON.stringify(routeData.boundaryCoordinates || [])
+      boundaryCoordinates: routeData.boundaryCoordinates 
+        ? (typeof routeData.boundaryCoordinates === 'string' 
+           ? routeData.boundaryCoordinates 
+           : JSON.stringify(routeData.boundaryCoordinates))
+        : null
     };
+    
+    console.log('Creating route with boundary coordinates:', payload.boundaryCoordinates ? 'YES' : 'NO');
     return apiClient.post('/routes', payload);
   },
   
@@ -308,8 +314,14 @@ export const routeApi = {
       trafficPattern: routeData.trafficPattern,
       routeType: routeData.routeType,
       vehicleRestrictions: JSON.stringify(routeData.vehicleRestrictions || []),
-      boundaryCoordinates: JSON.stringify(routeData.boundaryCoordinates || [])
+      boundaryCoordinates: routeData.boundaryCoordinates 
+        ? (typeof routeData.boundaryCoordinates === 'string' 
+           ? routeData.boundaryCoordinates 
+           : JSON.stringify(routeData.boundaryCoordinates))
+        : null
     };
+    
+    console.log('Updating route with boundary coordinates:', payload.boundaryCoordinates ? 'YES' : 'NO');
     return apiClient.put(`/routes/${routeId}`, payload);
   },
   
@@ -335,7 +347,9 @@ export const routeApi = {
   // PUT /api/routes/{routeId}/boundaries
   updateRouteBoundaries: (routeId, boundaryCoordinates) => 
     apiClient.put(`/routes/${routeId}/boundaries`, { 
-      boundaryCoordinates: JSON.stringify(boundaryCoordinates) 
+      boundaryCoordinates: typeof boundaryCoordinates === 'string' 
+        ? boundaryCoordinates 
+        : JSON.stringify(boundaryCoordinates) 
     }),
   
   // GET /api/routes/search
@@ -429,7 +443,7 @@ export const routeAssignmentApi = {
   deleteAssignment: (assignmentId) => apiClient.delete(`/route-assignments/${assignmentId}`),
 };
 
-// Helper functions for route management
+// Enhanced helper functions for route management with boundary coordinate support
 export const routeHelpers = {
   // Parse postal codes from comma-separated string
   parsePostalCodes: (postalCodesString) => {
@@ -451,6 +465,181 @@ export const routeHelpers = {
       console.warn('Failed to parse JSON field:', error);
       return defaultValue;
     }
+  },
+  
+  // Enhanced boundary coordinates parsing
+  parseBoundaryCoordinates: (boundaryCoordinatesString) => {
+    try {
+      if (!boundaryCoordinatesString || boundaryCoordinatesString.trim() === '') {
+        return null;
+      }
+      
+      const parsed = JSON.parse(boundaryCoordinatesString);
+      
+      // Validate that it's an array of coordinate objects
+      if (Array.isArray(parsed) && parsed.length >= 3) {
+        const validCoordinates = parsed.map(coord => ({
+          lat: parseFloat(coord.lat),
+          lng: parseFloat(coord.lng)
+        })).filter(coord => 
+          !isNaN(coord.lat) && !isNaN(coord.lng) &&
+          coord.lat >= -90 && coord.lat <= 90 &&
+          coord.lng >= -180 && coord.lng <= 180
+        );
+        
+        if (validCoordinates.length >= 3) {
+          console.log(`Parsed ${validCoordinates.length} valid boundary coordinates`);
+          return validCoordinates;
+        }
+      }
+      
+      console.warn('Invalid boundary coordinates format or insufficient points');
+      return null;
+    } catch (error) {
+      console.warn('Failed to parse boundary coordinates:', error);
+      return null;
+    }
+  },
+  
+  // Format boundary coordinates for API
+  formatBoundaryCoordinates: (coordinatesArray) => {
+    if (!Array.isArray(coordinatesArray) || coordinatesArray.length < 3) {
+      return null;
+    }
+    
+    try {
+      return JSON.stringify(coordinatesArray);
+    } catch (error) {
+      console.warn('Failed to format boundary coordinates:', error);
+      return null;
+    }
+  },
+  
+  // Validate boundary coordinates
+  validateBoundaryCoordinates: (boundaryCoordinates) => {
+    const errors = [];
+    
+    if (!boundaryCoordinates) {
+      return { isValid: true, errors: [] }; // Optional field
+    }
+    
+    if (typeof boundaryCoordinates === 'string') {
+      try {
+        const parsed = JSON.parse(boundaryCoordinates);
+        boundaryCoordinates = parsed;
+      } catch (e) {
+        errors.push('Boundary coordinates must be valid JSON');
+        return { isValid: false, errors };
+      }
+    }
+    
+    if (!Array.isArray(boundaryCoordinates)) {
+      errors.push('Boundary coordinates must be an array');
+      return { isValid: false, errors };
+    }
+    
+    if (boundaryCoordinates.length < 3) {
+      errors.push('Boundary coordinates must contain at least 3 points');
+      return { isValid: false, errors };
+    }
+    
+    for (let i = 0; i < boundaryCoordinates.length; i++) {
+      const coord = boundaryCoordinates[i];
+      if (!coord.lat || !coord.lng) {
+        errors.push(`Coordinate ${i + 1} must have lat and lng properties`);
+      } else {
+        const lat = parseFloat(coord.lat);
+        const lng = parseFloat(coord.lng);
+        
+        if (isNaN(lat) || lat < -90 || lat > 90) {
+          errors.push(`Coordinate ${i + 1} has invalid latitude: ${lat}`);
+        }
+        
+        if (isNaN(lng) || lng < -180 || lng > 180) {
+          errors.push(`Coordinate ${i + 1} has invalid longitude: ${lng}`);
+        }
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  },
+  
+  // Generate sample boundary coordinates for testing
+  generateSampleBoundary: (center, radiusKm = 1) => {
+    const { lat, lng } = center;
+    const radius = radiusKm / 111; // Rough conversion to degrees
+    const points = 8;
+    const coordinates = [];
+    
+    for (let i = 0; i < points; i++) {
+      const angle = (i * 2 * Math.PI) / points;
+      const pointLat = lat + (radius * Math.cos(angle));
+      const pointLng = lng + (radius * Math.sin(angle));
+      coordinates.push({
+        lat: parseFloat(pointLat.toFixed(6)),
+        lng: parseFloat(pointLng.toFixed(6))
+      });
+    }
+    
+    console.log(`Generated sample boundary with ${coordinates.length} points around ${lat}, ${lng}`);
+    return coordinates;
+  },
+  
+  // Check if point is inside polygon (for testing)
+  isPointInPolygon: (point, polygon) => {
+    if (!polygon || polygon.length < 3) return false;
+    
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      if (((polygon[i].lat > point.lat) !== (polygon[j].lat > point.lat)) &&
+          (point.lng < (polygon[j].lng - polygon[i].lng) * 
+           (point.lat - polygon[i].lat) / (polygon[j].lat - polygon[i].lat) + polygon[i].lng)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  },
+  
+  // Calculate polygon area (in square kilometers)
+  calculatePolygonArea: (polygon) => {
+    if (!polygon || polygon.length < 3) return 0;
+    
+    let area = 0;
+    const earthRadius = 6371; // Earth radius in kilometers
+    
+    for (let i = 0; i < polygon.length; i++) {
+      const j = (i + 1) % polygon.length;
+      const lat1 = polygon[i].lat * Math.PI / 180;
+      const lat2 = polygon[j].lat * Math.PI / 180;
+      const lng1 = polygon[i].lng * Math.PI / 180;
+      const lng2 = polygon[j].lng * Math.PI / 180;
+      
+      area += (lng2 - lng1) * (2 + Math.sin(lat1) + Math.sin(lat2));
+    }
+    
+    area = Math.abs(area) * earthRadius * earthRadius / 2;
+    return parseFloat(area.toFixed(2));
+  },
+  
+  // Get polygon center (centroid)
+  getPolygonCenter: (polygon) => {
+    if (!polygon || polygon.length === 0) return null;
+    
+    let latSum = 0;
+    let lngSum = 0;
+    
+    polygon.forEach(coord => {
+      latSum += coord.lat;
+      lngSum += coord.lng;
+    });
+    
+    return {
+      lat: latSum / polygon.length,
+      lng: lngSum / polygon.length
+    };
   },
   
   // Calculate route efficiency
@@ -511,6 +700,14 @@ export const routeHelpers = {
       errors.push('Max daily deliveries must be greater than 0');
     }
     
+    // Validate boundary coordinates if provided
+    if (routeData.boundaryCoordinates) {
+      const boundaryValidation = routeHelpers.validateBoundaryCoordinates(routeData.boundaryCoordinates);
+      if (!boundaryValidation.isValid) {
+        errors.push(...boundaryValidation.errors);
+      }
+    }
+    
     return {
       isValid: errors.length === 0,
       errors
@@ -531,19 +728,77 @@ export const routeHelpers = {
   
   // Check if a point is within a route's boundary
   isPointInRoute: (point, routeBoundaries) => {
-    // This is a simplified point-in-polygon check
-    // In a real implementation, you'd use a more robust algorithm
-    if (!routeBoundaries || routeBoundaries.length < 3) return false;
-    
-    let inside = false;
-    for (let i = 0, j = routeBoundaries.length - 1; i < routeBoundaries.length; j = i++) {
-      if (((routeBoundaries[i].lat > point.lat) !== (routeBoundaries[j].lat > point.lat)) &&
-          (point.lng < (routeBoundaries[j].lng - routeBoundaries[i].lng) * 
-           (point.lat - routeBoundaries[i].lat) / (routeBoundaries[j].lat - routeBoundaries[i].lat) + routeBoundaries[i].lng)) {
-        inside = !inside;
-      }
+    return routeHelpers.isPointInPolygon(point, routeBoundaries);
+  },
+  
+  // Convert boundary coordinates to Google Maps polygon paths
+  boundaryToGoogleMapsPath: (boundaryCoordinates) => {
+    if (!boundaryCoordinates || !Array.isArray(boundaryCoordinates)) {
+      return null;
     }
-    return inside;
+    
+    return boundaryCoordinates.map(coord => ({
+      lat: parseFloat(coord.lat),
+      lng: parseFloat(coord.lng)
+    }));
+  },
+  
+  // Create boundary coordinates from Google Maps polygon
+  googleMapsPathToBoundary: (path) => {
+    if (!path || !Array.isArray(path)) {
+      return null;
+    }
+    
+    return path.map(coord => ({
+      lat: parseFloat(coord.lat),
+      lng: parseFloat(coord.lng)
+    }));
+  },
+  
+  // Get boundary coordinate statistics
+  getBoundaryStats: (boundaryCoordinates) => {
+    if (!boundaryCoordinates || !Array.isArray(boundaryCoordinates) || boundaryCoordinates.length < 3) {
+      return null;
+    }
+    
+    const lats = boundaryCoordinates.map(coord => coord.lat);
+    const lngs = boundaryCoordinates.map(coord => coord.lng);
+    
+    return {
+      pointCount: boundaryCoordinates.length,
+      center: routeHelpers.getPolygonCenter(boundaryCoordinates),
+      area: routeHelpers.calculatePolygonArea(boundaryCoordinates),
+      bounds: {
+        north: Math.max(...lats),
+        south: Math.min(...lats),
+        east: Math.max(...lngs),
+        west: Math.min(...lngs)
+      }
+    };
+  },
+  
+  // Format boundary coordinates for display
+  formatBoundaryDisplay: (boundaryCoordinates) => {
+    if (!boundaryCoordinates) {
+      return 'No boundary defined';
+    }
+    
+    const stats = routeHelpers.getBoundaryStats(boundaryCoordinates);
+    if (!stats) {
+      return 'Invalid boundary data';
+    }
+    
+    return `${stats.pointCount} points, ${stats.area} km²`;
+  },
+  
+  // Debug helper to log boundary coordinates
+  debugBoundaryCoordinates: (routeName, boundaryCoordinates) => {
+    if (boundaryCoordinates) {
+      const stats = routeHelpers.getBoundaryStats(boundaryCoordinates);
+      console.log(`Route "${routeName}" boundary:`, stats);
+    } else {
+      console.log(`Route "${routeName}" has no boundary coordinates`);
+    }
   }
 };
 
