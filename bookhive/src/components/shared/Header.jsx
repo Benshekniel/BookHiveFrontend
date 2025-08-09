@@ -89,7 +89,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     } else if (path.startsWith('/manager')) {
       return {
         name: 'Priya',
-        image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg'
+        image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239292.jpeg'
       };
     } else if (path.startsWith('/agent')) {
       return {
