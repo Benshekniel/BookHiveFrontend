@@ -1,7 +1,28 @@
-// src/services/deliveryService.js - Complete file with boundary coordinate support
+// src/services/deliveryService.js - Complete file with caching and all APIs
 const API_BASE_URL = 'http://localhost:9090/api';
 
-// Generic API client
+// Simple cache for performance
+const cache = new Map();
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+const isValidCache = (key) => {
+  const cached = cache.get(key);
+  return cached && (Date.now() - cached.timestamp) < CACHE_TTL;
+};
+
+const setCache = (key, data) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+};
+
+const getCache = (key) => {
+  const cached = cache.get(key);
+  return cached ? cached.data : null;
+};
+
+// Enhanced API Client
 class ApiClient {
   constructor(baseURL = API_BASE_URL) {
     this.baseURL = baseURL;
@@ -23,20 +44,24 @@ class ApiClient {
     }
 
     try {
+      console.log(`API Request: ${config.method || 'GET'} ${url}`);
+      
       const response = await fetch(url, config);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        const data = await response.json();
+        console.log(`API Response: ${endpoint} - Success`);
+        return data;
       }
 
       return response;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error(`API request failed for ${endpoint}:`, error);
       throw error;
     }
   }
@@ -66,117 +91,238 @@ class ApiClient {
   }
 }
 
-// Create API client instance
 const apiClient = new ApiClient();
 
 // Agent API Service
+// Agent API Service
 export const agentApi = {
-  // GET /api/agents
-  getAllAgents: () => apiClient.get('/agents'),
+  getAllAgents: async (useCache = true) => {
+    const cacheKey = 'all_agents';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
 
-  // GET /api/agents/{agentId}
-  getAgentById: (agentId) => apiClient.get(`/agents/${agentId}`),
+    try {
+      const agents = await apiClient.get('/agents');
+      setCache(cacheKey, agents);
+      return agents;
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+      return [];
+    }
+  },
 
-  // GET /api/agents/user/{userId}
-  getAgentByUserId: (userId) => apiClient.get(`/agents/user/${userId}`),
+  getAvailableAgents: async (useCache = true) => {
+    const cacheKey = 'available_agents';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
 
-  // GET /api/agents/hub/{hubId}
-  getAgentsByHub: (hubId) => apiClient.get(`/agents/hub/${hubId}`),
+    try {
+      const agents = await apiClient.get('/agents/available');
+      setCache(cacheKey, agents);
+      return agents;
+    } catch (error) {
+      console.error('Failed to fetch available agents:', error);
+      return [];
+    }
+  },
 
-  // GET /api/agents/available
-  getAvailableAgents: () => apiClient.get('/agents/available'),
+  getAgentById: async (agentId) => {
+    try {
+      return await apiClient.get(`/agents/${agentId}`);
+    } catch (error) {
+      console.error(`Failed to fetch agent ${agentId}:`, error);
+      return null;
+    }
+  },
 
-  // GET /api/agents/available/hub/{hubId}
-  getAvailableAgentsByHub: (hubId) => apiClient.get(`/agents/available/hub/${hubId}`),
+  getAgentByUserId: async (userId) => {
+    try {
+      return await apiClient.get(`/agents/user/${userId}`);
+    } catch (error) {
+      console.error(`Failed to fetch agent by user ID ${userId}:`, error);
+      return null;
+    }
+  },
 
-  // GET /api/agents/performance/hub/{hubId}
-  getAgentPerformanceByHub: (hubId) => apiClient.get(`/agents/performance/hub/${hubId}`),
+  getAgentsByHub: async (hubId) => {
+    try {
+      return await apiClient.get(`/agents/hub/${hubId}`);
+    } catch (error) {
+      console.error(`Failed to fetch agents for hub ${hubId}:`, error);
+      return [];
+    }
+  },
 
-  // POST /api/agents
-  createAgent: (agentData) => apiClient.post('/agents', agentData),
+  getAvailableAgentsByHub: async (hubId) => {
+    try {
+      return await apiClient.get(`/agents/available/hub/${hubId}`);
+    } catch (error) {
+      console.error(`Failed to fetch available agents for hub ${hubId}:`, error);
+      return [];
+    }
+  },
 
-  // PUT /api/agents/{agentId}/status
-  updateAgentStatus: (agentId, status) =>
-    apiClient.put(`/agents/${agentId}/status`, { status }),
+  getAgentPerformanceByHub: async (hubId) => {
+    try {
+      return await apiClient.get(`/agents/performance/hub/${hubId}`);
+    } catch (error) {
+      console.error(`Failed to fetch agent performance for hub ${hubId}:`, error);
+      return [];
+    }
+  },
+
+  createAgent: async (agentData) => {
+    try {
+      const result = await apiClient.post('/agents', agentData);
+      cache.clear(); // Clear cache after mutations
+      return result;
+    } catch (error) {
+      console.error('Failed to create agent:', error);
+      throw error;
+    }
+  },
+
+  updateAgentStatus: async (agentId, status) => {
+    try {
+      const result = await apiClient.put(`/agents/${agentId}/status`, { status });
+      cache.clear();
+      return result;
+    } catch (error) {
+      console.error(`Failed to update agent ${agentId} status:`, error);
+      throw error;
+    }
+  }
 };
 
 // Delivery API Service
 export const deliveryApi = {
-  // GET /api/deliveries
-  getAllDeliveries: () => apiClient.get('/deliveries'),
+  getAllDeliveries: async (useCache = true) => {
+    const cacheKey = 'all_deliveries';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
 
-  // GET /api/deliveries/{deliveryId}
+    const deliveries = await apiClient.get('/deliveries');
+    setCache(cacheKey, deliveries);
+    return deliveries;
+  },
+
+  getDeliveryStats: async (useCache = true) => {
+    const cacheKey = 'delivery_stats';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+
+    const stats = await apiClient.get('/deliveries/stats');
+    setCache(cacheKey, stats);
+    return stats;
+  },
+
+  getDeliverySummary: async (useCache = true) => {
+    const cacheKey = 'delivery_summary';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+
+    const summary = await apiClient.get('/deliveries/summary');
+    setCache(cacheKey, summary);
+    return summary;
+  },
+
   getDeliveryById: (deliveryId) => apiClient.get(`/deliveries/${deliveryId}`),
-
-  // GET /api/deliveries/tracking/{trackingNumber}
-  getDeliveryByTrackingNumber: (trackingNumber) =>
-    apiClient.get(`/deliveries/tracking/${trackingNumber}`),
-
-  // GET /api/deliveries/hub/{hubId}
+  getDeliveryByTrackingNumber: (trackingNumber) => apiClient.get(`/deliveries/tracking/${trackingNumber}`),
   getDeliveriesByHub: (hubId) => apiClient.get(`/deliveries/hub/${hubId}`),
-
-  // GET /api/deliveries/agent/{agentId}
   getDeliveriesByAgent: (agentId) => apiClient.get(`/deliveries/agent/${agentId}`),
-
-  // GET /api/deliveries/status/{status}
   getDeliveriesByStatus: (status) => apiClient.get(`/deliveries/status/${status}`),
-
-  // GET /api/deliveries/today
   getTodaysDeliveries: () => apiClient.get('/deliveries/today'),
 
-  // GET /api/deliveries/stats
-  getDeliveryStats: () => apiClient.get('/deliveries/stats'),
+  createDelivery: async (deliveryData) => {
+    const result = await apiClient.post('/deliveries', deliveryData);
+    cache.clear();
+    return result;
+  },
 
-  // POST /api/deliveries
-  createDelivery: (deliveryData) => apiClient.post('/deliveries', deliveryData),
+  updateDeliveryStatus: async (deliveryId, status) => {
+    const result = await apiClient.put(`/deliveries/${deliveryId}/status`, { status });
+    cache.clear();
+    return result;
+  },
 
-  // PUT /api/deliveries/{deliveryId}/status
-  updateDeliveryStatus: (deliveryId, status) =>
-    apiClient.put(`/deliveries/${deliveryId}/status`, { status }),
+  assignAgent: async (deliveryId, agentId) => {
+    const result = await apiClient.put(`/deliveries/${deliveryId}/assign-agent`, { agentId });
+    cache.clear();
+    return result;
+  },
 
-  // PUT /api/deliveries/{deliveryId}/assign-agent
-  assignAgent: (deliveryId, agentId) =>
-    apiClient.put(`/deliveries/${deliveryId}/assign-agent`, { agentId }),
-
-  // DELETE /api/deliveries/{deliveryId}
-  deleteDelivery: (deliveryId) => apiClient.delete(`/deliveries/${deliveryId}`),
+  deleteDelivery: async (deliveryId) => {
+    const result = await apiClient.delete(`/deliveries/${deliveryId}`);
+    cache.clear();
+    return result;
+  },
 };
 
 // Hub API Service
 export const hubApi = {
-  // GET /api/hubs
-  getAllHubs: () => apiClient.get('/hubs'),
+  getAllHubs: async (useCache = true) => {
+    const cacheKey = 'all_hubs';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
 
-  // GET /api/hubs/{hubId}
+    const hubs = await apiClient.get('/hubs');
+    setCache(cacheKey, hubs);
+    return hubs;
+  },
+
+  getHubStats: async (useCache = true) => {
+    const cacheKey = 'hub_stats';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+
+    const stats = await apiClient.get('/hubs/stats');
+    setCache(cacheKey, stats);
+    return stats;
+  },
+
   getHubById: (hubId) => apiClient.get(`/hubs/${hubId}`),
-
-  // GET /api/hubs/city/{city}
   getHubsByCity: (city) => apiClient.get(`/hubs/city/${city}`),
-
-  // GET /api/hubs/stats
-  getHubStats: () => apiClient.get('/hubs/stats'),
-
-  // GET /api/hubs/{hubId}/performance
   getHubPerformance: (hubId) => apiClient.get(`/hubs/${hubId}/performance`),
-
-  // GET /api/hubs/{hubId}/agents
   getHubAgents: (hubId) => apiClient.get(`/hubs/${hubId}/agents`),
-
-  // GET /api/hubs/{hubId}/deliveries
   getHubDeliveries: (hubId) => apiClient.get(`/hubs/${hubId}/deliveries`),
 
-  // POST /api/hubs
-  createHub: (hubData) => apiClient.post('/hubs', hubData),
+  createHub: async (hubData) => {
+    const result = await apiClient.post('/hubs', hubData);
+    cache.clear();
+    return result;
+  },
 
-  // PUT /api/hubs/{hubId}
-  updateHub: (hubId, hubData) => apiClient.put(`/hubs/${hubId}`, hubData),
+  updateHub: async (hubId, hubData) => {
+    const result = await apiClient.put(`/hubs/${hubId}`, hubData);
+    cache.clear();
+    return result;
+  },
 
-  // POST /api/hubs/{hubId}/assign-manager
-  assignManager: (hubId, userId) =>
-    apiClient.post(`/hubs/${hubId}/assign-manager`, { userId }),
+  assignManager: async (hubId, userId) => {
+    const result = await apiClient.post(`/hubs/${hubId}/assign-manager`, { userId });
+    cache.clear();
+    return result;
+  },
 
-  // DELETE /api/hubs/{hubId}
-  deleteHub: (hubId) => apiClient.delete(`/hubs/${hubId}`),
+  deleteHub: async (hubId) => {
+    const result = await apiClient.delete(`/hubs/${hubId}`);
+    cache.clear();
+    return result;
+  },
 };
 
 // Message API Service
@@ -421,42 +567,6 @@ export const routeApi = {
   }
 };
 
-
-// Transaction API Service
-export const transactionApi = {
-  // GET /api/transactions
-  getAllTransactions: () => apiClient.get('/transactions'),
-
-  // GET /api/transactions/{transactionId}
-  getTransactionById: (transactionId) => apiClient.get(`/transactions/${transactionId}`),
-
-  // GET /api/transactions/status/{status}
-  getTransactionsByStatus: (status) => apiClient.get(`/transactions/status/${status}`),
-
-  // GET /api/transactions/type/{type}
-  getTransactionsByType: (type) => apiClient.get(`/transactions/type/${type}`),
-
-  // GET /api/transactions/payment-status/{paymentStatus}
-  getTransactionsByPaymentStatus: (paymentStatus) => apiClient.get(`/transactions/payment-status/${paymentStatus}`),
-
-  // GET /api/transactions/hub/{hubId}/revenue
-  getHubRevenue: (hubId) => apiClient.get(`/transactions/hub/${hubId}/revenue`),
-
-  // GET /api/transactions/revenue-summary
-  getRevenueSummary: () => apiClient.get('/transactions/revenue-summary'),
-
-  // POST /api/transactions
-  createTransaction: (transactionData) => apiClient.post('/transactions', transactionData),
-
-  // PUT /api/transactions/{transactionId}/status
-  updateTransactionStatus: (transactionId, status) =>
-    apiClient.put(`/transactions/${transactionId}/status`, { status }),
-
-  // PUT /api/transactions/{transactionId}/payment-status
-  updatePaymentStatus: (transactionId, paymentStatus) =>
-    apiClient.put(`/transactions/${transactionId}/payment-status`, { paymentStatus }),
-};
-
 // Route Assignment API Service
 export const routeAssignmentApi = {
   // GET /api/route-assignments/route/{routeId}
@@ -478,6 +588,89 @@ export const routeAssignmentApi = {
   // DELETE /api/route-assignments/{assignmentId}
   deleteAssignment: (assignmentId) => apiClient.delete(`/route-assignments/${assignmentId}`),
 };
+
+// Transaction API Service
+export const transactionApi = {
+  getAllTransactions: async (useCache = true) => {
+    const cacheKey = 'all_transactions';
+    
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+
+    const transactions = await apiClient.get('/transactions');
+    setCache(cacheKey, transactions);
+    return transactions;
+  },
+
+  getTransactionById: (transactionId) => apiClient.get(`/transactions/${transactionId}`),
+  getTransactionsByStatus: (status) => apiClient.get(`/transactions/status/${status}`),
+  getTransactionsByType: (type) => apiClient.get(`/transactions/type/${type}`),
+  getTransactionsByPaymentStatus: (paymentStatus) => apiClient.get(`/transactions/payment-status/${paymentStatus}`),
+  getHubRevenue: (hubId) => apiClient.get(`/transactions/hub/${hubId}/revenue`),
+  getRevenueSummary: () => apiClient.get('/transactions/revenue-summary'),
+
+  createTransaction: async (transactionData) => {
+    const result = await apiClient.post('/transactions', transactionData);
+    cache.clear();
+    return result;
+  },
+
+  updateTransactionStatus: async (transactionId, status) => {
+    const result = await apiClient.put(`/transactions/${transactionId}/status`, { status });
+    cache.clear();
+    return result;
+  },
+
+  updatePaymentStatus: async (transactionId, paymentStatus) => {
+    const result = await apiClient.put(`/transactions/${transactionId}/payment-status`, { paymentStatus });
+    cache.clear();
+    return result;
+  },
+};
+
+// Dashboard API Service
+// export const dashboardApi = {
+//   getDashboardSummary: async (useCache = true) => {
+//     const cacheKey = 'dashboard_summary';
+    
+//     if (useCache && isValidCache(cacheKey)) {
+//       return getCache(cacheKey);
+//     }
+
+//     try {
+//       const summary = await apiClient.get('/dashboard/summary');
+//       setCache(cacheKey, summary);
+//       return summary;
+//     } catch (error) {
+//       console.warn('Dashboard summary endpoint not available, using fallback');
+//       // Fallback to individual calls
+//       return await dashboardApi.getDashboardSummaryFallback();
+//     }
+//   },
+
+//   getDashboardSummaryFallback: async () => {
+//     try {
+//       const [deliveryStats, agents, hubs, transactions] = await Promise.all([
+//         deliveryApi.getDeliveryStats(),
+//         agentApi.getAvailableAgents(),
+//         hubApi.getAllHubs(),
+//         transactionApi.getAllTransactions()
+//       ]);
+
+//       return {
+//         deliveryStats,
+//         agents,
+//         hubs,
+//         transactions,
+//         timestamp: new Date().toISOString()
+//       };
+//     } catch (error) {
+//       console.error('Error in dashboard summary fallback:', error);
+//       throw error;
+//     }
+//   }
+// };
 
 // Enhanced helper functions for route management with boundary coordinate support
 export const routeHelpers = {
@@ -660,6 +853,31 @@ export const routeHelpers = {
     return parseFloat(area.toFixed(2));
   },
 
+  // Calculate polygon perimeter
+  calculatePolygonPerimeter: (coordinates) => {
+    if (!coordinates || coordinates.length < 3) return 0;
+
+    let perimeter = 0;
+    for (let i = 0; i < coordinates.length; i++) {
+      const current = coordinates[i];
+      const next = coordinates[(i + 1) % coordinates.length];
+
+      // Use Haversine formula for distance
+      const R = 6371; // Earth radius in kilometers
+      const dLat = (next.lat - current.lat) * Math.PI / 180;
+      const dLng = (next.lng - current.lng) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(current.lat * Math.PI / 180) * Math.cos(next.lat * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distance = R * c;
+
+      perimeter += distance;
+    }
+
+    return parseFloat(perimeter.toFixed(2));
+  },
+
   // Get polygon center (centroid)
   getPolygonCenter: (polygon) => {
     if (!polygon || polygon.length === 0) return null;
@@ -804,6 +1022,7 @@ export const routeHelpers = {
       pointCount: boundaryCoordinates.length,
       center: routeHelpers.getPolygonCenter(boundaryCoordinates),
       area: routeHelpers.calculatePolygonArea(boundaryCoordinates),
+      perimeter: routeHelpers.calculatePolygonPerimeter(boundaryCoordinates),
       bounds: {
         north: Math.max(...lats),
         south: Math.min(...lats),
@@ -811,31 +1030,6 @@ export const routeHelpers = {
         west: Math.min(...lngs)
       }
     };
-  },
-
-  // Add this to the routeHelpers object
-  calculatePolygonPerimeter: (coordinates) => {
-    if (!coordinates || coordinates.length < 3) return 0;
-
-    let perimeter = 0;
-    for (let i = 0; i < coordinates.length; i++) {
-      const current = coordinates[i];
-      const next = coordinates[(i + 1) % coordinates.length];
-
-      // Use Haversine formula for distance
-      const R = 6371; // Earth radius in kilometers
-      const dLat = (next.lat - current.lat) * Math.PI / 180;
-      const dLng = (next.lng - current.lng) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(current.lat * Math.PI / 180) * Math.cos(next.lat * Math.PI / 180) *
-        Math.sin(dLng / 2) * Math.sin(dLng / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distance = R * c;
-
-      perimeter += distance;
-    }
-
-    return parseFloat(perimeter.toFixed(2));
   },
 
   // Format boundary coordinates for display
@@ -861,9 +1055,29 @@ export const routeHelpers = {
       console.log(`Route "${routeName}" has no boundary coordinates`);
     }
   }
-
-
 };
 
-// Export default API client
+// Cache utilities
+export const cacheUtils = {
+  clearAll: () => {
+    cache.clear();
+    console.log('All cache cleared');
+  },
+
+  clearPattern: (pattern) => {
+    for (const key of cache.keys()) {
+      if (key.includes(pattern)) {
+        cache.delete(key);
+      }
+    }
+  },
+
+  getCacheStats: () => {
+    return {
+      size: cache.size,
+      keys: Array.from(cache.keys())
+    };
+  }
+};
+
 export default apiClient;

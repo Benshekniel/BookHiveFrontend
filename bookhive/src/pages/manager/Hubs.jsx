@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Search,
   MapPin,
@@ -13,19 +13,26 @@ import {
   X,
   Package,
   Route,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  UserPlus,
+  ChevronDown
 } from 'lucide-react';
-import { hubApi, agentApi, deliveryApi } from '../../services/deliveryService';
+import { hubApi, agentApi, deliveryApi, transactionApi } from '../../services/deliveryService';
 
 const Hubs = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showMap, setShowMap] = useState(false);
   const [selectedHub, setSelectedHub] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showAssignAgentModal, setShowAssignAgentModal] = useState(false);
   const [hubs, setHubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [availableAgents, setAvailableAgents] = useState([]);
+  const [loadingAgents, setLoadingAgents] = useState(false);
   const [stats, setStats] = useState({
     totalRoutes: 0,
     todayDeliveries: 0,
@@ -33,114 +40,500 @@ const Hubs = () => {
     activeHubs: 0
   });
 
-  // Fetch hubs data from backend
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hubsPerPage] = useState(12);
+
+  // Dropdown states
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  // Fetch hubs data
   useEffect(() => {
     fetchHubsData();
+    loadGoogleMaps();
+    fetchAvailableAgents();
   }, []);
 
-  const fetchHubsData = async () => {
+  // Update map when hubs change
+  useEffect(() => {
+    if (mapLoaded && hubs.length > 0) {
+      initializeHubMap();
+    }
+  }, [mapLoaded, hubs]);
+
+  const loadGoogleMaps = () => {
+    // Check if Google Maps is already loaded
+    if (window.google && window.google.maps) {
+      setMapLoaded(true);
+      return;
+    }
+
+    // Check if script is already being loaded
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+      return;
+    }
+
+    // Create script element
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU&libraries=geometry,places`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      setMapLoaded(true);
+    };
+
+    script.onerror = () => {
+      console.error('Error loading Google Maps');
+      setError('Failed to load Google Maps');
+    };
+
+    document.head.appendChild(script);
+  };
+
+  const fetchAvailableAgents = async () => {
+    try {
+      setLoadingAgents(true);
+      
+      // Fetch available agents
+      const agents = await agentApi.getAvailableAgents();
+      
+      // Filter agents who are not assigned to any hub or are available for reassignment
+      const unassignedAgents = Array.isArray(agents)
+        ? agents.filter(agent => !agent.hubId || agent.availabilityStatus === 'AVAILABLE')
+        : [];
+
+      setAvailableAgents(unassignedAgents);
+
+    } catch (error) {
+      console.error('Error fetching available agents:', error);
+      setAvailableAgents([]);
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
+
+  const initializeHubMap = () => {
+    const mapElement = document.getElementById('hub-map');
+    if (!mapElement || !window.google) return;
+
+    // Default center (Colombo, Sri Lanka)
+    const defaultCenter = { lat: 6.9271, lng: 79.8612 };
+
+    // Initialize map
+    const map = new window.google.maps.Map(mapElement, {
+      zoom: 7,
+      center: defaultCenter,
+      mapTypeId: 'roadmap',
+      styles: [
+        {
+          featureType: 'poi',
+          elementType: 'labels',
+          stylers: [{ visibility: 'off' }]
+        }
+      ]
+    });
+
+    // Add markers for hubs
+    const bounds = new window.google.maps.LatLngBounds();
+    let validMarkers = 0;
+
+    console.log(`Adding ${hubs.length} hubs to map...`);
+
+    hubs.forEach((hub, index) => {
+      console.log(`Hub ${hub.name}:`, hub.coordinates);
+      if (hub.coordinates && hub.coordinates.lat && hub.coordinates.lng) {
+        addHubMarkerToMap(map, hub, bounds);
+        validMarkers++;
+      } else {
+        console.warn(`Hub ${hub.name} has no valid coordinates:`, hub.coordinates);
+      }
+    });
+
+    console.log(`Added ${validMarkers} valid markers to map`);
+
+    // Adjust map bounds if we have markers
+    if (validMarkers > 0) {
+      setTimeout(() => {
+        map.fitBounds(bounds);
+        if (map.getZoom() > 12) {
+          map.setZoom(10);
+        }
+      }, 1000);
+    }
+
+    // Add legend
+    addHubMapLegend(map);
+  };
+
+  const addHubMarkerToMap = (map, hub, bounds) => {
+    const lat = parseFloat(hub.coordinates.lat);
+    const lng = parseFloat(hub.coordinates.lng);
+
+    // Validate coordinates
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      console.warn(`Invalid coordinates for hub ${hub.name}:`, hub.coordinates);
+      return;
+    }
+
+    const position = { lat, lng };
+
+    // Use red markers for all hubs regardless of status
+    const icon = {
+      url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      scaledSize: new window.google.maps.Size(35, 35),
+      origin: new window.google.maps.Point(0, 0),
+      anchor: new window.google.maps.Point(17, 35)
+    };
+
+    const marker = new window.google.maps.Marker({
+      position: position,
+      map: map,
+      title: `${hub.name} - ${hub.status}`,
+      icon: icon
+    });
+
+    // Add info window
+    const infoWindow = new window.google.maps.InfoWindow({
+      content: createHubInfoWindowContent(hub)
+    });
+
+    marker.addListener('click', () => {
+      infoWindow.open(map, marker);
+    });
+
+    bounds.extend(position);
+    console.log(`Added marker for ${hub.name} at ${lat}, ${lng}`);
+  };
+
+  const createHubInfoWindowContent = (hub) => {
+    return `
+      <div style="max-width: 300px; font-family: Arial, sans-serif;">
+        <h4 style="margin: 0 0 8px 0; color: #1f2937;">${hub.name}</h4>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>Status:</strong> ${hub.status}</p>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>Location:</strong> ${hub.location}</p>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>City:</strong> ${hub.city}</p>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>Agents:</strong> ${hub.agents} (${hub.availableAgents} available)</p>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>Manager:</strong> ${hub.hubManager || 'Not assigned'}</p>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>Today's Deliveries:</strong> ${hub.todayDeliveries}</p>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>Revenue:</strong> Rs.${hub.monthlyRevenue.toLocaleString()}</p>
+        <p style="margin: 4px 0; font-size: 14px;"><strong>Routes:</strong> ${hub.routes}</p>
+      </div>
+    `;
+  };
+
+  const addHubMapLegend = (map) => {
+    // const legend = document.createElement('div');
+    // legend.style.backgroundColor = 'white';
+    // legend.style.border = '2px solid #ccc';
+    // legend.style.borderRadius = '6px';
+    // legend.style.boxShadow = '0 2px 8px rgba(0,0,0,.15)';
+    // legend.style.cursor = 'default';
+    // legend.style.marginBottom = '22px';
+    // legend.style.marginRight = '10px';
+    // legend.style.padding = '12px';
+    // legend.style.fontFamily = 'Arial, sans-serif';
+    // legend.style.fontSize = '13px';
+    // legend.style.lineHeight = '1.4';
+
+    // legend.innerHTML = `
+    //   <div style="font-weight: bold; margin-bottom: 8px; text-align: center; color: #333;">Hub Locations</div>
+    //   <div style="display: flex; align-items: center; justify-content: center;">
+    //     <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
+    //          style="width: 16px; height: 16px; margin-right: 8px; flex-shrink: 0;"> 
+    //     <span style="color: #555;">All Hub Locations</span>
+    //   </div>
+    // `;
+
+    // map.controls[window.google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
+  };
+
+  const fetchHubsData = async (useCache = true) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch all hubs
-      const hubsResponse = await hubApi.getAllHubs();
-      
-      // Fetch hub statistics
-      const hubStatsResponse = await hubApi.getHubStats();
-      
-      // Transform backend data to match frontend structure
-      const transformedHubs = await Promise.all(hubsResponse.map(async (hub) => {
-        try {
-          // Get hub agents
-          const agentsResponse = await hubApi.getHubAgents(hub.hubId);
-          
-          // Get hub deliveries for today
-          const deliveriesResponse = await hubApi.getHubDeliveries(hub.hubId);
-          const todayDeliveries = deliveriesResponse.filter(delivery => {
-            const deliveryDate = new Date(delivery.createdAt || delivery.orderTime);
-            const today = new Date();
-            return deliveryDate.toDateString() === today.toDateString();
-          });
+      console.log('Fetching hubs data...');
 
-          // Get hub performance
-          let hubPerformance = null;
-          try {
-            hubPerformance = await hubApi.getHubPerformance(hub.hubId);
-          } catch (perfError) {
-            console.warn(`Could not fetch performance for hub ${hub.hubId}:`, perfError);
-          }
+      // Fetch hubs and stats in parallel
+      const [hubsResponse, hubStatsResponse] = await Promise.all([
+        hubApi.getAllHubs(useCache).catch(err => {
+          console.error('Failed to fetch hubs:', err);
+          return [];
+        }),
+        hubApi.getHubStats(useCache).catch(err => {
+          console.error('Failed to fetch hub stats:', err);
+          return [];
+        })
+      ]);
 
-          return {
-            id: hub.hubId,
-            name: hub.name || `Hub ${hub.hubId}`,
-            location: hub.address || 'Unknown Location',
-            coordinates: { 
-              lat: hub.latitude || 6.9271, 
-              lng: hub.longitude || 79.8612 
-            },
-            hubManager: hub.managerName || null,
-            agents: agentsResponse.length,
-            status: determineHubStatus(hub, agentsResponse, todayDeliveries),
-            todayDeliveries: todayDeliveries.length,
-            monthlyRevenue: hubPerformance?.monthlyRevenue || (Math.random() * 2000000 + 1000000),
-            routes: hubPerformance?.totalRoutes || Math.floor(Math.random() * 30 + 15),
-            city: hub.city || 'Unknown City',
-            phoneNumber: hub.phoneNumber || 'N/A',
-            email: hub.email || 'N/A',
-            description: hub.description || `${hub.name || 'This hub'} serves the local community with efficient delivery services.`,
-            establishedYear: hub.establishedYear || '2020',
-            maxCapacity: hub.maxCapacity || 50
-          };
-        } catch (hubError) {
-          console.error(`Error processing hub ${hub.hubId}:`, hubError);
-          return {
-            id: hub.hubId,
-            name: hub.name || `Hub ${hub.hubId}`,
-            location: hub.address || 'Unknown Location',
-            coordinates: { lat: 6.9271, lng: 79.8612 },
-            hubManager: hub.managerName || null,
-            agents: 0,
-            status: 'Offline',
-            todayDeliveries: 0,
-            monthlyRevenue: 0,
-            routes: 0,
-            city: hub.city || 'Unknown City',
-            phoneNumber: hub.phoneNumber || 'N/A',
-            email: hub.email || 'N/A'
-          };
-        }
-      }));
+      console.log(`Fetched ${hubsResponse.length} hubs`);
 
-      setHubs(transformedHubs);
-
-      // Calculate overall stats
-      const totalRoutes = transformedHubs.reduce((sum, hub) => sum + hub.routes, 0);
-      const todayDeliveries = transformedHubs.reduce((sum, hub) => sum + hub.todayDeliveries, 0);
-      const monthlyRevenue = transformedHubs.reduce((sum, hub) => sum + hub.monthlyRevenue, 0);
-      const activeHubs = transformedHubs.filter(hub => hub.status === 'Operational').length;
-
-      setStats({
-        totalRoutes,
-        todayDeliveries,
-        monthlyRevenue,
-        activeHubs
+      // Fetch transactions for accurate revenue calculation
+      const allTransactions = await transactionApi.getAllTransactions(useCache).catch(err => {
+        console.error('Failed to fetch transactions:', err);
+        return [];
       });
+
+      console.log(`Fetched ${allTransactions.length} transactions for revenue calculation`);
+
+      // Process hubs with real data
+      const processedHubs = await Promise.all(
+        hubsResponse.map(hub => processHubWithRealDataAndDashboardRevenue(hub, allTransactions))
+      );
+
+      // Calculate stats from real data
+      const calculatedStats = calculateStatsFromHubsWithDashboardRevenue(hubStatsResponse, processedHubs, allTransactions);
+
+      setHubs(processedHubs);
+      setStats(calculatedStats);
+
+      console.log('Hubs data loaded successfully');
 
     } catch (err) {
       console.error('Error fetching hubs data:', err);
-      setError('Failed to load hubs data');
+      setError('Failed to load hubs data: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const processHubWithRealDataAndDashboardRevenue = async (hub, allTransactions) => {
+    try {
+      // Get real agent and delivery data for each hub
+      const [agents, deliveries] = await Promise.all([
+        hubApi.getHubAgents(hub.hubId).catch(() => []),
+        hubApi.getHubDeliveries(hub.hubId).catch(() => [])
+      ]);
+
+      const totalAgents = agents.length;
+      const availableAgents = agents.filter(agent => 
+        agent.availabilityStatus === 'AVAILABLE'
+      ).length;
+
+      // Count today's deliveries
+      const today = new Date();
+      const todayDeliveries = deliveries.filter(delivery => {
+        const deliveryDate = new Date(delivery.createdAt);
+        return deliveryDate.toDateString() === today.toDateString();
+      }).length;
+
+      // Calculate revenue using fixed function
+      const monthlyRevenue = calculateHubRevenueFixed(
+        hub.hubId, 
+        hub.name, 
+        deliveries, 
+        allTransactions
+      );
+
+      // Generate coordinates if missing
+      const coordinates = getHubCoordinates(hub);
+
+      return {
+        id: hub.hubId,
+        name: hub.name || `Hub ${hub.hubId}`,
+        location: hub.address || 'Unknown Location',
+        coordinates,
+        hubManager: hub.hubManagerName || null,
+        hubManagerId: hub.hubManagerId || null,
+        agents: totalAgents,
+        availableAgents,
+        status: determineHubStatus(hub, totalAgents, todayDeliveries),
+        todayDeliveries,
+        monthlyRevenue,
+        routes: hub.numberOfRoutes || 0,
+        city: hub.city || 'Unknown City',
+        phoneNumber: hub.phoneNumber || 'N/A',
+        email: hub.email || 'N/A',
+        description: hub.description || `${hub.name || 'This hub'} serves the local community with efficient delivery services.`,
+        establishedYear: hub.establishedYear || '2020',
+        maxCapacity: hub.maxCapacity || 50,
+        isNearCapacity: totalAgents > 40,
+        efficiencyScore: totalAgents > 0 ? Math.floor((todayDeliveries / totalAgents) * 10) + 70 : 70,
+        lastUpdated: new Date().toISOString(),
+        createdAt: hub.createdAt
+      };
+    } catch (error) {
+      console.error(`Error processing hub ${hub.hubId}:`, error);
+      return {
+        id: hub.hubId,
+        name: hub.name || `Hub ${hub.hubId}`,
+        location: hub.address || 'Unknown Location',
+        city: hub.city || 'Unknown City',
+        coordinates: getHubCoordinates(hub),
+        hubManager: hub.hubManagerName || null,
+        hubManagerId: hub.hubManagerId || null,
+        agents: 0,
+        availableAgents: 0,
+        status: 'Unknown',
+        todayDeliveries: 0,
+        monthlyRevenue: 0,
+        routes: 0,
+        phoneNumber: 'N/A',
+        email: 'N/A',
+        description: 'Hub data unavailable',
+        efficiencyScore: 0,
+        lastUpdated: new Date().toISOString()
+      };
+    }
+  };
+
+  // Fixed revenue calculation function - using Object instead of Map
+  const calculateHubRevenueFixed = (hubId, hubName, hubDeliveries, allTransactions) => {
+    try {
+      console.log(`Calculating revenue for hub ${hubName}...`);
+      
+      // Use Object instead of Map to avoid naming conflicts with Google Maps
+      const transactionMap = {};
+      allTransactions.forEach(transaction => {
+        transactionMap[transaction.transactionId] = transaction;
+      });
+
+      let revenue = 0;
+
+      // Method 1: Calculate revenue from deliveries with transactions
+      hubDeliveries.forEach(delivery => {
+        if (delivery.transactionId) {
+          const transaction = transactionMap[delivery.transactionId];
+          if (transaction && (transaction.paymentStatus === 'COMPLETED' || transaction.paymentStatus === 'PAID')) {
+            const amount = parseFloat(transaction.paymentAmount || 0);
+            if (!isNaN(amount)) {
+              revenue += amount;
+            }
+          }
+        }
+      });
+
+      // Method 2: Direct hub transaction matching
+      allTransactions.forEach(transaction => {
+        if ((transaction.hubId === hubId || transaction.hubName === hubName) &&
+            (transaction.paymentStatus === 'COMPLETED' || transaction.paymentStatus === 'PAID')) {
+          
+          const amount = parseFloat(transaction.paymentAmount || 0);
+          if (!isNaN(amount)) {
+            // Only add if not already counted through delivery
+            const alreadyCounted = hubDeliveries.some(d => d.transactionId === transaction.transactionId);
+            if (!alreadyCounted) {
+              revenue += amount;
+            }
+          }
+        }
+      });
+
+      console.log(`Hub ${hubName} revenue calculated: Rs.${revenue}`);
+      return revenue;
+
+    } catch (error) {
+      console.error(`Error calculating revenue for hub ${hubName}:`, error);
+      return 0;
+    }
+  };
+
+  // Function to get or generate coordinates for hubs
+  const getHubCoordinates = (hub) => {
+    // If hub has valid coordinates, use them
+    if (hub.latitude && hub.longitude) {
+      const lat = parseFloat(hub.latitude);
+      const lng = parseFloat(hub.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        return { lat, lng };
+      }
+    }
+
+    // Generate coordinates based on city/hub name
+    const cityCoordinates = {
+      'Colombo': { lat: 6.9271, lng: 79.8612 },
+      'Kandy': { lat: 7.2906, lng: 80.6337 },
+      'Galle': { lat: 6.0329, lng: 80.2168 },
+      'Negombo': { lat: 7.2084, lng: 79.8375 },
+      'Ratnapura': { lat: 6.6828, lng: 80.3992 },
+      'Jaffna': { lat: 9.6615, lng: 80.0255 },
+      'Anuradhapura': { lat: 8.3114, lng: 80.4037 },
+      'Matara': { lat: 5.9549, lng: 80.5550 },
+      'Nuwara Eliya': { lat: 6.9497, lng: 80.7891 },
+      'Ampara': { lat: 7.2975, lng: 81.6747 },
+      'Badulla': { lat: 6.9934, lng: 81.0550 },
+      'Batticaloa': { lat: 7.7102, lng: 81.6924 },
+      'Gampaha': { lat: 7.0840, lng: 79.9956 },
+      'Hambantota': { lat: 6.1241, lng: 81.1185 },
+      'Kalutara': { lat: 6.5831, lng: 79.9607 },
+      'Kegalle': { lat: 7.2513, lng: 80.3464 },
+      'Kurunegala': { lat: 7.4818, lng: 80.3609 },
+      'Matale': { lat: 7.4675, lng: 80.6234 },
+      'Monaragala': { lat: 6.8714, lng: 81.3507 },
+      'Polonnaruwa': { lat: 7.9403, lng: 81.0188 },
+      'Puttalam': { lat: 8.0362, lng: 79.8283 },
+      'Trincomalee': { lat: 8.5874, lng: 81.2152 }
+    };
+
+    // Try to match city name
+    const city = hub.city || '';
+    const hubName = hub.name || '';
+    
+    for (const [cityName, coords] of Object.entries(cityCoordinates)) {
+      if (city.toLowerCase().includes(cityName.toLowerCase()) || 
+          hubName.toLowerCase().includes(cityName.toLowerCase())) {
+        console.log(`Using generated coordinates for ${hub.name}: ${cityName}`);
+        return coords;
+      }
+    }
+
+    // Default to Colombo if no match found
+    console.log(`Using default coordinates (Colombo) for ${hub.name}`);
+    return { lat: 6.9271, lng: 79.8612 };
+  };
+
+  const calculateStatsFromHubsWithDashboardRevenue = (hubStatsResponse, processedHubs, allTransactions) => {
+    try {
+      // Calculate total revenue using Dashboard's approach
+      const totalRevenue = allTransactions
+        .filter(t => t.paymentStatus === 'COMPLETED' || t.paymentStatus === 'PAID')
+        .reduce((total, transaction) => {
+          const amount = parseFloat(transaction.paymentAmount || 0);
+          return total + (isNaN(amount) ? 0 : amount);
+        }, 0);
+
+      // Use hub stats if available, otherwise calculate from processed hubs
+      if (Array.isArray(hubStatsResponse) && hubStatsResponse.length > 0) {
+        const totalRoutes = hubStatsResponse.reduce((sum, hub) => sum + (hub.totalRoutes || 0), 0);
+        const todayDeliveries = hubStatsResponse.reduce((sum, hub) => sum + (hub.todayDeliveries || 0), 0);
+        const activeHubs = hubStatsResponse.filter(hub => (hub.totalAgents || 0) > 0).length;
+
+        return {
+          totalRoutes: totalRoutes || processedHubs.reduce((sum, hub) => sum + hub.routes, 0),
+          todayDeliveries: todayDeliveries || processedHubs.reduce((sum, hub) => sum + hub.todayDeliveries, 0),
+          monthlyRevenue: totalRevenue,
+          activeHubs: activeHubs || processedHubs.filter(hub => hub.agents > 0).length
+        };
+      }
+
+      // Fallback to processed hubs data
+      return {
+        totalRoutes: processedHubs.reduce((sum, hub) => sum + hub.routes, 0),
+        todayDeliveries: processedHubs.reduce((sum, hub) => sum + hub.todayDeliveries, 0),
+        monthlyRevenue: totalRevenue,
+        activeHubs: processedHubs.filter(hub => hub.agents > 0).length
+      };
+    } catch (error) {
+      console.error('Error calculating stats:', error);
+      return {
+        totalRoutes: 0,
+        todayDeliveries: 0,
+        monthlyRevenue: 0,
+        activeHubs: 0
+      };
+    }
+  };
+
   const determineHubStatus = (hub, agents, todayDeliveries) => {
-    if (!hub.managerName) return 'Needs Hub Manager';
-    if (agents.length > (hub.maxCapacity * 0.8)) return 'Near Capacity';
+    if (!hub.hubManagerName) return 'Needs Hub Manager';
+    if (agents === 0) return 'No Agents';
+    if (agents > 40) return 'Near Capacity';
+    if (todayDeliveries < 5) return 'Low Activity';
     return 'Operational';
   };
 
+  // Hub management functions
   const updateHub = async (hubId, updateData) => {
     try {
       await hubApi.updateHub(hubId, updateData);
@@ -149,7 +542,7 @@ const Hubs = () => {
       setHubs(prevHubs => 
         prevHubs.map(hub => 
           hub.id === hubId 
-            ? { ...hub, ...updateData }
+            ? { ...hub, ...updateData, lastUpdated: new Date().toISOString() }
             : hub
         )
       );
@@ -157,24 +550,19 @@ const Hubs = () => {
       alert('Hub updated successfully!');
     } catch (err) {
       console.error('Error updating hub:', err);
-      alert('Failed to update hub');
+      alert('Failed to update hub: ' + err.message);
     }
   };
 
   const assignManager = async (hubId, managerData) => {
     try {
-      // In a real implementation, you would need a user ID
-      // For now, we'll just update the hub with manager info
-      await hubApi.updateHub(hubId, {
-        managerName: managerData.name,
-        managerEmail: managerData.email
-      });
+      await hubApi.assignManager(hubId, managerData.userId);
       
       // Update local state
       setHubs(prevHubs => 
         prevHubs.map(hub => 
           hub.id === hubId 
-            ? { ...hub, hubManager: managerData.name, status: 'Operational' }
+            ? { ...hub, hubManager: managerData.name, hubManagerId: managerData.userId, status: 'Operational' }
             : hub
         )
       );
@@ -182,21 +570,49 @@ const Hubs = () => {
       alert('Hub manager assigned successfully!');
     } catch (err) {
       console.error('Error assigning hub manager:', err);
-      alert('Failed to assign hub manager');
+      alert('Failed to assign hub manager: ' + err.message);
+    }
+  };
+
+  const assignAgent = async (hubId, agentData) => {
+    try {
+      // Create agent with hub assignment
+      await agentApi.createAgent({
+        userId: agentData.userId,
+        name: agentData.name,
+        email: agentData.email,
+        phoneNumber: agentData.phoneNumber,
+        hubId: hubId,
+        availabilityStatus: 'AVAILABLE'
+      });
+      
+      // Refresh data to show updated agent count
+      await fetchHubsData(false);
+      await fetchAvailableAgents();
+      
+      alert('Agent assigned to hub successfully!');
+    } catch (err) {
+      console.error('Error assigning agent to hub:', err);
+      alert('Failed to assign agent to hub: ' + err.message);
     }
   };
 
   const refreshData = async () => {
-    await fetchHubsData();
+    await fetchHubsData(false);
+    await fetchAvailableAgents();
   };
 
+  // Utility functions
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Operational':
         return <CheckCircle className="text-green-600" size={20} />;
       case 'Near Capacity':
         return <AlertCircle className="text-yellow-400" size={20} />;
+      case 'Low Activity':
+        return <AlertCircle className="text-orange-400" size={20} />;
       case 'Needs Hub Manager':
+      case 'No Agents':
         return <AlertCircle className="text-red-600" size={20} />;
       default:
         return <AlertCircle className="text-gray-400" size={20} />;
@@ -209,20 +625,73 @@ const Hubs = () => {
         return 'bg-green-600 text-white';
       case 'Near Capacity':
         return 'bg-yellow-400 text-white';
+      case 'Low Activity':
+        return 'bg-orange-400 text-white';
       case 'Needs Hub Manager':
+      case 'No Agents':
         return 'bg-red-600 text-white';
       default:
         return 'bg-gray-400 text-white';
     }
   };
 
-  const filteredHubs = useMemo(() => {
-    return hubs.filter(hub =>
+  // Filtered and paginated hubs
+  const { paginatedHubs, totalPages } = useMemo(() => {
+    const filtered = hubs.filter(hub =>
       hub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      hub.location.toLowerCase().includes(searchTerm.toLowerCase())
+      hub.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      hub.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, hubs]);
 
+    const startIndex = (currentPage - 1) * hubsPerPage;
+    const endIndex = startIndex + hubsPerPage;
+    const paginated = filtered.slice(startIndex, endIndex);
+
+    return {
+      paginatedHubs: paginated,
+      totalPages: Math.ceil(filtered.length / hubsPerPage)
+    };
+  }, [hubs, searchTerm, currentPage, hubsPerPage]);
+
+  // Pagination handlers
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // Dropdown component
+  const Dropdown = ({ hubId, isOpen, onToggle, onAssignManager, onAssignAgent }) => (
+    <div className="relative">
+      <button
+        onClick={() => onToggle(hubId)}
+        className="flex items-center justify-center w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+      >
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute right-0 top-9 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+          <div className="py-1">
+            <button
+              onClick={onAssignManager}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Assign Manager
+            </button>
+            <button
+              onClick={onAssignAgent}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Assign Agent
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Modal components
   const ManageModal = ({ hub, onClose }) => {
     const [formData, setFormData] = useState({
       name: hub?.name || '',
@@ -352,8 +821,10 @@ const Hubs = () => {
     );
   };
 
+  // Hub Manager Assignment Modal - Using User ID Input
   const AssignHubManagerModal = ({ hub, onClose }) => {
     const [formData, setFormData] = useState({
+      userId: '',
       name: '',
       email: ''
     });
@@ -361,13 +832,23 @@ const Hubs = () => {
 
     const handleSubmit = async (e) => {
       e.preventDefault();
+      if (!formData.userId) {
+        alert('Please enter a user ID');
+        return;
+      }
+
       setSaving(true);
       
       try {
-        await assignManager(hub.id, formData);
+        await assignManager(hub.id, {
+          userId: parseInt(formData.userId),
+          name: formData.name,
+          email: formData.email
+        });
         onClose();
       } catch (err) {
         console.error('Error assigning manager:', err);
+        alert('Failed to assign hub manager: ' + err.message);
       } finally {
         setSaving(false);
       }
@@ -386,19 +867,30 @@ const Hubs = () => {
           </div>
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-600">Hub Manager Name</label>
+              <label className="text-sm font-medium text-gray-600">User ID</label>
               <input
-                type="text"
-                placeholder="Enter hub manager name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                type="number"
+                placeholder="Enter user ID"
+                value={formData.userId}
+                onChange={(e) => setFormData(prev => ({ ...prev, userId: e.target.value }))}
                 className="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
                 disabled={saving}
                 required
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Contact Email</label>
+              <label className="text-sm font-medium text-gray-600">Manager Name (Optional)</label>
+              <input
+                type="text"
+                placeholder="Enter manager name"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                disabled={saving}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Contact Email (Optional)</label>
               <input
                 type="email"
                 placeholder="Enter email"
@@ -406,9 +898,16 @@ const Hubs = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 className="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
                 disabled={saving}
-                required
               />
             </div>
+
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Enter the User ID of the person you want to assign as hub manager. 
+                The name and email fields are optional and will be used for display purposes.
+              </p>
+            </div>
+
             <div className="flex justify-end space-x-2">
               <button
                 type="button"
@@ -421,9 +920,134 @@ const Hubs = () => {
               <button
                 type="submit"
                 className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50"
+                disabled={saving || !formData.userId}
+              >
+                {saving ? 'Assigning...' : 'Assign Manager'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // Agent Assignment Modal - Using Dropdown
+  const AssignAgentModal = ({ hub, onClose }) => {
+    const [selectedAgent, setSelectedAgent] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      if (!selectedAgent) {
+        alert('Please select an agent');
+        return;
+      }
+
+      setSaving(true);
+      
+      try {
+        const agent = availableAgents.find(a => 
+          a.agentId?.toString() === selectedAgent || a.userId?.toString() === selectedAgent
+        );
+        
+        if (!agent) {
+          throw new Error('Selected agent not found');
+        }
+
+        await assignAgent(hub.id, {
+          userId: agent.userId || agent.agentId,
+          name: agent.name || `${agent.firstName || ''} ${agent.lastName || ''}`.trim(),
+          email: agent.email,
+          phoneNumber: agent.phoneNumber || agent.phone
+        });
+        onClose();
+      } catch (err) {
+        console.error('Error assigning agent:', err);
+        alert('Failed to assign agent: ' + err.message);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    if (!hub) return null;
+    
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/30">
+        <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl border border-gray-200">
+          <div className="flex justify-between items-center p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-slate-900 font-heading">Assign Agent to {hub.name}</h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700" disabled={saving}>
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-600 mb-2 block">Select Agent</label>
+              {loadingAgents ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-sm text-gray-500 mt-2">Loading available agents...</p>
+                </div>
+              ) : availableAgents.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500">No available agents found</p>
+                  <p className="text-xs text-gray-400 mt-1">Create agents first or ensure agents are marked as available</p>
+                </div>
+              ) : (
+                <select
+                  value={selectedAgent}
+                  onChange={(e) => setSelectedAgent(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+                  disabled={saving}
+                  required
+                >
+                  <option value="">Select an agent...</option>
+                  {availableAgents.map((agent) => (
+                    <option key={agent.agentId || agent.userId} value={agent.agentId || agent.userId}>
+                      {agent.name || `${agent.firstName || ''} ${agent.lastName || ''}`.trim() || `Agent ${agent.agentId || agent.userId}`}
+                      {agent.email && ` (${agent.email})`}
+                      {/* {agent.availabilityStatus && ` - ${agent.availabilityStatus}`} */}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            
+            {selectedAgent && (
+              <div className="bg-green-50 p-3 rounded-lg">
+                <h4 className="text-sm font-medium text-green-900 mb-2">Selected Agent Details:</h4>
+                {(() => {
+                  const agent = availableAgents.find(a => 
+                    a.agentId?.toString() === selectedAgent || a.userId?.toString() === selectedAgent
+                  );
+                  return agent ? (
+                    <div className="text-sm text-green-800 space-y-1">
+                      <p><strong>Name:</strong> {agent.name || `${agent.firstName || ''} ${agent.lastName || ''}`.trim() || 'N/A'}</p>
+                      <p><strong>Email:</strong> {agent.email || 'N/A'}</p>
+                      <p><strong>Phone:</strong> {agent.phoneNumber || agent.phone || 'N/A'}</p>
+                      <p><strong>Status:</strong> {agent.availabilityStatus || 'Available'}</p>
+                      <p><strong>Agent ID:</strong> {agent.agentId || agent.userId}</p>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 disabled={saving}
               >
-                {saving ? 'Assigning...' : 'Assign'}
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                disabled={saving || !selectedAgent}
+              >
+                {saving ? 'Assigning...' : 'Assign Agent'}
               </button>
             </div>
           </form>
@@ -464,8 +1088,13 @@ const Hubs = () => {
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Header with Refresh Button */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Hub Management</h1>
+      {/* <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Hub Management</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Showing {paginatedHubs.length} of {hubs.length} hubs
+          </p>
+        </div>
         <button 
           onClick={refreshData}
           disabled={loading}
@@ -474,7 +1103,7 @@ const Hubs = () => {
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
         </button>
-      </div>
+      </div> */}
 
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -483,7 +1112,6 @@ const Hubs = () => {
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Routes</p>
               <p className="text-2xl font-bold text-slate-900 font-heading">{stats.totalRoutes}</p>
-              <p className="text-sm text-green-600">Across all provinces</p>
             </div>
             <Route className="text-yellow-600" size={32} />
           </div>
@@ -493,7 +1121,6 @@ const Hubs = () => {
             <div>
               <p className="text-sm text-gray-600 mb-1">Today's Deliveries</p>
               <p className="text-2xl font-bold text-slate-900 font-heading">{stats.todayDeliveries}</p>
-              <p className="text-sm text-green-600">+18% from yesterday</p>
             </div>
             <Package className="text-blue-800" size={32} />
           </div>
@@ -501,9 +1128,8 @@ const Hubs = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Monthly Revenue</p>
-              <p className="text-2xl font-bold text-slate-900 font-heading">Rs.{(stats.monthlyRevenue / 1000000).toFixed(1)}M</p>
-              <p className="text-sm text-green-600">All provinces</p>
+              <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
+              <p className="text-2xl font-bold text-slate-900 font-heading">Rs.{stats.monthlyRevenue.toLocaleString()}</p>
             </div>
             <TrendingUp className="text-green-600" size={32} />
           </div>
@@ -513,7 +1139,6 @@ const Hubs = () => {
             <div>
               <p className="text-sm text-gray-600 mb-1">Active Hubs</p>
               <p className="text-2xl font-bold text-slate-900 font-heading">{stats.activeHubs}</p>
-              <p className="text-sm text-gray-500">Nationwide coverage</p>
             </div>
             <MapPin className="text-blue-600" size={32} />
           </div>
@@ -536,46 +1161,103 @@ const Hubs = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg h-96 flex items-center justify-center relative border-2 border-dashed border-gray-300">
-          <div className="text-center">
-            <Map className="mx-auto mb-4 text-blue-600" size={48} />
-            <p className="text-gray-700 mb-2 font-medium">Interactive Sri Lanka Map</p>
-            <p className="text-sm text-gray-500 mb-4">Displaying {hubs.length} delivery hubs across all 9 provinces</p>
-          </div>
+        <div className="relative w-full h-96 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+          {!mapLoaded ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-600">Loading map...</p>
+              </div>
+            </div>
+          ) : (
+            <div id="hub-map" className="w-full h-full"></div>
+          )}
+
+          {hubs.length === 0 && mapLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90">
+              <div className="text-center">
+                <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">No hubs to display</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Search hubs by name or location..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
-        />
+      {/* Search and Pagination Controls */}
+      <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0 lg:space-x-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search hubs by name, location, or city..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+          />
+        </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <span className="px-4 py-2 text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Hubs Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {filteredHubs.map((hub) => (
+        {paginatedHubs.map((hub) => (
           <div key={hub.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             {/* Hub Header */}
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 font-heading">{hub.name}</h3>
                 <p className="text-sm text-gray-600 flex items-center space-x-1">
-                  <MapPin size={14} />
-                  <span>{hub.location}</span>
+                  {/* <MapPin size={14} /> */}
+                  <span>{hub.location}, {hub.city}</span>
                 </p>
+                
               </div>
               <div className="flex items-center space-x-2">
-                {getStatusIcon(hub.status)}
+                {/* {getStatusIcon(hub.status)}
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hub.status)}`}>
                   {hub.status}
-                </span>
-              </div>
+                </span> */}
+                <Dropdown
+                  hubId={hub.id}
+                  isOpen={openDropdown === hub.id}
+                  onToggle={(hubId) => setOpenDropdown(openDropdown === hubId ? null : hubId)}
+                  onAssignManager={() => {
+                    setSelectedHub(hub);
+                    setShowAssignModal(true);
+                    setOpenDropdown(null);
+                  }}
+                  onAssignAgent={() => {
+                    setSelectedHub(hub);
+                    setShowAssignAgentModal(true);
+                    setOpenDropdown(null);
+                  }}
+                />
+              </div> 
             </div>
 
             {/* Hub Stats */}
@@ -586,24 +1268,26 @@ const Hubs = () => {
                   <span className="text-sm font-medium">Agents</span>
                 </div>
                 <p className="text-lg font-bold text-slate-900">{hub.agents}</p>
+                <p className="text-xs text-gray-500">{hub.availableAgents} available</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="flex items-center space-x-2 mb-1">
-                  <TrendingUp className="text-green-600" size={16} />
-                  <span className="text-sm font-medium">Deliveries</span>
+                  <Package className="text-green-600" size={16} />
+                  <span className="text-sm font-medium">Today</span>
                 </div>
                 <p className="text-lg font-bold text-slate-900">{hub.todayDeliveries}</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="flex items-center space-x-2 mb-1">
                   <TrendingUp className="text-green-600" size={16} />
-                  <span className="text-sm font-medium">Monthly Revenue</span>
+                  <span className="text-sm font-medium">Revenue</span>
                 </div>
-                <p className="text-lg font-bold text-slate-900">Rs.{(hub.monthlyRevenue / 1000).toLocaleString()}K</p>
+                <p className="text-lg font-bold text-slate-900">Rs.{hub.monthlyRevenue.toLocaleString()}</p>
+                <p className="text-xs text-gray-500">Dashboard Config</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="flex items-center space-x-2 mb-1">
-                  <MapPin className="text-blue-600" size={16} />
+                  <Route className="text-blue-600" size={16} />
                   <span className="text-sm font-medium">Routes</span>
                 </div>
                 <p className="text-lg font-bold text-slate-900">{hub.routes}</p>
@@ -632,34 +1316,38 @@ const Hubs = () => {
                 <Settings size={16} />
                 <span className="text-sm">Manage</span>
               </button>
-              {!hub.hubManager && (
-                <button
-                  className="flex-1 bg-yellow-400 text-white py-2 px-3 rounded-lg hover:bg-yellow-500 transition-colors"
-                  onClick={() => {
-                    setSelectedHub(hub);
-                    setShowAssignModal(true);
-                  }}
-                >
-                  <span className="text-sm">Assign Manager</span>
-                </button>
-              )}
             </div>
           </div>
         ))}
       </div>
 
-      {filteredHubs.length === 0 && (
+      {/* No Results State */}
+      {paginatedHubs.length === 0 && !loading && (
         <div className="text-center py-12">
           <MapPin className="mx-auto mb-4 text-gray-400" size={48} />
-          <p className="text-gray-500">No hubs found matching your search</p>
+          <p className="text-gray-500">
+            {searchTerm ? 'No hubs found matching your search' : 'No hubs available'}
+          </p>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="mt-2 text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear search
+            </button>
+          )}
         </div>
       )}
 
+      {/* Modals */}
       {showManageModal && (
         <ManageModal hub={selectedHub} onClose={() => setShowManageModal(false)} />
       )}
       {showAssignModal && (
         <AssignHubManagerModal hub={selectedHub} onClose={() => setShowAssignModal(false)} />
+      )}
+      {showAssignAgentModal && (
+        <AssignAgentModal hub={selectedHub} onClose={() => setShowAssignAgentModal(false)} />
       )}
     </div>
   );
