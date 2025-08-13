@@ -12,6 +12,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.1.1",
+    "@react-google-maps/api": "^2.20.7",
     "@tailwindcss/vite": "^4.1.10",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
