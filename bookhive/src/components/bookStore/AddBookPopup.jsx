@@ -58,7 +58,9 @@ const AddBookPopup = () => {
       const dto = {
         title: newBook.title.trim(),
         authors: newBook.authors.split(',').map(author => author.trim()).filter(author => author),
-        genres: newBook.genres.split(',').map(genre => genre.trim()).filter(genre => genre),
+        genres: newBook.genres.split(',')
+          .map(genre => genre.trim())
+          .filter(genre => genre.charAt(0).toUpperCase() + genre.slice(1)),
         imageUrls: newBook.imageUrls ? [newBook.imageUrls] : [],
         condition: newBook.condition,
         description: newBook.description.trim(),
