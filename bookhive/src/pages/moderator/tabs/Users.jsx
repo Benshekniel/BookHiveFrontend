@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Shield, AlertTriangle, Eye, CheckCircle, X } from 'lucide-react';
+import { UserCheck, Shield, AlertTriangle, Eye } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import UserReview from '../subPages/UserReview'; // Import the new component
+import UserReview from '../subPages/UserReview';
+import UserApproval from '../subPages/UserApproval'; 
 
 const Users = () => {
   const [activeTab, setActiveTab] = useState('registrations');
   const [pendingRegistrations, setPendingRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null); // State for selected user
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const userManagement = [
     {
@@ -88,10 +89,10 @@ const Users = () => {
         });
         setPendingRegistrations(
           response.data.map((registration, index) => ({
-            id: `REG-${1001 + index}`, // Fallback since user_id is not provided
+            id: `REG-${1001 + index}`,
             username: registration.email ? registration.email.split('@')[0] : `user${index}`,
             email: registration.email || '',
-            name: registration.name || '', // Pass name for UserReview
+            name: registration.name || '',
             fullName: registration.fname && registration.lname
               ? `${registration.fname} ${registration.lname}`
               : registration.name || '',
@@ -107,10 +108,10 @@ const Users = () => {
             location: [registration.city, registration.state, registration.zip]
               .filter(Boolean)
               .join(', ') || '',
-            status: 'pending', // Hardcoded since status is not returned
-            referredBy: null, // Not available in the response
-            role: registration.role || '', // Pass role for UserReview
-            fname: registration.fname || '', // Pass additional fields for UserReview
+            status: 'pending',
+            referredBy: null,
+            role: registration.role || '',
+            fname: registration.fname || '',
             lname: registration.lname || '',
             phone: registration.phone || '',
             dob: registration.dob || '',
@@ -198,16 +199,21 @@ const Users = () => {
   };
 
   const handleReview = (user) => {
-    setSelectedUser(user); // Set the selected user to show in UserReview
+    setSelectedUser(user);
   };
 
   const handleCloseReview = () => {
-    setSelectedUser(null); // Clear selected user to close UserReview
+    setSelectedUser(null);
+  };
+
+  const handleUserUpdate = (updatedUser) => {
+    setPendingRegistrations(prev =>
+      prev.map(reg => reg.id === updatedUser.id ? updatedUser : reg)
+    );
   };
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
@@ -247,7 +253,6 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
@@ -304,17 +309,14 @@ const Users = () => {
                             {registration.status}
                           </span>
                         </div>
-                        
                         <p className="text-sm text-gray-600 mb-3">
                           Email: {registration.email} • Location: {registration.location} • NIC Photo: <span className={getNicPhotoColor(registration.nicPhoto)}>{registration.nicPhoto}</span> • Profile Complete: {registration.profileComplete}%
                         </p>
-
                         <p className="text-sm text-gray-500">
                           Registered: {registration.registrationDate}
                           {registration.referredBy && ` • Referred by: ${registration.referredBy}`}
                         </p>
                       </div>
-                      
                       <div className="flex space-x-2 ml-4">
                         <button
                           onClick={() => handleReview(registration)}
@@ -323,14 +325,7 @@ const Users = () => {
                           <Eye className="w-3 h-3 mr-1" />
                           Review
                         </button>
-                        <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors flex items-center">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Approve
-                        </button>
-                        <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors flex items-center">
-                          <X className="w-3 h-3 mr-1" />
-                          Reject
-                        </button>
+                        <UserApproval user={registration} onUpdate={handleUserUpdate} />
                       </div>
                     </div>
                   </div>
@@ -355,14 +350,12 @@ const Users = () => {
                           </span>
                         )}
                       </div>
-                      
                       <p className="text-sm text-gray-600 mb-3">
                         TrustScore: <span className={`font-bold text-lg ${getTrustScoreColor(user.trustScore)}`}>{user.trustScore}</span> • 
                         Exchanges: {user.totalExchanges} • 
                         Success Rate: {user.successRate}% • 
                         Member Since: {user.joinDate}
                       </p>
-
                       <div className="mb-3">
                         <div className="flex flex-wrap gap-1 mt-1">
                           <span className="text-gray-500 text-sm">Badges:</span>
@@ -377,12 +370,10 @@ const Users = () => {
                           )}
                         </div>
                       </div>
-
                       <p className="text-sm text-gray-500">
                         Last activity: {user.lastActivity}
                       </p>
                     </div>
-                    
                     <div className="flex space-x-2 ml-4">
                       <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         View Profile
@@ -419,23 +410,20 @@ const Users = () => {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           appeal.priority === 'high' ? 'bg-red-100 text-red-700' :
                           appeal.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
+                          'bg-green-100 text-green-600'
                         }`}>
                           {appeal.priority} priority
                         </span>
                       </div>
-                      
                       <p className="text-sm text-gray-600 mb-3">
                         Original Penalty: {appeal.originalPenalty} - {appeal.reason} • 
                         Appeal Reason: {appeal.appealReason} • 
                         Evidence: {appeal.evidence}
                       </p>
-
                       <p className="text-sm text-gray-500">
                         Appeal Date: {appeal.appealDate}
                       </p>
                     </div>
-                    
                     <div className="flex space-x-2 ml-4">
                       <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Review Evidence
@@ -455,7 +443,6 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Render UserReview modal if a user is selected */}
       {selectedUser && (
         <UserReview user={selectedUser} onClose={handleCloseReview} />
       )}
@@ -466,16 +453,18 @@ const Users = () => {
 export default Users;
 
 // import React, { useState, useEffect } from 'react';
-// import { UserCheck, Star, Shield, AlertTriangle, Eye, CheckCircle, X } from 'lucide-react';
+// import { UserCheck, Shield, AlertTriangle, Eye, CheckCircle, X } from 'lucide-react';
 // import axios from 'axios';
 // import { toast } from 'react-toastify';
 // import 'react-toastify/dist/ReactToastify.css';
+// import UserReview from '../subPages/UserReview'; // Import the new component
 
 // const Users = () => {
 //   const [activeTab, setActiveTab] = useState('registrations');
 //   const [pendingRegistrations, setPendingRegistrations] = useState([]);
 //   const [loading, setLoading] = useState(false);
 //   const [error, setError] = useState(null);
+//   const [selectedUser, setSelectedUser] = useState(null); // State for selected user
 
 //   const userManagement = [
 //     {
@@ -556,6 +545,7 @@ export default Users;
 //             id: `REG-${1001 + index}`, // Fallback since user_id is not provided
 //             username: registration.email ? registration.email.split('@')[0] : `user${index}`,
 //             email: registration.email || '',
+//             name: registration.name || '', // Pass name for UserReview
 //             fullName: registration.fname && registration.lname
 //               ? `${registration.fname} ${registration.lname}`
 //               : registration.name || '',
@@ -572,7 +562,22 @@ export default Users;
 //               .filter(Boolean)
 //               .join(', ') || '',
 //             status: 'pending', // Hardcoded since status is not returned
-//             referredBy: null // Not available in the response
+//             referredBy: null, // Not available in the response
+//             role: registration.role || '', // Pass role for UserReview
+//             fname: registration.fname || '', // Pass additional fields for UserReview
+//             lname: registration.lname || '',
+//             phone: registration.phone || '',
+//             dob: registration.dob || '',
+//             idType: registration.idType || '',
+//             idFront: registration.idFront || '',
+//             idBack: registration.idBack || '',
+//             gender: registration.gender || '',
+//             address: registration.address || '',
+//             city: registration.city || '',
+//             state: registration.state || '',
+//             zip: registration.zip || '',
+//             billImage: registration.billImage || '',
+//             createdAt: registration.createdAt || ''
 //           }))
 //         );
 //       } catch (err) {
@@ -644,6 +649,14 @@ export default Users;
 //       case 'low': return 'border-l-green-500';
 //       default: return 'border-l-gray-300';
 //     }
+//   };
+
+//   const handleReview = (user) => {
+//     setSelectedUser(user); // Set the selected user to show in UserReview
+//   };
+
+//   const handleCloseReview = () => {
+//     setSelectedUser(null); // Clear selected user to close UserReview
 //   };
 
 //   return (
@@ -757,7 +770,10 @@ export default Users;
 //                       </div>
                       
 //                       <div className="flex space-x-2 ml-4">
-//                         <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors flex items-center">
+//                         <button
+//                           onClick={() => handleReview(registration)}
+//                           className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors flex items-center"
+//                         >
 //                           <Eye className="w-3 h-3 mr-1" />
 //                           Review
 //                         </button>
@@ -892,9 +908,13 @@ export default Users;
 //           )}
 //         </div>
 //       </div>
+
+//       {/* Render UserReview modal if a user is selected */}
+//       {selectedUser && (
+//         <UserReview user={selectedUser} onClose={handleCloseReview} />
+//       )}
 //     </div>
 //   );
 // };
 
 // export default Users;
-
