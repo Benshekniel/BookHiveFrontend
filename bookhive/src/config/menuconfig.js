@@ -11,7 +11,7 @@ export const sidebarMenuConfig = {
     { label: 'Dashboard', icon: Home, path: '/admin' },
     { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
     { label: 'Analytics', icon: BarChart2, path: '/admin/analytics' },
-    { label: 'Messages', icon: Bell, path: '/admin/messages' },
+    { label: 'Messages', icon: MessageSquare, path: '/admin/messages' },
     { label: 'Payment', icon: Bell, path: '/admin/payment' },
   ],
   moderator: [
