@@ -9,7 +9,7 @@ const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50"> {/* Cards */}
+    <nav className="bg-white/60 backdrop-blur-md shadow-md sticky top-0 z-50"> {/* Cards */}
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex-shrink-0">
@@ -22,9 +22,9 @@ const Navbar = () => {
                 type="text"
                 placeholder="Search books, authors, genres..."
                 className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none"
-                style={{ borderColor: '#D1D5DB', boxShadow: '0 0 0 2px rgba(251, 191, 36, 0.5)' }} /* Secondary */
-                onFocusESelect={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(251, 191, 36, 0.5)')}
-                onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                style={{ borderColor: '#D1D5DB' }}
+                  onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                  onBlur={(e) => (e.target.style.boxShadow = 'none')}
               />
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <Search size={18} />
