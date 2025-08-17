@@ -1,4 +1,4 @@
-// AdminModeratorService.js - API service layer for moderator management
+// AdminModeratorService.js - API service layer for moderator management and dashboard
 
 import axios from 'axios';
 
@@ -46,8 +46,75 @@ const apiClient = axios.create({
 // );
 
 const AdminModeratorService = {
+  // ==================== DASHBOARD OPERATIONS ====================
+
+  /**
+   * Get complete dashboard data including metrics, recent activities, and quick action counts
+   * @returns {Promise} API response
+   */
+  getDashboardData: async () => {
+    try {
+      const response = await apiClient.get('/dashboard');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get only dashboard metrics
+   * @returns {Promise} API response
+   */
+  getDashboardMetrics: async () => {
+    try {
+      const response = await apiClient.get('/dashboard/metrics');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get only recent activities
+   * @returns {Promise} API response
+   */
+  getRecentActivities: async () => {
+    try {
+      const response = await apiClient.get('/dashboard/activities');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get only quick action counts
+   * @returns {Promise} API response
+   */
+  getQuickActionCounts: async () => {
+    try {
+      const response = await apiClient.get('/dashboard/quick-actions');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Health check endpoint for dashboard service
+   * @returns {Promise} API response
+   */
+  getDashboardHealth: async () => {
+    try {
+      const response = await apiClient.get('/dashboard/health');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // ==================== CREATE OPERATIONS ====================
-  
+
   /**
    * Register a new moderator
    * @param {Object} moderatorData - Moderator registration data
@@ -56,9 +123,7 @@ const AdminModeratorService = {
   registerModerator: async (moderatorData) => {
     try {
       // const response = await apiClient.post('/registerModerator', moderatorData);
-
-    const response = await axios.post('http://localhost:9090/api/registerModerator', moderatorData);
-
+      const response = await axios.post('http://localhost:9090/api/registerModerator', moderatorData);
       return response.data;
     } catch (error) {
       throw error;
@@ -325,7 +390,7 @@ const AdminModeratorService = {
     if (error.response) {
       // Server responded with error status
       const { status, data } = error.response;
-      
+
       switch (status) {
         case 400:
           return data.message || 'Invalid request. Please check your input.';
@@ -334,7 +399,7 @@ const AdminModeratorService = {
         case 403:
           return 'Forbidden. You don\'t have permission to perform this action.';
         case 404:
-          return data.message || 'Moderator not found.';
+          return data.message || 'Resource not found.';
         case 409:
           return data.message || 'Conflict. This email might already exist.';
         case 500:
