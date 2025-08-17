@@ -19,12 +19,12 @@ const mockData = {
       participants: 45,
       maxParticipants: 100,
       organizer: { name: "Literary Society", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" },
-      rules: ["Original work only - no plagiarism", "Submit as PDF, max 10MB", "One entry per participant"],
+      rules: ["Original work only - no plagiarism", "Word limit: 1,500-3,000 words", "One entry per participant"],
       judgesCriteria: ["Creativity and originality (40%)", "Writing style and technique (30%)", "Character development (20%)", "Overall impact (10%)"],
       submissions: [
-        { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", file: "lost_horizons.pdf", votes: 72 },
-        { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", file: "silent_echoes.pdf", votes: 60 },
-        { id: 3, userId: 1, name: "Samantha Perera", title: "The Journey Home", file: "journey_home.pdf", votes: 85 },
+        { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest, where whispers of forgotten legends guide his path...", votes: 72 },
+        { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", content: "Echoes of a forgotten past resonate through an abandoned village, revealing secrets buried for centuries...", votes: 60 },
+        { id: 3, userId: 1, name: "Samantha Perera", title: "The Journey Home", content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate...", votes: 85 },
       ],
       leaderboard: [
         { userId: 1, name: "Samantha Perera", votes: 85, submissionTitle: "The Journey Home" },
@@ -43,7 +43,7 @@ const mockData = {
       participants: 28,
       maxParticipants: 75,
       organizer: { name: "Education Foundation", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face" },
-      rules: ["Age limit: 16-25 years", "Submit as PDF, max 5MB", "Topic: 'Future of Writing'", "Include bibliography if citing sources"],
+      rules: ["Age limit: 16-25 years", "Word count: 800-1,200 words", "Topic: 'Future of Writing'", "Include bibliography if citing sources"],
       judgesCriteria: ["Argument strength (40%)", "Evidence and research (25%)", "Writing clarity (20%)", "Originality of perspective (15%)"],
     },
   ],
@@ -54,8 +54,9 @@ const mockData = {
       competitionId: 1,
       status: "Under Review",
       submittedAt: "2024-01-20",
-      file: "journey_home.pdf",
+      wordCount: 2450,
       votes: 85,
+      content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate. As Sarah walked through the crumbling gates of her grandmother's property, memories flooded back like autumn leaves caught in a whirlwind. The manor, once grand and imposing, now stood as a testament to time's relentless march. Yet within its weathered walls lay secrets that would reshape her understanding of her family's past and her own identity.",
       feedback: "Excellent character development and vivid descriptions. The narrative flow is compelling.",
       ranking: 1,
       totalEntries: 45
@@ -66,8 +67,9 @@ const mockData = {
       competitionId: 2,
       status: "Submitted",
       submittedAt: "2024-02-15",
-      file: "future_horizons.pdf",
+      wordCount: 1150,
       votes: 0,
+      content: "The future of writing lies not in replacing human creativity with artificial intelligence, but in embracing technology as a powerful tool for enhancement. As we stand on the precipice of a new era, writers must adapt while preserving the essential human elements that make storytelling meaningful. Technology can assist with research, editing, and distribution, but the heart of writing—the ability to capture human emotion and experience—remains uniquely ours.",
       feedback: null,
       ranking: null,
       totalEntries: 28
@@ -78,8 +80,9 @@ const mockData = {
       competitionId: 1,
       status: "Draft",
       submittedAt: null,
-      file: null,
+      wordCount: 890,
       votes: 0,
+      content: "In the quiet corners of the old library, where dust motes danced in shafts of golden sunlight, Elena discovered a letter that would change everything. The yellowed paper crackled between her fingers as she unfolded it, revealing words written in her great-grandmother's delicate script. The letter spoke of a hidden treasure, not of gold or jewels, but of stories—family histories that had been carefully preserved and hidden away during the war.",
       feedback: null,
       ranking: null,
       totalEntries: null
@@ -133,18 +136,19 @@ const Competitions = () => {
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [submissionForm, setSubmissionForm] = useState({
     title: "",
-    file: null,
+    content: "",
+    wordCount: 0,
   });
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showContentModal, setShowContentModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingSubmission, setEditingSubmission] = useState(null);
-  const [editForm, setEditForm] = useState({ title: "", file: null });
+  const [editForm, setEditForm] = useState({ title: "", content: "", wordCount: 0 });
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [votes, setVotes] = useState({});
+  const [votes, setVotes] = useState({}); // Tracks user's vote contribution (0 or 1) per submission
   const [userSubmissions, setUserSubmissions] = useState(mockData.userSubmissions);
 
   const { writingCompetitions } = mockData;
@@ -153,6 +157,7 @@ const Competitions = () => {
     setSubmissionForm((prev) => ({
       ...prev,
       [field]: value,
+      wordCount: field === "content" ? value.split(" ").filter((word) => word.length > 0).length : prev.wordCount,
     }));
   };
 
@@ -160,32 +165,38 @@ const Competitions = () => {
     setEditForm((prev) => ({
       ...prev,
       [field]: value,
+      wordCount: field === "content" ? value.split(" ").filter((word) => word.length > 0).length : prev.wordCount,
     }));
   };
 
   const handleSubmitEntry = () => {
-    if (selectedCompetition && submissionForm.title && submissionForm.file) {
+    if (selectedCompetition && submissionForm.title && submissionForm.content) {
+      // Create new submission
       const newSubmission = {
-        id: userSubmissions.length + Date.now(),
+        id: userSubmissions.length + Date.now(), // Simple ID generation
         title: submissionForm.title,
         competitionId: selectedCompetition.id,
-        status: "Draft",
-        submittedAt: null,
-        file: submissionForm.file.name,
+        status: "Draft", // Start as draft so it can be edited
+        submittedAt: null, // Will be set when actually submitted
+        wordCount: submissionForm.wordCount,
         votes: 0,
+        content: submissionForm.content,
         feedback: null,
         ranking: null,
         totalEntries: null
       };
       
+      // Add to submissions list
       setUserSubmissions(prev => [...prev, newSubmission]);
       
       console.log("Entry added to submissions:", newSubmission);
     }
     
     setShowSubmissionModal(false);
-    setSubmissionForm({ title: "", file: null });
+    setSubmissionForm({ title: "", content: "", wordCount: 0 });
     setSelectedCompetition(null);
+    
+    // Switch to submissions tab to show the new entry
     setActiveTab("yourSubmissions");
   };
 
@@ -193,12 +204,12 @@ const Competitions = () => {
     if (editingSubmission) {
       setUserSubmissions(prev => prev.map(sub => 
         sub.id === editingSubmission.id 
-          ? { ...sub, title: editForm.title, file: editForm.file ? editForm.file.name : sub.file }
+          ? { ...sub, title: editForm.title, content: editForm.content, wordCount: editForm.wordCount }
           : sub
       ));
       setShowEditModal(false);
       setEditingSubmission(null);
-      setEditForm({ title: "", file: null });
+      setEditForm({ title: "", content: "", wordCount: 0 });
     }
   };
 
@@ -212,8 +223,9 @@ const Competitions = () => {
     const key = `${competitionId}-${submissionId}`;
     setVotes((prev) => ({
       ...prev,
-      [key]: (prev[key] || 0) === 0 ? 1 : 0,
+      [key]: (prev[key] || 0) === 0 ? 1 : 0, // Toggle between 0 and 1
     }));
+    // Do not close modal automatically so user can see the updated count
   };
 
   const getCurrentVotes = (competitionId, submissionId, originalVotes) => {
@@ -237,7 +249,8 @@ const Competitions = () => {
     setEditingSubmission(submission);
     setEditForm({
       title: submission.title,
-      file: null
+      content: submission.content,
+      wordCount: submission.wordCount
     });
     setShowEditModal(true);
   };
@@ -342,12 +355,10 @@ const Competitions = () => {
                                 <Calendar size={14} className="mr-1" />
                                 {submission.submittedAt ? `Submitted: ${submission.submittedAt}` : 'Not submitted yet'}
                               </span>
-                              {submission.file && (
-                                <span className="flex items-center">
-                                  <FileText size={14} className="mr-1" />
-                                  {submission.file}
-                                </span>
-                              )}
+                              <span className="flex items-center">
+                                <FileText size={14} className="mr-1" />
+                                {submission.wordCount} words
+                              </span>
                               {submission.votes > 0 && (
                                 <span className="flex items-center">
                                   <Star size={14} className="mr-1" />
@@ -378,19 +389,17 @@ const Competitions = () => {
 
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
-                            {submission.file && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedSubmission(submission);
-                                  setShowContentModal(true);
-                                }}
-                                icon={<Eye size={16} />}
-                              >
-                                View
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSubmission(submission);
+                                setShowContentModal(true);
+                              }}
+                              icon={<Eye size={16} />}
+                            >
+                              View
+                            </Button>
                             {submission.status === 'Draft' && (
                               <Button
                                 variant="primary"
@@ -483,7 +492,7 @@ const Competitions = () => {
                               return (
                                 <div key={submission.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition">
                                   <h5 className="font-medium text-gray-900">{submission.title} by {submission.name}</h5>
-                                  <p className="text-gray-600 text-sm mb-2">File: {submission.file}</p>
+                                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">{submission.content.substring(0, 50)}...</p>
                                   <div className="flex items-center text-sm text-gray-600 mb-2">
                                     <Star size={14} className="mr-1 text-yellow-500" />
                                     {currentVotes} votes
@@ -545,7 +554,7 @@ const Competitions = () => {
                               return (
                                 <div key={submission.id} className="p-4 bg-green-50 rounded-lg border border-green-200">
                                   <h5 className="font-medium text-gray-900">{submission.title}</h5>
-                                  <p className="text-gray-600 text-sm mb-2">File: {submission.file}</p>
+                                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">{submission.content}</p>
                                   <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium text-green-600">Your Votes: {currentVotes}</span>
                                   </div>
@@ -745,7 +754,7 @@ const Competitions = () => {
                   <button
                     onClick={() => {
                       setShowSubmissionModal(false);
-                      setSubmissionForm({ title: "", file: null });
+                      setSubmissionForm({ title: "", content: "", wordCount: 0 });
                     }}
                     className="text-gray-500 hover:text-gray-700"
                   >
@@ -767,17 +776,18 @@ const Competitions = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Upload PDF
+                      Your Entry
                     </label>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(e) => handleSubmissionChange("file", e.target.files[0])}
+                    <textarea
+                      rows={12}
+                      value={submissionForm.content}
+                      onChange={(e) => handleSubmissionChange("content", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Write your entry here..."
                     />
                     <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                      <span>{submissionForm.file ? submissionForm.file.name : "No file selected"}</span>
-                      <span>Max size: 10MB</span>
+                      <span>Word count: {submissionForm.wordCount}</span>
+                      <span>Remember to follow the competition rules</span>
                     </div>
                   </div>
                 </div>
@@ -786,7 +796,7 @@ const Competitions = () => {
                     variant="outline"
                     onClick={() => {
                       setShowSubmissionModal(false);
-                      setSubmissionForm({ title: "", file: null });
+                      setSubmissionForm({ title: "", content: "", wordCount: 0 });
                     }}
                   >
                     Cancel
@@ -794,7 +804,7 @@ const Competitions = () => {
                   <Button
                     variant="primary"
                     onClick={handleSubmitEntry}
-                    disabled={!submissionForm.title || !submissionForm.file || isDeadlinePassed(selectedCompetition.deadline)}
+                    disabled={!submissionForm.title || !submissionForm.content || isDeadlinePassed(selectedCompetition.deadline)}
                     icon={<Send size={16} />}
                   >
                     Save as Draft
@@ -819,7 +829,7 @@ const Competitions = () => {
                     onClick={() => {
                       setShowEditModal(false);
                       setEditingSubmission(null);
-                      setEditForm({ title: "", file: null });
+                      setEditForm({ title: "", content: "", wordCount: 0 });
                     }}
                     className="text-gray-500 hover:text-gray-700"
                   >
@@ -841,16 +851,17 @@ const Competitions = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Upload PDF
+                      Your Entry
                     </label>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(e) => handleEditChange("file", e.target.files[0])}
+                    <textarea
+                      rows={12}
+                      value={editForm.content}
+                      onChange={(e) => handleEditChange("content", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Write your entry here..."
                     />
                     <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                      <span>{editForm.file ? editForm.file.name : editingSubmission.file || "No file selected"}</span>
+                      <span>Word count: {editForm.wordCount}</span>
                       <span>Changes will be saved as draft</span>
                     </div>
                   </div>
@@ -861,7 +872,7 @@ const Competitions = () => {
                     onClick={() => {
                       setShowEditModal(false);
                       setEditingSubmission(null);
-                      setEditForm({ title: "", file: null });
+                      setEditForm({ title: "", content: "", wordCount: 0 });
                     }}
                   >
                     Cancel
@@ -869,7 +880,7 @@ const Competitions = () => {
                   <Button
                     variant="primary"
                     onClick={handleEditSubmission}
-                    disabled={!editForm.title}
+                    disabled={!editForm.title || !editForm.content}
                     icon={<Edit size={16} />}
                   >
                     Save Changes
@@ -902,22 +913,16 @@ const Competitions = () => {
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Submission File</label>
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      {selectedSubmission.file ? (
-                        <a
-                          href={`/${selectedSubmission.file}`}
-                          download
-                          className="text-blue-600 hover:underline flex items-center"
-                        >
-                          <FileText size={16} className="mr-2" />
-                          Download {selectedSubmission.file}
-                        </a>
-                      ) : (
-                        <p className="text-gray-700">No file available</p>
-                      )}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
+                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedSubmission.content}</p>
                     </div>
                   </div>
+                  {selectedSubmission.wordCount && (
+                    <div className="text-sm text-gray-500">
+                      Word count: {selectedSubmission.wordCount}
+                    </div>
+                  )}
                   <div className="flex items-center text-sm font-medium text-gray-700">
                     <Star size={16} className="mr-1 text-yellow-500" />
                     Current Votes: {getCurrentVotes(selectedSubmission.competitionId, selectedSubmission.id, selectedSubmission.votes)}
