@@ -40,7 +40,7 @@ const PaymentAnalytics = () => {
       },
       {
         transactionId: 2,
-        type: 'LOAN',
+        type: 'SALE',
         status: 'ACTIVE',
         paymentStatus: 'COMPLETED',
         paymentAmount: 500.00,
@@ -88,7 +88,7 @@ const PaymentAnalytics = () => {
       },
       {
         transactionId: 6,
-        type: 'LOAN',
+        type: 'SALE',
         status: 'OVERDUE',
         paymentStatus: 'COMPLETED',
         paymentAmount: 750.00,
