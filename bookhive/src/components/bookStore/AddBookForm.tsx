@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 
-import { useAuth } from '../../App';
+import { useAuth } from '../AuthContext';
 
 import { Plus, X } from 'lucide-react';
 
