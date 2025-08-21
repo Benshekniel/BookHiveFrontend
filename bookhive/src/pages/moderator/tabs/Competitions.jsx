@@ -69,6 +69,8 @@ const Competitions = () => {
                 : "ongoing"
               : "finished",
             activeStatus: comp.activestatus || false,
+            pauseStatus: comp.pausestatus !== null ? comp.pausestatus : true, // Set null to paused
+            activatedAt: comp.activatedat || null,
             votingStatus: votingStartDate && votingEndDate
               ? votingStartDate > now
                 ? "upcoming"
@@ -175,6 +177,10 @@ const Competitions = () => {
     return active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
   };
 
+  const getPauseStatusColor = (paused) => {
+    return paused ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
+  };
+
   const handleCreateCompetition = async (newCompetition) => {
     try {
       const formData = new FormData();
@@ -219,6 +225,8 @@ const Competitions = () => {
             : "ongoing"
           : "finished",
         activeStatus: createdCompetition.activestatus || false,
+        pauseStatus: createdCompetition.pausestatus !== null ? createdCompetition.pausestatus : true, // Set null to paused
+        activatedAt: createdCompetition.activatedat || null,
         votingStatus: createdCompetition.votingstartdatetime && createdCompetition.votingenddatetime
           ? new Date(createdCompetition.votingstartdatetime) > new Date()
             ? "upcoming"
@@ -273,6 +281,8 @@ const Competitions = () => {
                   : "ongoing"
                 : "finished",
               activeStatus: updatedCompetition.activeStatus || false,
+              pauseStatus: updatedCompetition.pausestatus !== null ? updatedCompetition.pausestatus : true, // Set null to paused
+              activatedAt: updatedCompetition.activatedAt || null,
               votingStatus: updatedCompetition.votingStartDateTime && updatedCompetition.votingEndDateTime
                 ? new Date(updatedCompetition.votingStartDateTime) > new Date()
                   ? "upcoming"
@@ -310,15 +320,109 @@ const Competitions = () => {
     }
   };
 
-  const handleToggleActive = (id) => {
-    setCompetitions((prev) =>
-      prev.map((comp) =>
-        comp.id === id
-          ? { ...comp, activeStatus: !comp.activeStatus }
-          : comp
-      )
-    );
-    // Later: Send update to backend
+  const handleGoLive = async (id) => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/moderator/goLiveCompetition`, {
+        params: { competitionId: id, email: user.email },
+      });
+      if (response.data.message === "success") {
+        setCompetitions((prev) =>
+          prev.map((comp) =>
+            comp.id === id
+              ? { ...comp, activeStatus: true, activatedAt: new Date().toISOString() }
+              : comp
+          )
+        );
+      } else {
+        setError("Failed to go live: " + response.data.message);
+      }
+    } catch (error) {
+      setError("Failed to go live: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleReLive = async (id) => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/moderator/reLiveCompetition`, {
+        params: { competitionId: id, email: user.email },
+      });
+      if (response.data.message === "success") {
+        setCompetitions((prev) =>
+          prev.map((comp) =>
+            comp.id === id
+              ? { ...comp, activeStatus: true }
+              : comp
+          )
+        );
+      } else {
+        setError("Failed to relive: " + response.data.message);
+      }
+    } catch (error) {
+      setError("Failed to relive: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleStopLive = async (id) => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/moderator/stopLiveCompetition`, {
+        params: { competitionId: id, email: user.email },
+      });
+      if (response.data.message === "success") {
+        setCompetitions((prev) =>
+          prev.map((comp) =>
+            comp.id === id
+              ? { ...comp, activeStatus: false }
+              : comp
+          )
+        );
+      } else {
+        setError("Failed to stop live: " + response.data.message);
+      }
+    } catch (error) {
+      setError("Failed to stop live: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handlePause = async (id) => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/moderator/pauseCompetition`, {
+        params: { competitionId: id, email: user.email },
+      });
+      if (response.data.message === "success") {
+        setCompetitions((prev) =>
+          prev.map((comp) =>
+            comp.id === id
+              ? { ...comp, pauseStatus: true }
+              : comp
+          )
+        );
+      } else {
+        setError("Failed to pause: " + response.data.message);
+      }
+    } catch (error) {
+      setError("Failed to pause: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleResume = async (id) => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/moderator/resumeCompetition`, {
+        params: { competitionId: id, email: user.email },
+      });
+      if (response.data.message === "success") {
+        setCompetitions((prev) =>
+          prev.map((comp) =>
+            comp.id === id
+              ? { ...comp, pauseStatus: false }
+              : comp
+          )
+        );
+      } else {
+        setError("Failed to resume: " + response.data.message);
+      }
+    } catch (error) {
+      setError("Failed to resume: " + (error.response?.data?.message || error.message));
+    }
   };
 
   const handleImageClick = (src) => {
@@ -645,7 +749,14 @@ const Competitions = () => {
                               competition.activeStatus
                             )}`}
                           >
-                            {competition.activeStatus ? "Active" : "Paused"}
+                            {competition.activeStatus ? "Active" : "Inactive"}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getPauseStatusColor(
+                              competition.pauseStatus
+                            )}`}
+                          >
+                            {competition.pauseStatus ? "Paused" : "On Play"}
                           </span>
                         </div>
                       </div>
@@ -653,16 +764,16 @@ const Competitions = () => {
                       {/* Banner Image */}
                       <div className="mb-4">
                         {imageStatus[competition.id]?.status === "missing" ? (
-                          <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-lg border border-gray-200 text-gray-500">
+                          <div className="w-full h-40 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200 text-gray-500">
                             No Image Uploaded
                           </div>
                         ) : imageStatus[competition.id]?.status === "loading" ? (
-                          <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-lg border border-gray-200 text-gray-500">
+                          <div className="w-full h-40 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200 text-gray-500">
                             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                             <span className="ml-2">Loading...</span>
                           </div>
                         ) : imageStatus[competition.id]?.status === "not_found" ? (
-                          <div className="w-full h-48 flex flex-col items-center justify-center bg-gray-100 rounded-lg border border-gray-200 text-red-600">
+                          <div className="w-full h-40 flex flex-col items-center justify-center bg-gray-100 rounded-md border border-gray-200 text-red-600">
                             <AlertCircle className="w-6 h-6 mb-2" />
                             <p>Image not found: {imageStatus[competition.id]?.error}</p>
                           </div>
@@ -670,7 +781,7 @@ const Competitions = () => {
                           <img
                             src={imageStatus[competition.id]?.url}
                             alt={competition.title}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer"
+                            className="w-full h-40 object-cover rounded-md border border-gray-200 cursor-pointer"
                             onClick={() => handleImageClick(imageStatus[competition.id]?.url)}
                             onError={() =>
                               setImageStatus((prev) => ({
@@ -739,28 +850,43 @@ const Competitions = () => {
                         <div className="flex space-x-2">
                           {competition.createdBy === user.email && (
                             <>
-                              <button
-                                onClick={() => handleToggleActive(competition.id)}
-                                disabled={competition.activeStatus}
-                                className={`text-sm font-medium px-2 py-1 rounded ${
-                                  competition.activeStatus
-                                    ? "bg-green-100 text-green-800 cursor-not-allowed"
-                                    : "bg-green-600 text-white hover:bg-green-700"
-                                }`}
-                              >
-                                Active
-                              </button>
-                              <button
-                                onClick={() => handleToggleActive(competition.id)}
-                                disabled={!competition.activeStatus}
-                                className={`text-sm font-medium px-2 py-1 rounded ${
-                                  !competition.activeStatus
-                                    ? "bg-red-100 text-red-800 cursor-not-allowed"
-                                    : "bg-red-600 text-white hover:bg-red-700"
-                                }`}
-                              >
-                                Pause
-                              </button>
+                              {!competition.activatedAt && !competition.activeStatus ? (
+                                <button
+                                  onClick={() => handleGoLive(competition.id)}
+                                  className="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded text-sm font-medium transition-colors"
+                                >
+                                  Go Live
+                                </button>
+                              ) : competition.activeStatus ? (
+                                <button
+                                  onClick={() => handleStopLive(competition.id)}
+                                  className="bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded text-sm font-medium transition-colors"
+                                >
+                                  Stop Live
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleReLive(competition.id)}
+                                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-sm font-medium transition-colors"
+                                >
+                                  ReLive
+                                </button>
+                              )}
+                              {!competition.pauseStatus ? (
+                                <button
+                                  onClick={() => handlePause(competition.id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm font-medium transition-colors"
+                                >
+                                  Pause
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleResume(competition.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-sm font-medium transition-colors"
+                                >
+                                  Resume
+                                </button>
+                              )}
                               <button
                                 onClick={() => {
                                   setSelectedCompetition(competition);
@@ -948,7 +1074,7 @@ const Competitions = () => {
                             <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
                               Approve
                             </button>
-                            <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                            <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors">
                               Reject
                             </button>
                           </>
@@ -1572,16 +1698,10 @@ export default Competitions;
 //           {showDetailsEvent && selectedCompetition && (
 //             <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
 //               <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-lg p-6">
-//                 <button
-//                   onClick={() => setShowDetailsEvent(false)}
-//                   className="absolute top-4 right-4 text-gray-600 hover:text-red-600 text-xl font-bold"
-//                   aria-label="Close"
-//                 >
-//                   &times;
-//                 </button>
 //                 <CompetitionDetails
 //                   competition={selectedCompetition}
 //                   currentUserEmail={user.email}
+//                   closeModal={() => setShowDetailsEvent(false)}
 //                 />
 //               </div>
 //             </div>
