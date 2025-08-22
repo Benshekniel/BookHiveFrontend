@@ -379,6 +379,92 @@ const AdminModeratorService = {
     }
   },
 
+// Add these analytics methods to your existing AdminModeratorService object in adminService.js
+
+// ==================== ANALYTICS OPERATIONS ====================
+
+/**
+ * Get complete analytics dashboard data
+ * @returns {Promise} API response
+ */
+getDashboardAnalytics: async () => {
+  try {
+    const response = await apiClient.get('/analytics/dashboard');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+
+/**
+ * Get analytics stats
+ * @returns {Promise} API response
+ */
+getAnalyticsStats: async () => {
+  try {
+    const response = await apiClient.get('/analytics/stats');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+
+/**
+ * Get popular genres
+ * @returns {Promise} API response
+ */
+getPopularGenres: async () => {
+  try {
+    const response = await apiClient.get('/analytics/popular-genres');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+
+/**
+ * Get top users
+ * @param {number} limit - Number of top users to fetch (default: 10)
+ * @returns {Promise} API response
+ */
+getTopUsers: async (limit = 10) => {
+  try {
+    const response = await apiClient.get('/analytics/top-users', {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+
+/**
+ * Get monthly revenue for a specific year
+ * @param {number} year - Year for which to fetch monthly revenue
+ * @returns {Promise} API response
+ */
+getMonthlyRevenue: async (year) => {
+  try {
+    const response = await apiClient.get(`/analytics/monthly-revenue/${year}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+
+/**
+ * Get yearly user growth data
+ * @returns {Promise} API response
+ */
+getYearlyUsers: async () => {
+  try {
+    const response = await apiClient.get('/analytics/yearly-users');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+
   // ==================== UTILITY METHODS ====================
 
   /**

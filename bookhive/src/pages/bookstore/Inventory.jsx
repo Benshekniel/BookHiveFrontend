@@ -3,6 +3,7 @@ import {
   Search, Filter, Plus, Upload, Edit, Trash2, Eye, MoreHorizontal,Package,DollarSign,BookOpen,Heart,Clock,Users,Star,AlertCircle,CheckCircle,Calendar,FileText,Camera,Download,Settings, Shield,Award
 } from 'lucide-react';
 import AddBookPopup from '../../components/bookStore/AddBookPopup';
+import AddBookForm from '../../components/bookStore/AddBookForm.tsx';
 
 const InventoryPage = () => {
   const [activeTab, setActiveTab] = useState('sales');
@@ -446,7 +447,8 @@ const InventoryPage = () => {
                 <Download className="w-4 h-4" />
                 <span className="font-medium">Export</span>
               </button> */}
-              <AddBookPopup />
+              {/* <AddBookPopup /> */}
+              <AddBookForm />
             </div>
           </div>
         </div>
