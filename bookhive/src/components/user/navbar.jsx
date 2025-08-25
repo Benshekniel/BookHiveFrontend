@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu, 
@@ -31,6 +32,8 @@ const UserNavbar = ({ user, onLogout, children }) => {
     { label: 'Competitions', icon: Trophy, path: '/user/competitions', color: '#f59e0b' },
     { label: 'Orders', icon: Truck, path: '/user/orders', color: '#ef4444' },
   ];
+
+  const { userDetails } = useAuth();
 
   const handleLogout = () => {
     if (onLogout) {
@@ -122,7 +125,7 @@ const UserNavbar = ({ user, onLogout, children }) => {
                     className="h-8 w-8 rounded-full object-cover border-2 border-yellow-400"
                   />
                   <span className="text-sm font-medium text-gray-700 hidden xl:block">
-                    {user?.username || 'Nive'}
+                    {userDetails?.name || user?.name || 'Nive'}
                   </span>
                 </button>
 
