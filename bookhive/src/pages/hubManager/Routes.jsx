@@ -1,4 +1,4 @@
-// Routes.jsx - Complete file with RouteEditor integration
+// Routes.jsx - Complete file with RouteEditor integration and fixes
 import { useState, useEffect, useRef } from 'react';
 import {
   Plus,
@@ -38,21 +38,27 @@ const Routes = () => {
   const [showRouteEditor, setShowRouteEditor] = useState(false);
   const [editingRouteId, setEditingRouteId] = useState(null);
   const [boundaryStats, setBoundaryStats] = useState({});
+  const [mapsLoading, setMapsLoading] = useState(false);
   const mapRef = useRef(null);
   const fullscreenMapRef = useRef(null);
   const detailsMapRef = useRef(null);
-  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(!!window.google);
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(!!window.google?.maps?.drawing);
 
   useEffect(() => {
     // Preload Google Maps API and fetch routes data
     const loadGoogleMapsAndData = async () => {
-      if (!window.google) {
+      if (!window.google?.maps?.drawing) {
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU&libraries=drawing,geometry`;
         script.async = true;
         script.defer = true;
         script.onload = () => {
-          setIsGoogleMapsLoaded(true);
+          // Wait for drawing library to be ready
+          setTimeout(() => {
+            if (window.google?.maps?.drawing) {
+              setIsGoogleMapsLoaded(true);
+            }
+          }, 100);
         };
         script.onerror = () => {
           setError('Failed to load Google Maps API');
@@ -70,30 +76,50 @@ const Routes = () => {
   }, [hubId]);
 
   const handleLoadGoogleMaps = (callback) => {
-    if (window.google) {
+    if (window.google?.maps?.drawing) {
+      // Google Maps with drawing library is already loaded
       callback();
       return;
     }
-    // If Google Maps is already loading, wait for it to complete
-    if (!isGoogleMapsLoaded) {
-      const script = document.querySelector(`script[src*="maps.googleapis.com"]`);
-      if (script) {
-        script.addEventListener('load', callback);
-      } else {
-        const newScript = document.createElement('script');
-        newScript.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU&libraries=drawing,geometry`;
-        newScript.async = true;
-        newScript.defer = true;
-        newScript.onload = () => {
+
+    // Check if script is already loading
+    const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+    if (existingScript) {
+      // Script is loading, wait for it
+      existingScript.addEventListener('load', () => {
+        // Wait a bit more for drawing library to be ready
+        setTimeout(() => {
+          if (window.google?.maps?.drawing) {
+            setIsGoogleMapsLoaded(true);
+            callback();
+          } else {
+            setError('Drawing library failed to load');
+          }
+        }, 100);
+      });
+      return;
+    }
+
+    // Load new script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU&libraries=drawing,geometry`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      // Wait a bit for drawing library to be ready
+      setTimeout(() => {
+        if (window.google?.maps?.drawing) {
           setIsGoogleMapsLoaded(true);
           callback();
-        };
-        newScript.onerror = () => {
-          setError('Failed to load Google Maps API');
-        };
-        document.head.appendChild(newScript);
-      }
-    }
+        } else {
+          setError('Drawing library failed to load');
+        }
+      }, 100);
+    };
+    script.onerror = () => {
+      setError('Failed to load Google Maps API');
+    };
+    document.head.appendChild(script);
   };
 
   // Modified initializeMap function with context parameter to prevent infinite loops
@@ -427,15 +453,25 @@ const Routes = () => {
     }
   };
 
-  // Route Editor Functions
+  // Route Editor Functions - Updated with proper Google Maps loading
   const openRouteEditor = (routeId = null) => {
-    setEditingRouteId(routeId);
-    setShowRouteEditor(true);
+    if (!window.google?.maps?.drawing) {
+      setMapsLoading(true);
+      handleLoadGoogleMaps(() => {
+        setMapsLoading(false);
+        setEditingRouteId(routeId);
+        setShowRouteEditor(true);
+      });
+    } else {
+      setEditingRouteId(routeId);
+      setShowRouteEditor(true);
+    }
   };
 
   const closeRouteEditor = () => {
     setShowRouteEditor(false);
     setEditingRouteId(null);
+    setMapsLoading(false);
   };
 
   const handleRouteSaved = (savedRoute) => {
@@ -680,7 +716,12 @@ const Routes = () => {
                 Close
               </button>
               <button
-                onClick={() => openRouteEditor(selectedRoute.id)}
+                onClick={() => {
+                  // Close the details modal first
+                  setSelectedRoute(null);
+                  // Then open the route editor
+                  openRouteEditor(selectedRoute.id);
+                }}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
               >
                 <Edit className="w-4 h-4" />
@@ -700,11 +741,6 @@ const Routes = () => {
           <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>
             Colombo Hub - Routes Overview
           </h2>
-          {/* <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-            <span>Total Routes: {routes.length}</span>
-            <span>With Boundaries: {Object.keys(boundaryStats).length}</span>
-            <span>Active: {routes.filter(r => r.status === 'active').length}</span>
-          </div> */}
         </div>
         <div className="flex space-x-2">
           <button
@@ -989,16 +1025,26 @@ const Routes = () => {
       {selectedRoute && <RouteDetailsModal />}
 
       {/* Route Editor Modal */}
-      {showRouteEditor && (
+      {(showRouteEditor || mapsLoading) && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[95vh] overflow-hidden">
-            <RouteEditor
-              routeId={editingRouteId}
-              hubId={hubId}
-              mode={editingRouteId ? 'edit' : 'create'}
-              onSave={handleRouteSaved}
-              onCancel={closeRouteEditor}
-            />
+            {mapsLoading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading Google Maps for route editor...</p>
+              </div>
+            ) : (
+              <RouteEditor
+                routeId={editingRouteId}
+                hubId={hubId}
+                mode={editingRouteId ? 'edit' : 'create'}
+                onSave={handleRouteSaved}
+                onCancel={closeRouteEditor}
+                existingRoute={editingRouteId ? routes.find(r => r.id === editingRouteId) : null}
+                allRoutes={routes}
+                boundaryStats={boundaryStats}
+              />
+            )}
           </div>
         </div>
       )}
