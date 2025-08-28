@@ -1359,7 +1359,7 @@ const Agents = () => {
                       <tr key={agent.id} className="border-b hover:bg-gray-50 bg-white rounded-lg border-gray-200">
                         <td className="py-4">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                            <div className="w-10 h-10 bg-blue-900 text-white rounded-full flex items-center justify-center font-semibold text-sm">
                               {agent.avatar}
                             </div>
                             <div>
