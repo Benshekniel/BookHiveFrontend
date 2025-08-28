@@ -32,7 +32,7 @@ import {
   TrendingUp,
   AlertCircle
 } from 'lucide-react';
-import { agentApi } from '../../services/deliveryService';
+import { agentApi, documentApi, documentHelpers } from '../../services/deliveryService';
 
 const API_BASE_URL = 'http://localhost:9090/api';
 
@@ -57,6 +57,7 @@ const Agents = () => {
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedApplicationForRejection, setSelectedApplicationForRejection] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [downloadingDocuments, setDownloadingDocuments] = useState({});
 
   // Common rejection reasons
   const commonRejectionReasons = [
@@ -76,16 +77,16 @@ const Agents = () => {
     const fetchAllData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch agents
         const agentsResponse = await agentApi.getAllAgents();
         const transformedAgents = agentsResponse.map(agent => transformAgentData(agent));
-        
-        const regularAgents = transformedAgents.filter(agent => 
+
+        const regularAgents = transformedAgents.filter(agent =>
           !['truck', 'van'].includes(agent.vehicle.toLowerCase())
         );
-        
-        const superAgentsList = transformedAgents.filter(agent => 
+
+        const superAgentsList = transformedAgents.filter(agent =>
           ['truck', 'van'].includes(agent.vehicle.toLowerCase())
         ).map(agent => ({
           ...agent,
@@ -102,7 +103,7 @@ const Agents = () => {
           fetchApprovedApplications(),
           fetchApplicationStats()
         ]);
-        
+
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load data');
@@ -249,7 +250,7 @@ const Agents = () => {
           alert('Please provide a rejection reason');
           return;
         }
-        
+
         const response = await fetch(`${API_BASE_URL}/agent-applications/${applicationId}/reject`, {
           method: 'POST',
           headers: {
@@ -260,7 +261,7 @@ const Agents = () => {
             rejectedBy: 1
           })
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to reject application');
@@ -275,13 +276,13 @@ const Agents = () => {
             approvedBy: 1
           })
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to approve application');
         }
       }
-      
+
       // Refresh data
       await Promise.all([
         fetchPendingApplications(),
@@ -289,17 +290,101 @@ const Agents = () => {
         fetchApprovedApplications(),
         fetchApplicationStats()
       ]);
-      
+
       setShowVerificationModal(false);
       setShowRejectionModal(false);
       setSelectedApplication(null);
       setSelectedApplicationForRejection(null);
       setRejectionReason('');
-      
+
       alert(`Application ${action === 'approve' ? 'approved' : 'rejected'} successfully! Email notification sent to applicant.`);
     } catch (err) {
       console.error(`Error ${action}ing application:`, err);
       alert(`Failed to ${action} application: ${err.message}`);
+    }
+  };
+
+  // Document download functions
+  const handleDocumentDownload = async (application, documentType, documentUrl) => {
+    const downloadKey = `${application.id}_${documentType}`;
+
+    try {
+      setDownloadingDocuments(prev => ({
+        ...prev,
+        [downloadKey]: true
+      }));
+
+      // First validate the URL
+      console.log(`Attempting to download ${documentType} from:`, documentUrl);
+
+      if (!documentUrl || documentUrl.trim() === '') {
+        throw new Error('Document URL is not available');
+      }
+
+      // Try the API endpoint first
+      try {
+        await documentApi.downloadApplicationDocument(application.id, documentType);
+        console.log(`Downloaded ${documentHelpers.getDocumentTypeDisplayName(documentType)} successfully via API`);
+      } catch (apiError) {
+        console.log('API download failed, trying direct URL...', apiError);
+
+        // Fallback to direct URL download
+        if (documentUrl) {
+          const filename = documentHelpers.generateFilename(
+            application.id,
+            documentType,
+            'jpg'
+          );
+          await documentApi.downloadDocument(documentUrl, filename);
+          console.log(`Downloaded ${documentHelpers.getDocumentTypeDisplayName(documentType)} successfully via direct URL`);
+        } else {
+          throw new Error('Both API and direct URL download failed');
+        }
+      }
+
+    } catch (error) {
+      console.error('Download failed:', error);
+
+      // More specific error messages
+      let errorMessage = 'Download failed';
+      if (error.message.includes('404')) {
+        errorMessage = 'Document not found. The file may have been moved or deleted.';
+      } else if (error.message.includes('403')) {
+        errorMessage = 'Access denied. You may not have permission to access this document.';
+      } else if (error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else {
+        errorMessage = error.message;
+      }
+
+      alert(`Failed to download ${documentHelpers.getDocumentTypeDisplayName(documentType)}: ${errorMessage}`);
+    } finally {
+      setDownloadingDocuments(prev => ({
+        ...prev,
+        [downloadKey]: false
+      }));
+    }
+  };
+
+  const handleDownloadAllDocuments = async (application) => {
+    const downloadKey = `${application.id}_all`;
+
+    try {
+      setDownloadingDocuments(prev => ({
+        ...prev,
+        [downloadKey]: true
+      }));
+
+      await documentApi.downloadAllDocuments(application.id);
+      console.log('Downloaded all documents successfully');
+    } catch (error) {
+      console.error('Download all failed:', error);
+      alert(`Failed to download all documents: ${error.message}`);
+    } finally {
+      setDownloadingDocuments(prev => ({
+        ...prev,
+        [downloadKey]: false
+      }));
     }
   };
 
@@ -355,15 +440,15 @@ const Agents = () => {
     const phone = safeToLower(agent.phone);
     const searchLower = safeToLower(searchTerm);
 
-    const matchesSearch = searchTerm === '' || 
-                         name.includes(searchLower) ||
-                         id.includes(searchLower) ||
-                         email.includes(searchLower) ||
-                         phone.includes(searchLower);
-    
-    const matchesFilter = selectedFilter === 'all' || 
-                         safeToLower(agent.status) === safeToLower(selectedFilter);
-    
+    const matchesSearch = searchTerm === '' ||
+      name.includes(searchLower) ||
+      id.includes(searchLower) ||
+      email.includes(searchLower) ||
+      phone.includes(searchLower);
+
+    const matchesFilter = selectedFilter === 'all' ||
+      safeToLower(agent.status) === safeToLower(selectedFilter);
+
     return matchesSearch && matchesFilter;
   });
 
@@ -379,15 +464,15 @@ const Agents = () => {
     const phone = safeToLower(agent.phone);
     const searchLower = safeToLower(searchTerm);
 
-    const matchesSearch = searchTerm === '' || 
-                         name.includes(searchLower) ||
-                         id.includes(searchLower) ||
-                         email.includes(searchLower) ||
-                         phone.includes(searchLower);
-    
-    const matchesFilter = selectedFilter === 'all' || 
-                         safeToLower(agent.status) === safeToLower(selectedFilter);
-    
+    const matchesSearch = searchTerm === '' ||
+      name.includes(searchLower) ||
+      id.includes(searchLower) ||
+      email.includes(searchLower) ||
+      phone.includes(searchLower);
+
+    const matchesFilter = selectedFilter === 'all' ||
+      safeToLower(agent.status) === safeToLower(selectedFilter);
+
     return matchesSearch && matchesFilter;
   });
 
@@ -397,14 +482,14 @@ const Agents = () => {
       return str.toLowerCase();
     };
 
-    const matchesDocumentStatus = selectedFilter === 'all' || 
+    const matchesDocumentStatus = selectedFilter === 'all' ||
       (selectedFilter === 'complete' && application.documents === 'Complete') ||
       (selectedFilter === 'pending' && application.documents === 'Pending');
 
-    const matchesVehicleType = vehicleFilter === 'all' || 
+    const matchesVehicleType = vehicleFilter === 'all' ||
       safeToLower(application.vehicleType) === safeToLower(vehicleFilter);
 
-    const matchesHub = hubFilter === 'all' || 
+    const matchesHub = hubFilter === 'all' ||
       safeToLower(application.hub).includes(safeToLower(hubFilter));
 
     return matchesDocumentStatus && matchesVehicleType && matchesHub;
@@ -420,11 +505,11 @@ const Agents = () => {
     const name = safeToLower(application.firstName + ' ' + application.lastName);
     const email = safeToLower(application.email);
 
-    const matchesSearch = searchTerm === '' || 
-                         name.includes(searchLower) ||
-                         email.includes(searchLower);
+    const matchesSearch = searchTerm === '' ||
+      name.includes(searchLower) ||
+      email.includes(searchLower);
 
-    const matchesVehicleType = vehicleFilter === 'all' || 
+    const matchesVehicleType = vehicleFilter === 'all' ||
       safeToLower(application.vehicleType) === safeToLower(vehicleFilter);
 
     return matchesSearch && matchesVehicleType;
@@ -493,7 +578,7 @@ const Agents = () => {
 
     const handleSubmit = async () => {
       const finalReason = selectedReason === 'Other (please specify)' ? customReason : selectedReason;
-      
+
       if (!finalReason.trim()) {
         alert('Please select or enter a rejection reason');
         return;
@@ -608,6 +693,35 @@ const Agents = () => {
   const VerificationModal = ({ application, onClose, showActions = false }) => {
     if (!application) return null;
 
+    const DocumentDownloadButton = ({ documentType, documentUrl, label }) => {
+      const downloadKey = `${application.id}_${documentType}`;
+      const isDownloading = downloadingDocuments[downloadKey];
+      const hasDocument = Boolean(documentUrl);
+
+      return (
+        <button
+          onClick={() => handleDocumentDownload(application, documentType, documentUrl)}
+          disabled={!hasDocument || isDownloading}
+          className={`mt-2 text-sm flex items-center gap-1 mx-auto transition-colors bg-transparent border-none p-0 ${hasDocument
+              ? 'text-blue-600 hover:text-blue-800 cursor-pointer disabled:text-blue-400'
+              : 'text-gray-400 cursor-not-allowed'
+            }`}
+          title={hasDocument ? `Download ${label}` : 'Document not available'}
+        >
+          {isDownloading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span>Downloading...</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              <span>{hasDocument ? 'Download' : 'Not Available'}</span>
+            </>
+          )}
+        </button>
+      );
+    };
     return (
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -615,14 +729,35 @@ const Agents = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">Agent Application Details</h2>
-                <p className="text-sm text-gray-600 mt-1">Application ID: {application.id}</p>
               </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Download All Documents Button */}
+                <button
+                  onClick={() => handleDownloadAllDocuments(application)}
+                  disabled={downloadingDocuments[`${application.id}_all`]}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:bg-blue-400"
+                  title="Download all documents as ZIP"
+                >
+                  {downloadingDocuments[`${application.id}_all`] ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Downloading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Download All</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -650,7 +785,7 @@ const Agents = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                       <div className="p-2 bg-white rounded border flex items-center gap-2">
@@ -658,7 +793,7 @@ const Agents = () => {
                         {application.email}
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                       <div className="p-2 bg-white rounded border flex items-center gap-2">
@@ -715,26 +850,28 @@ const Agents = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-2">ID Front</label>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                           <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600">{application.idFrontUrl ? 'Document uploaded' : 'No document'}</p>
-                          {application.idFrontUrl && (
-                            <button className="mt-2 text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1 mx-auto">
-                              <Download className="w-4 h-4" />
-                              View
-                            </button>
-                          )}
+                          <p className="text-sm text-gray-600">
+                            {application.idFrontUrl ? 'Document uploaded' : 'No document'}
+                          </p>
+                          <DocumentDownloadButton
+                            documentType="idFront"
+                            documentUrl={application.idFrontUrl}
+                            label="ID Front"
+                          />
                         </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">ID Back</label>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                           <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600">{application.idBackUrl ? 'Document uploaded' : 'No document'}</p>
-                          {application.idBackUrl && (
-                            <button className="mt-2 text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1 mx-auto">
-                              <Download className="w-4 h-4" />
-                              View
-                            </button>
-                          )}
+                          <p className="text-sm text-gray-600">
+                            {application.idBackUrl ? 'Document uploaded' : 'No document'}
+                          </p>
+                          <DocumentDownloadButton
+                            documentType="idBack"
+                            documentUrl={application.idBackUrl}
+                            label="ID Back"
+                          />
                         </div>
                       </div>
                     </div>
@@ -756,7 +893,7 @@ const Agents = () => {
                         {application.hubId ? `Hub ${application.hubId}` : 'Not assigned'}
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
                       <div className="p-2 bg-white rounded border flex items-center gap-2">
@@ -764,7 +901,7 @@ const Agents = () => {
                         {application.vehicleType}
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Registration Number</label>
                       <div className="p-2 bg-white rounded border flex items-center gap-2">
@@ -779,13 +916,32 @@ const Agents = () => {
                       </label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                         <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">{application.vehicleRcUrl ? 'Document uploaded' : 'No document'}</p>
-                        {application.vehicleRcUrl && (
-                          <button className="mt-2 text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1 mx-auto">
-                            <Download className="w-4 h-4" />
-                            View
-                          </button>
-                        )}
+                        <p className="text-sm text-gray-600">
+                          {application.vehicleRcUrl ? 'Document uploaded' : 'No document'}
+                        </p>
+                        <DocumentDownloadButton
+                          documentType="vehicleRc"
+                          documentUrl={application.vehicleRcUrl}
+                          label="Vehicle RC"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Profile Image */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Profile Image
+                      </label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <User className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">
+                          {application.profileImageUrl ? 'Image uploaded' : 'No image'}
+                        </p>
+                        <DocumentDownloadButton
+                          documentType="profileImage"
+                          documentUrl={application.profileImageUrl}
+                          label="Profile Image"
+                        />
                       </div>
                     </div>
                   </div>
@@ -808,11 +964,10 @@ const Agents = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Documents Status</label>
                         <div className="p-2 bg-white rounded border">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            application.documents === 'Complete' 
-                              ? 'bg-green-100 text-green-800' 
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${application.documents === 'Complete'
+                              ? 'bg-green-100 text-green-800'
                               : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                            }`}>
                             {application.documents}
                           </span>
                         </div>
@@ -863,14 +1018,14 @@ const Agents = () => {
   const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
-    
+
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
+
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);
     }
@@ -881,17 +1036,17 @@ const Agents = () => {
           Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, activeTab === 'agents' ? filteredAgents.length : filteredSuperAgents.length)} of {activeTab === 'agents' ? filteredAgents.length : filteredSuperAgents.length} {activeTab === 'agents' ? 'agents' : 'super agents'}
         </span>
         <div className="flex items-center space-x-2">
-          <button 
+          <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className={`px-3 py-1 border rounded hover:bg-gray-50 transition-colors ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Previous
           </button>
-          
+
           {startPage > 1 && (
             <>
-              <button 
+              <button
                 onClick={() => onPageChange(1)}
                 className="px-3 py-1 border rounded hover:bg-gray-50 transition-colors"
               >
@@ -900,25 +1055,24 @@ const Agents = () => {
               {startPage > 2 && <span className="px-2">...</span>}
             </>
           )}
-          
+
           {pageNumbers.map(number => (
-            <button 
+            <button
               key={number}
               onClick={() => onPageChange(number)}
-              className={`px-3 py-1 rounded transition-colors ${
-                currentPage === number 
-                  ? 'bg-blue-900 text-white' 
+              className={`px-3 py-1 rounded transition-colors ${currentPage === number
+                  ? 'bg-blue-900 text-white'
                   : 'border hover:bg-gray-50'
-              }`}
+                }`}
             >
               {number}
             </button>
           ))}
-          
+
           {endPage < totalPages && (
             <>
               {endPage < totalPages - 1 && <span className="px-2">...</span>}
-              <button 
+              <button
                 onClick={() => onPageChange(totalPages)}
                 className="px-3 py-1 border rounded hover:bg-gray-50 transition-colors"
               >
@@ -926,8 +1080,8 @@ const Agents = () => {
               </button>
             </>
           )}
-          
-          <button 
+
+          <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
             className={`px-3 py-1 border rounded hover:bg-gray-50 transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -955,8 +1109,8 @@ const Agents = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600 text-lg">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
             Retry
@@ -1150,7 +1304,7 @@ const Agents = () => {
                 </table>
               </div>
 
-              <PaginationComponent 
+              <PaginationComponent
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
@@ -1264,7 +1418,7 @@ const Agents = () => {
                 </table>
               </div>
 
-              <PaginationComponent 
+              <PaginationComponent
                 currentPage={currentPage}
                 totalPages={totalSuperPages}
                 onPageChange={handlePageChange}
@@ -1300,7 +1454,7 @@ const Agents = () => {
                   </select>
                 </div>
               </div>
-              
+
               {filteredPendingApplications.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -1329,18 +1483,17 @@ const Agents = () => {
                                   <Calendar className="w-4 h-4" />
                                   Applied: {application.appliedDate}
                                 </span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  application.documents === 'Complete' 
-                                    ? 'bg-green-100 text-green-800' 
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${application.documents === 'Complete'
+                                    ? 'bg-green-100 text-green-800'
                                     : 'bg-yellow-100 text-yellow-800'
-                                }`}>
+                                  }`}>
                                   {application.documents}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center space-x-3 ml-6">
                           <button
                             onClick={() => {
@@ -1390,14 +1543,14 @@ const Agents = () => {
                   </select>
                 </div>
               </div>
-              
+
               {filteredRejectedApplications.length === 0 ? (
                 <div className="text-center py-12">
                   <XCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Rejected Applications</h3>
                   <p className="text-gray-500">
-                    {rejectedApplications.length === 0 
-                      ? "No applications have been rejected yet." 
+                    {rejectedApplications.length === 0
+                      ? "No applications have been rejected yet."
                       : "No rejected applications match the selected filters."}
                   </p>
                 </div>
@@ -1431,7 +1584,6 @@ const Agents = () => {
                                   <p className="font-medium text-slate-900">
                                     {application.firstName} {application.lastName}
                                   </p>
-                                  <p className="text-sm text-gray-600">ID: {application.id}</p>
                                 </div>
                               </div>
                             </td>
@@ -1457,7 +1609,7 @@ const Agents = () => {
                               <span className="text-sm text-gray-600">{application.processedDate}</span>
                             </td>
                             <td className="py-4 px-4">
-                              <div className="max-w-xs">
+                              <div className="max-w-[12rem]">
                                 <p className="text-sm text-gray-700 truncate" title={application.rejectionReason}>
                                   {application.rejectionReason}
                                 </p>
@@ -1522,7 +1674,7 @@ const Agents = () => {
                   </select>
                 </div>
               </div>
-              
+
               {approvedApplications.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -1559,7 +1711,6 @@ const Agents = () => {
                                   <p className="font-medium text-slate-900">
                                     {application.firstName} {application.lastName}
                                   </p>
-                                  <p className="text-sm text-gray-600">ID: {application.id}</p>
                                 </div>
                               </div>
                             </td>
