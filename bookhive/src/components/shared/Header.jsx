@@ -68,10 +68,9 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
 
 const { user } = useAuth();
 
-if (!user) {
-  window.location.href = "http://localhost:9999/login";
-  return null; // prevent rendering anything
-}
+  if (!user) {
+    return <p>Please log in.</p>;
+  }
 
 
   // Sri Lankan dummy data based on route, prioritizing user data from JWT
