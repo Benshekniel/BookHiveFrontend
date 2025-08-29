@@ -1,6 +1,6 @@
 // src/config/menuConfig.js
 import {
-  Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
+  Home, User, Settings, CreditCard, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
   ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign, Box,
   LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route,FlaskConical, CircleDashed,MessageSquareText,MessageCircle,UserCog
@@ -12,7 +12,7 @@ export const sidebarMenuConfig = {
     { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
     { label: 'Analytics', icon: BarChart2, path: '/admin/analytics' },
     { label: 'Messages', icon: MessageSquare, path: '/admin/messages' },
-    { label: 'Payment', icon: Bell, path: '/admin/payment' },
+    { label: 'Payment', icon: CreditCard, path: '/admin/payment' },
   ],
   moderator: [
     { label: 'Dashboard', icon: Home, path: '/moderator' },
