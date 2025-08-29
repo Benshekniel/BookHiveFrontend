@@ -39,7 +39,7 @@ const ListingsPage = () => {
   const tabs = [
     { id: 'sales', label: 'For Sale', icon: DollarSign, count: 89 },
     { id: 'lending', label: 'For Lending', icon: BookOpen, count: 67 },
-    { id: 'donations', label: 'For Donation', icon: Heart, count: 22 }
+    // { id: 'donations', label: 'For Donation', icon: Heart, count: 22 }
   ];
 
   const salesStats = [
@@ -497,85 +497,85 @@ const ListingsPage = () => {
     </table>
   );
 
-  const renderDonationsTable = () => (
-    <table className="w-full">
-      <thead className="bg-slate-50 border-b border-gray-200">
-        <tr>
-          <th className="text-left p-4 font-semibold text-slate-700">BOOK DETAILS</th>
-          <th className="text-left p-4 font-semibold text-slate-700">VIEWS</th>
-          <th className="text-left p-4 font-semibold text-slate-700">INTERESTS</th>
-          <th className="text-left p-4 font-semibold text-slate-700">STATUS</th>
-          <th className="text-left p-4 font-semibold text-slate-700">RECIPIENT</th>
-          <th className="text-left p-4 font-semibold text-slate-700">ACTIONS</th>
-        </tr>
-      </thead>
-      <tbody>
-        {donationListings.map((listing) => (
-          <tr key={listing.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
-            <td className="p-4">
-              <div className="flex items-center space-x-4">
-                <img
-                  src={listing.image}
-                  alt={listing.title}
-                  className="w-12 h-16 object-cover rounded-lg border border-gray-200"
-                />
-                <div>
-                  <h3 className="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer transition-colors duration-200">
-                    {listing.title}
-                  </h3>
-                  <p className="text-sm text-slate-600">by {listing.author}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-xs text-slate-500">{listing.category}</span>
-                    <span className="text-xs text-slate-400">•</span>
-                    {getConditionBadge(listing.condition)}
-                  </div>
-                </div>
-              </div>
-            </td>
-            <td className="p-4">
-              <div className="flex items-center space-x-1">
-                <Eye className="w-4 h-4 text-slate-400" />
-                <span className="font-medium text-slate-700">{listing.views}</span>
-              </div>
-            </td>
-            <td className="p-4">
-              <div className="flex items-center space-x-1">
-                <Heart className="w-4 h-4 text-slate-400" />
-                <span className="font-medium text-slate-700">{listing.interests}</span>
-              </div>
-            </td>
-            <td className="p-4">{getStatusBadge(listing.status, 'donations')}</td>
-            <td className="p-4">
-              {listing.recipient ? (
-                <div className="text-sm">
-                  <p className="font-medium text-slate-700">{listing.recipient}</p>
-                  <p className="text-slate-600">Matched: {listing.matchedDate}</p>
-                </div>
-              ) : (
-                <span className="text-slate-400">Pending match</span>
-              )}
-            </td>
-            <td className="p-4">
-              <div className="flex items-center space-x-2">
-                <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors duration-200 group">
-                  <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
-                </button>
-                <button className="p-2 hover:bg-amber-50 rounded-lg transition-colors duration-200 group">
-                  <Edit className="w-4 h-4 text-slate-400 group-hover:text-amber-600" />
-                </button>
-                <button className="p-2 hover:bg-green-50 rounded-lg transition-colors duration-200 group">
-                  <Share2 className="w-4 h-4 text-slate-400 group-hover:text-green-600" />
-                </button>
-                <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200 group">
-                  <MoreHorizontal className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  // const renderDonationsTable = () => (
+  //   <table className="w-full">
+  //     <thead className="bg-slate-50 border-b border-gray-200">
+  //       <tr>
+  //         <th className="text-left p-4 font-semibold text-slate-700">BOOK DETAILS</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">VIEWS</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">INTERESTS</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">STATUS</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">RECIPIENT</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">ACTIONS</th>
+  //       </tr>
+  //     </thead>
+  //     <tbody>
+  //       {donationListings.map((listing) => (
+  //         <tr key={listing.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-4">
+  //               <img
+  //                 src={listing.image}
+  //                 alt={listing.title}
+  //                 className="w-12 h-16 object-cover rounded-lg border border-gray-200"
+  //               />
+  //               <div>
+  //                 <h3 className="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer transition-colors duration-200">
+  //                   {listing.title}
+  //                 </h3>
+  //                 <p className="text-sm text-slate-600">by {listing.author}</p>
+  //                 <div className="flex items-center space-x-2 mt-1">
+  //                   <span className="text-xs text-slate-500">{listing.category}</span>
+  //                   <span className="text-xs text-slate-400">•</span>
+  //                   {getConditionBadge(listing.condition)}
+  //                 </div>
+  //               </div>
+  //             </div>
+  //           </td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-1">
+  //               <Eye className="w-4 h-4 text-slate-400" />
+  //               <span className="font-medium text-slate-700">{listing.views}</span>
+  //             </div>
+  //           </td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-1">
+  //               <Heart className="w-4 h-4 text-slate-400" />
+  //               <span className="font-medium text-slate-700">{listing.interests}</span>
+  //             </div>
+  //           </td>
+  //           <td className="p-4">{getStatusBadge(listing.status, 'donations')}</td>
+  //           <td className="p-4">
+  //             {listing.recipient ? (
+  //               <div className="text-sm">
+  //                 <p className="font-medium text-slate-700">{listing.recipient}</p>
+  //                 <p className="text-slate-600">Matched: {listing.matchedDate}</p>
+  //               </div>
+  //             ) : (
+  //               <span className="text-slate-400">Pending match</span>
+  //             )}
+  //           </td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-2">
+  //               <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors duration-200 group">
+  //                 <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+  //               </button>
+  //               <button className="p-2 hover:bg-amber-50 rounded-lg transition-colors duration-200 group">
+  //                 <Edit className="w-4 h-4 text-slate-400 group-hover:text-amber-600" />
+  //               </button>
+  //               <button className="p-2 hover:bg-green-50 rounded-lg transition-colors duration-200 group">
+  //                 <Share2 className="w-4 h-4 text-slate-400 group-hover:text-green-600" />
+  //               </button>
+  //               <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200 group">
+  //                 <MoreHorizontal className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+  //               </button>
+  //             </div>
+  //           </td>
+  //         </tr>
+  //       ))}
+  //     </tbody>
+  //   </table>
+  // );
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -728,7 +728,7 @@ const ListingsPage = () => {
           <div className="overflow-x-auto">
             {activeTab === 'sales' && renderSalesTable()}
             {activeTab === 'lending' && renderLendingTable()}
-            {activeTab === 'donations' && renderDonationsTable()}
+            {/* {activeTab === 'donations' && renderDonationsTable()} */}
           </div>
         </div>
 
