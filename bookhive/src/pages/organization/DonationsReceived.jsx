@@ -1,46 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Gift, Truck, CheckCircle, Clock, User, MapPin, Package } from 'lucide-react';
+import { donationService } from '../../services/donationService';
+
+const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
 const DonationsReceived = () => {
   const [filter, setFilter] = useState('all');
+  const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const donations = [
-    {
-      id: 1,
-      bookTitle: 'Mathematics Grade 10 Textbooks',
-      donorName: 'Sarah Johnson',
-      donorLocation: 'New York, NY',
-      quantity: 25,
-      status: 'delivered',
-      dateReceived: '2024-01-18',
-      trackingNumber: 'TRK123456789',
-      condition: 'excellent',
-      notes: 'Brand new textbooks with answer keys included'
-    },
-    {
-      id: 2,
-      bookTitle: 'English Literature Collection',
-      donorName: 'BookWorms Foundation',
-      donorLocation: 'California, CA',
-      quantity: 15,
-      status: 'in_transit',
-      dateShipped: '2024-01-20',
-      trackingNumber: 'TRK987654321',
-      condition: 'good',
-      estimatedDelivery: '2024-01-25'
-    },
-    {
-      id: 3,
-      bookTitle: 'Science Laboratory Manuals',
-      donorName: 'Dr. Michael Chen',
-      donorLocation: 'Texas, TX',
-      quantity: 30,
-      status: 'approved',
-      dateApproved: '2024-01-19',
-      condition: 'very_good',
-      notes: 'Slightly used but in excellent condition'
-    }
-  ];
+  useEffect(() => {
+    setLoading(true);
+    donationService.getByOrganization(ORG_ID)
+      .then(data => {
+        setDonations(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError('Failed to load donations');
+        setLoading(false);
+      });
+  }, []);
 
   const filteredDonations = donations.filter(donation => 
     filter === 'all' || donation.status === filter
@@ -76,8 +57,19 @@ const DonationsReceived = () => {
     }
   };
 
-  const markAsReceived = (donationId) => {
-    console.log('Marking donation as received:', donationId);
+  const markAsReceived = async (donationId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await donationService.markAsReceived(donationId);
+      // Refresh donations
+      const data = await donationService.getByOrganization(ORG_ID);
+      setDonations(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Failed to mark as received');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
