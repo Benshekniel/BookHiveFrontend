@@ -1,64 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, BookOpen, Gift, Calendar, MessageCircle, Settings, CheckCircle, X } from 'lucide-react';
+import { notificationService } from '../../services/notificationService';
+
+const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
 const Notifications = () => {
   const [filter, setFilter] = useState('all');
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'donation',
-      title: 'New Book Donation Available',
-      message: 'Sarah Johnson has offered to donate 25 Mathematics Grade 10 textbooks matching your request.',
-      timestamp: '2 hours ago',
-      read: false,
-      actionUrl: '/donations'
-    },
-    {
-      id: 2,
-      type: 'request',
-      title: 'Book Request Approved',
-      message: 'Your request for English Literature books has been approved and is now visible to donors.',
-      timestamp: '5 hours ago',
-      read: false,
-      actionUrl: '/book-request'
-    },
-    {
-      id: 3,
-      type: 'event',
-      title: 'Upcoming Event Reminder',
-      message: 'Book Drive Campaign is starting tomorrow at 10:00 AM. Don\'t forget to participate!',
-      timestamp: '1 day ago',
-      read: true,
-      actionUrl: '/events'
-    },
-    {
-      id: 4,
-      type: 'message',
-      title: 'New Message from Donor',
-      message: 'Dr. Michael Chen sent you a message about the Science textbooks donation.',
-      timestamp: '2 days ago',
-      read: true,
-      actionUrl: '/messages'
-    },
-    {
-      id: 5,
-      type: 'delivery',
-      title: 'Books Delivered Successfully',
-      message: 'Your donation of 15 History textbooks has been delivered to Green Valley School.',
-      timestamp: '3 days ago',
-      read: true,
-      actionUrl: '/donations'
-    },
-    {
-      id: 6,
-      type: 'system',
-      title: 'Profile Update Required',
-      message: 'Please update your organization profile with the latest contact information.',
-      timestamp: '1 week ago',
-      read: false,
-      actionUrl: '/profile'
-    }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    notificationService.getByOrganization(ORG_ID)
+      .then(data => {
+        setNotifications(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError('Failed to load notifications');
+        setLoading(false);
+      });
+  }, []);
 
   const filteredNotifications = notifications.filter(notification => {
     if (filter === 'unread') return !notification.read;
@@ -90,18 +53,47 @@ const Notifications = () => {
     }
   };
 
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, read: true } : notif
-    ));
+  const markAsRead = async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await notificationService.markAsRead(id);
+      // Refresh notifications
+      const data = await notificationService.getByOrganization(ORG_ID);
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Failed to mark as read');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+  const markAllAsRead = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await notificationService.markAllAsRead(ORG_ID);
+      const data = await notificationService.getByOrganization(ORG_ID);
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Failed to mark all as read');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteNotification = (id) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
+  const deleteNotification = async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await notificationService.delete(id);
+      const data = await notificationService.getByOrganization(ORG_ID);
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Failed to delete notification');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
