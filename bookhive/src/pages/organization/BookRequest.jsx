@@ -1,42 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Search, Filter, Eye } from 'lucide-react';
+
+import { bookRequestService } from '../../services/bookRequestService';
+
+const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
 const BookRequest = () => {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({
+    title: '',
+    subject: '',
+    quantity: '',
+    urgency: 'high',
+    description: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
 
-  const requests = [
-    {
-      id: 1,
-      title: 'Mathematics Textbooks Grade 10',
-      subject: 'Mathematics',
-      quantity: 25,
-      description: 'Need basic algebra and geometry textbooks for 25 students in rural area',
-      status: 'approved',
-      dateRequested: '2024-01-15',
-      urgency: 'high'
-    },
-    {
-      id: 2,
-      title: 'English Literature Collection',
-      subject: 'English',
-      quantity: 15,
-      description: 'Classic literature books for high school reading program',
-      status: 'pending',
-      dateRequested: '2024-01-14',
-      urgency: 'medium'
-    },
-    {
-      id: 3,
-      title: 'Science Laboratory Manuals',
-      subject: 'Science',
-      quantity: 30,
-      description: 'Physics, Chemistry, and Biology lab manuals for practical sessions',
-      status: 'delivered',
-      dateRequested: '2024-01-10',
-      urgency: 'low'
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    bookRequestService.getByOrganization(ORG_ID)
+      .then(data => {
+        setRequests(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to load book requests');
+        setLoading(false);
+      });
+  }, []);
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const payload = {
+        ...form,
+        organizationId: ORG_ID,
+        quantity: Number(form.quantity),
+        urgency: form.urgency,
+      };
+      await bookRequestService.create(payload);
+      // Refresh list
+      const data = await bookRequestService.getByOrganization(ORG_ID);
+      setRequests(Array.isArray(data) ? data : []);
+      setShowForm(false);
+      setForm({ title: '', subject: '', quantity: '', urgency: 'high', description: '' });
+    } catch (err) {
+      setError('Failed to submit request');
+    } finally {
+      setSubmitting(false);
     }
-  ];
+  };
 
   const filteredRequests = requests.filter(request => 
     filter === 'all' || request.status === filter
@@ -61,6 +86,13 @@ const BookRequest = () => {
     }
   };
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Loading book requests...</div>;
+  }
+  if (error) {
+    return <div className="flex justify-center items-center h-64 text-red-500">{error}</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -83,7 +115,7 @@ const BookRequest = () => {
           <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">
             Create New Book Request
           </h2>
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
@@ -91,21 +123,32 @@ const BookRequest = () => {
                 </label>
                 <input
                   type="text"
+                  name="title"
+                  value={form.title}
+                  onChange={handleFormChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   placeholder="Mathematics Grade 10 Textbooks"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
                   Subject Category
                 </label>
-                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors">
-                  <option>Mathematics</option>
-                  <option>English</option>
-                  <option>Science</option>
-                  <option>History</option>
-                  <option>Geography</option>
-                  <option>Other</option>
+                <select
+                  name="subject"
+                  value={form.subject}
+                  onChange={handleFormChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
+                  required
+                >
+                  <option value="">Select subject</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="English">English</option>
+                  <option value="Science">Science</option>
+                  <option value="History">History</option>
+                  <option value="Geography">Geography</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </div>
@@ -117,18 +160,29 @@ const BookRequest = () => {
                 </label>
                 <input
                   type="number"
+                  name="quantity"
+                  value={form.quantity}
+                  onChange={handleFormChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   placeholder="25"
+                  required
+                  min="1"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
                   Urgency Level
                 </label>
-                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors">
-                  <option>High - Urgent</option>
-                  <option>Medium - Moderate</option>
-                  <option>Low - Can Wait</option>
+                <select
+                  name="urgency"
+                  value={form.urgency}
+                  onChange={handleFormChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
+                  required
+                >
+                  <option value="high">High - Urgent</option>
+                  <option value="medium">Medium - Moderate</option>
+                  <option value="low">Low - Can Wait</option>
                 </select>
               </div>
             </div>
@@ -138,9 +192,13 @@ const BookRequest = () => {
                 Description of Need
               </label>
               <textarea
+                name="description"
+                value={form.description}
+                onChange={handleFormChange}
                 rows="4"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                 placeholder="Please describe why you need these books, who will benefit, and any specific requirements..."
+                required
               ></textarea>
             </div>
 
@@ -148,13 +206,15 @@ const BookRequest = () => {
               <button
                 type="submit"
                 className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                disabled={submitting}
               >
-                Submit Request
+                {submitting ? 'Submitting...' : 'Submit Request'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
                 className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={submitting}
               >
                 Cancel
               </button>
