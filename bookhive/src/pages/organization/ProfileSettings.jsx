@@ -1,21 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { organizationService } from '../../services/organizationService';
 import { User, Building, Mail, Phone, MapPin, FileText, Camera, Save, Edit } from 'lucide-react';
 
 const ProfileSettings = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    organizationName: 'Green Valley School',
-    registrationNumber: 'REG123456789',
-    email: 'admin@greenvalley.edu',
-    phone: '+1 (555) 123-4567',
-    address: '123 Education Street, Learning City, LC 12345',
-    description: 'Green Valley School is a public elementary school serving students from grades K-6 in the Learning City area. We are committed to providing quality education and fostering a love of reading among our students.',
-    website: 'https://greenvalley.edu',
-    established: '1985',
-    studentCount: '250',
-    contactPerson: 'Jane Smith',
-    contactTitle: 'Principal'
+    organizationName: '',
+    registrationNumber: '',
+    email: '',
+    phone: '',
+    address: '',
+    description: '',
+    website: '',
+    established: '',
+    studentCount: '',
+    contactPerson: '',
+    contactTitle: ''
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const orgId = 1; // TODO: Replace with dynamic orgId as needed
+
+  useEffect(() => {
+    async function fetchProfile() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await organizationService.getProfile(orgId);
+        setFormData({
+          organizationName: data.organizationName || '',
+          registrationNumber: data.registrationNumber || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          address: data.address || '',
+          description: data.description || '',
+          website: data.website || '',
+          established: data.established || '',
+          studentCount: data.studentCount || '',
+          contactPerson: data.contactPerson || '',
+          contactTitle: data.contactTitle || ''
+        });
+      } catch (err) {
+        setError('Failed to load profile.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProfile();
+  }, [orgId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -25,10 +57,15 @@ const ProfileSettings = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Saving profile:', formData);
-    setIsEditing(false);
+    setError(null);
+    try {
+      await organizationService.updateProfile(orgId, formData);
+      setIsEditing(false);
+    } catch (err) {
+      setError('Failed to save profile.');
+    }
   };
 
   const handleCancel = () => {
@@ -36,6 +73,8 @@ const ProfileSettings = () => {
     // Reset form data to original values
   };
 
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
