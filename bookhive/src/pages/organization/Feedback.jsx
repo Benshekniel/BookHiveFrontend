@@ -1,73 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, User, Gift, Calendar, MessageSquare, Plus, Filter } from 'lucide-react';
+import { feedbackService } from '../../services/feedbackService';
+
+const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
 const Feedback = () => {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [filter, setFilter] = useState('all');
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [pendingDonations, setPendingDonations] = useState([
+    // TODO: Replace with backend data
+    { id: 1, donorName: 'Alex Rodriguez', donorAvatar: 'AR', bookTitle: 'Geography Textbooks', deliveryDate: '2024-01-22', status: 'delivered' },
+    { id: 2, donorName: 'Lisa Thompson', donorAvatar: 'LT', bookTitle: 'Art & Craft Books', deliveryDate: '2024-01-25', status: 'delivered' }
+  ]);
+  const [selectedDonation, setSelectedDonation] = useState('');
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const feedbacks = [
-    {
-      id: 1,
-      donorName: 'Sarah Johnson',
-      donorAvatar: 'SJ',
-      bookTitle: 'Mathematics Grade 10 Textbooks',
-      rating: 5,
-      comment: 'Excellent donation! The textbooks were brand new and exactly what our students needed. Sarah was very responsive and helpful throughout the process.',
-      date: '2024-01-20',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      donorName: 'Dr. Michael Chen',
-      donorAvatar: 'MC',
-      bookTitle: 'Science Laboratory Manuals',
-      rating: 4,
-      comment: 'Great quality books and fast shipping. The manuals were in excellent condition and our students love them.',
-      date: '2024-01-18',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      donorName: 'BookWorms Foundation',
-      donorAvatar: 'BF',
-      bookTitle: 'English Literature Collection',
-      rating: 5,
-      comment: 'Amazing collection of classic literature books. The foundation was professional and the books arrived in perfect condition.',
-      date: '2024-01-15',
-      status: 'completed'
-    },
-    {
-      id: 4,
-      donorName: 'Jennifer Wilson',
-      donorAvatar: 'JW',
-      bookTitle: 'History Textbooks Grade 8',
-      rating: 3,
-      comment: 'Books were good but took longer than expected to arrive. Overall satisfied with the donation.',
-      date: '2024-01-10',
-      status: 'completed'
-    }
-  ];
-
-  const pendingDonations = [
-    {
-      id: 1,
-      donorName: 'Alex Rodriguez',
-      donorAvatar: 'AR',
-      bookTitle: 'Geography Textbooks',
-      deliveryDate: '2024-01-22',
-      status: 'delivered'
-    },
-    {
-      id: 2,
-      donorName: 'Lisa Thompson',
-      donorAvatar: 'LT',
-      bookTitle: 'Art & Craft Books',
-      deliveryDate: '2024-01-25',
-      status: 'delivered'
-    }
-  ];
+  useEffect(() => {
+    setLoading(true);
+    feedbackService.getByOrganization(ORG_ID)
+      .then(data => {
+        setFeedbacks(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError('Failed to load feedbacks');
+        setLoading(false);
+      });
+  }, []);
 
   const filteredFeedbacks = feedbacks.filter(feedback => {
     if (filter === 'all') return true;
@@ -78,11 +42,34 @@ const Feedback = () => {
     return true;
   });
 
-  const handleSubmitFeedback = (e) => {
+  const handleSubmitFeedback = async (e) => {
     e.preventDefault();
-    console.log('Submitting feedback');
-    setShowFeedbackForm(false);
-    setRating(0);
+    if (!selectedDonation) {
+      setError('Please select a donation.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await feedbackService.create({
+        organizationId: ORG_ID,
+        donationId: selectedDonation,
+        rating,
+        comment,
+        // Add more fields as needed
+      });
+      // Refresh feedbacks
+      const data = await feedbackService.getByOrganization(ORG_ID);
+      setFeedbacks(Array.isArray(data) ? data : []);
+      setShowFeedbackForm(false);
+      setRating(0);
+      setComment('');
+      setSelectedDonation('');
+    } catch (err) {
+      setError('Failed to submit feedback');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const averageRating = feedbacks.reduce((sum, feedback) => sum + feedback.rating, 0) / feedbacks.length;
@@ -178,7 +165,11 @@ const Feedback = () => {
                 <label className="block text-sm font-medium text-textPrimary mb-2">
                   Select Donation
                 </label>
-                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors">
+                <select
+                  value={selectedDonation}
+                  onChange={(e) => setSelectedDonation(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
+                >
                   <option value="">Choose a completed donation...</option>
                   {pendingDonations.map((donation) => (
                     <option key={donation.id} value={donation.id}>
@@ -212,6 +203,8 @@ const Feedback = () => {
               </label>
               <textarea
                 rows="4"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                 placeholder="Share your experience with this donor and donation..."
                 required
@@ -233,6 +226,9 @@ const Feedback = () => {
                 Cancel
               </button>
             </div>
+
+            {loading && <p className="text-sm text-gray-500">Submitting feedback...</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </form>
         </div>
       )}
