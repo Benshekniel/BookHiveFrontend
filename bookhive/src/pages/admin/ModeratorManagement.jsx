@@ -1,108 +1,342 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Eye, Shield, User, Mail, Calendar, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Eye, Shield, User, Search, X, AlertCircle, CheckCircle } from 'lucide-react';
+import AdminModeratorService from '../../services/adminService'; // Import the service
 
 const ModeratorManagement = () => {
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedModerator, setSelectedModerator] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
+  // Moderators state - now fetched from backend
+  const [moderators, setModerators] = useState([]);
+
+  // State for add modal
   const [newModerator, setNewModerator] = useState({
     name: '',
     email: '',
-    permissions: []
+    password: '',
+    phone: '',
+    dob: '',
+    address: '',
+    city: '',
+    experience: ''
   });
 
-  const moderators = [
-    {
-      id: 1,
-      name: 'Alice Smith',
-      email: 'alice.smith@bookhive.com',
-      status: 'active',
-      lastActivity: '2024-01-15 10:30:00',
-      createdAt: '2023-12-01',
-      permissions: ['content_moderation', 'user_management'],
-      actionsCount: 145,
-      warningsIssued: 12
-    },
-    {
-      id: 2,
-      name: 'Bob Johnson',
-      email: 'bob.johnson@bookhive.com',
-      status: 'active',
-      lastActivity: '2024-01-14 16:45:00',
-      createdAt: '2023-11-15',
-      permissions: ['content_moderation', 'event_management'],
-      actionsCount: 89,
-      warningsIssued: 8
-    },
-    {
-      id: 3,
-      name: 'Carol Davis',
-      email: 'carol.davis@bookhive.com',
-      status: 'suspended',
-      lastActivity: '2024-01-10 09:15:00',
-      createdAt: '2023-10-20',
-      permissions: ['user_management'],
-      actionsCount: 234,
-      warningsIssued: 25
-    },
-    {
-      id: 4,
-      name: 'David Wilson',
-      email: 'david.wilson@bookhive.com',
-      status: 'inactive',
-      lastActivity: '2023-12-28 14:20:00',
-      createdAt: '2023-09-10',
-      permissions: ['content_moderation', 'dispute_resolution'],
-      actionsCount: 67,
-      warningsIssued: 5
+  // Form validation errors
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Load moderators on component mount
+  useEffect(() => {
+    loadModerators();
+  }, []);
+
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError('');
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-  ];
+  }, [error, success]);
 
-  const permissions = [
-    { id: 'content_moderation', name: 'Content Moderation', description: 'Review and moderate book listings and user content' },
-    { id: 'user_management', name: 'User Management', description: 'Manage user accounts and registrations' },
-    { id: 'event_management', name: 'Event Management', description: 'Create and manage platform events' },
-    { id: 'dispute_resolution', name: 'Dispute Resolution', description: 'Handle user disputes and complaints' },
-    { id: 'notification_management', name: 'Notification Management', description: 'Send and manage platform notifications' }
-  ];
+  /**
+   * Load all moderators from the backend
+   */
+  /**
+ * Load all moderators from the backend
+ */
+  const loadModerators = async () => {
+    try {
+      setLoading(true);
+      const response = await AdminModeratorService.getAllModerators();
+      console.log('API Response:', response); // Keep this for now
 
-  const activityLog = [
-    {
-      id: 1,
-      moderatorId: 1,
-      moderatorName: 'Alice Smith',
-      action: 'Approved book listing',
-      details: 'Approved "The Great Gatsby" by John Doe',
-      timestamp: '2024-01-15 10:30:00'
-    },
-    {
-      id: 2,
-      moderatorId: 2,
-      moderatorName: 'Bob Johnson',
-      action: 'Removed inappropriate content',
-      details: 'Removed forum post with inappropriate language',
-      timestamp: '2024-01-14 16:45:00'
-    },
-    {
-      id: 3,
-      moderatorId: 1,
-      moderatorName: 'Alice Smith',
-      action: 'Suspended user account',
-      details: 'Suspended user "baduser123" for policy violations',
-      timestamp: '2024-01-14 14:20:00'
+      // Fix: Check for success property instead of message
+      if (response.success === true) {
+        setModerators(response.data || []);
+      } else {
+        setError('Failed to load moderators');
+      }
+    } catch (error) {
+      setError(AdminModeratorService.handleError(error));
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
+  /**
+   * Search moderators
+   */
+  /**
+ * Search moderators
+ */
+  const handleSearch = async (searchValue) => {
+    if (!searchValue.trim()) {
+      loadModerators();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await AdminModeratorService.searchModerators(searchValue);
+      // Fix: Check for success property
+      if (response.success === true) {
+        setModerators(response.data || []);
+      }
+    } catch (error) {
+      setError(AdminModeratorService.handleError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Filter moderators based on search term and status
+   */
   const filteredModerators = moderators.filter(moderator => {
-    const matchesSearch = moderator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         moderator.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm ||
+      moderator.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      moderator.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Note: Backend doesn't have status field in ModeratorDto, so we'll show all for now
     const matchesFilter = filterStatus === 'all' || moderator.status === filterStatus;
+
     return matchesSearch && matchesFilter;
   });
 
+  /**
+   * Validate form fields
+   */
+  const validateForm = (moderator) => {
+    const errors = {};
+
+    if (!moderator.name?.trim()) errors.name = 'Name is required';
+    if (!moderator.email?.trim()) errors.email = 'Email is required';
+    if (!moderator.password?.trim()) errors.password = 'Password is required';
+    if (!moderator.phone?.trim()) errors.phone = 'Phone is required';
+    if (!moderator.dob?.trim()) errors.dob = 'Date of birth is required';
+    if (!moderator.city?.trim()) errors.city = 'City is required';
+    if (!moderator.address?.trim()) errors.address = 'Address is required';
+    if (!moderator.experience || moderator.experience < 0) errors.experience = 'Valid experience is required';
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (moderator.email && !emailRegex.test(moderator.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    // Phone validation (basic)
+    if (moderator.phone && !/^\d+$/.test(moderator.phone)) {
+      errors.phone = 'Phone should contain only numbers';
+    }
+
+    return errors;
+  };
+
+  /**
+   * Handle moderator add
+   */
+  /**
+   * Handle moderator add
+   */
+  const handleModeratorAdd = async (e) => {
+    e.preventDefault();
+
+    // Validate form
+    const errors = validateForm(newModerator);
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setError('Please fix the validation errors');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const moderatorData = {
+        name: newModerator.name.trim(),
+        email: newModerator.email.trim(),
+        password: newModerator.password.trim(),
+        phone: parseInt(newModerator.phone, 10),
+        dob: newModerator.dob,
+        city: newModerator.city.trim(),
+        experience: parseInt(newModerator.experience, 10),
+        address: newModerator.address.trim()
+      };
+
+      const result = await AdminModeratorService.registerModerator(moderatorData);
+
+      // Fix: Check for success property
+      if (result.message === "success") {
+        setSuccess('Moderator added successfully!');
+        setShowAddModal(false);
+        setNewModerator({
+          name: '',
+          email: '',
+          password: '',
+          phone: '',
+          dob: '',
+          address: '',
+          city: '',
+          experience: ''
+        });
+        setValidationErrors({});
+        loadModerators(); // Reload the list
+      } else {
+        setError(result.message || 'Failed to add moderator');
+      }
+    } catch (error) {
+      setError(AdminModeratorService.handleError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle view moderator
+   */
+  /**
+   * Handle view moderator
+   */
+  const handleViewModerator = async (moderator) => {
+    try {
+      setLoading(true);
+      const response = await AdminModeratorService.getModeratorById(moderator.id);
+      if (response.success === true) { // Fix here
+        setSelectedModerator(response.data);
+        setShowViewModal(true);
+      } else {
+        setError('Failed to load moderator details');
+      }
+    } catch (error) {
+      setError(AdminModeratorService.handleError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle edit moderator
+   */
+  const handleEditModerator = async (moderator) => {
+    try {
+      setLoading(true);
+      const response = await AdminModeratorService.getModeratorById(moderator.id);
+      if (response.success === true) { // Fix here
+        setSelectedModerator(response.data);
+        setShowEditModal(true);
+      } else {
+        setError('Failed to load moderator details');
+      }
+    } catch (error) {
+      setError(AdminModeratorService.handleError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle update moderator
+   */
+  const handleUpdateModerator = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await AdminModeratorService.updateModerator(selectedModerator.id, selectedModerator);
+
+      if (response.success === true) { // Fix here
+        setSuccess('Moderator updated successfully!');
+        setShowEditModal(false);
+        loadModerators(); // Reload the list
+      } else {
+        setError(response.message || 'Failed to update moderator');
+      }
+    } catch (error) {
+      setError(AdminModeratorService.handleError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle delete moderator
+   */
+  const handleDeleteModerator = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this moderator?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await AdminModeratorService.deleteModerator(id);
+
+      if (response.success === true) { // Fix here
+        setSuccess('Moderator deleted successfully!');
+        loadModerators(); // Reload the list
+      } else {
+        setError(response.message || 'Failed to delete moderator');
+      }
+    } catch (error) {
+      setError(AdminModeratorService.handleError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle input changes for new moderator form
+   */
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewModerator({ ...newModerator, [name]: value });
+
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors({ ...validationErrors, [name]: '' });
+    }
+  };
+
+  /**
+   * Handle input changes for edit moderator form
+   */
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setSelectedModerator({ ...selectedModerator, [name]: value });
+  };
+
+  /**
+   * Handle search input change with debouncing
+   */
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      handleSearch(value);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  /**
+   * Get status color (for future use when status is available)
+   */
   const getStatusColor = (status) => {
     const colors = {
       active: 'bg-green-500 text-white',
@@ -112,34 +346,24 @@ const ModeratorManagement = () => {
     return colors[status] || colors.active;
   };
 
-  const handleCreateModerator = (e) => {
-    e.preventDefault();
-    console.log('Creating moderator:', newModerator);
-    setShowCreateModal(false);
-    setNewModerator({ name: '', email: '', permissions: [] });
-  };
-
-  const handleEditModerator = (moderator) => {
-    setSelectedModerator(moderator);
-    setShowEditModal(true);
-  };
-
-  const handlePermissionChange = (permissionId, checked) => {
-    if (checked) {
-      setNewModerator({
-        ...newModerator,
-        permissions: [...newModerator.permissions, permissionId]
-      });
-    } else {
-      setNewModerator({
-        ...newModerator,
-        permissions: newModerator.permissions.filter(p => p !== permissionId)
-      });
+  /**
+   * Calculate age from date of birth
+   */
+  const calculateAge = (dob) => {
+    if (!dob) return 'N/A';
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
+    return age;
   };
 
   return (
-    <div className="bg-slate-50 p-6 min-h-screen">
+    <div className="bg-white p-6 min-h-screen">
+      {/* Header */}
       <div className="sm:flex sm:items-center mb-8">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-semibold text-slate-900">Moderator Management</h1>
@@ -149,14 +373,47 @@ const ModeratorManagement = () => {
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            disabled={loading}
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto transition-colors disabled:opacity-50"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Moderator
           </button>
         </div>
       </div>
+
+      {/* Alert Messages */}
+      {error && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <div className="flex">
+            <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+            <span>{error}</span>
+            <button
+              onClick={() => setError('')}
+              className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative" role="alert">
+          <div className="flex">
+            <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+            <span>{success}</span>
+            <button
+              onClick={() => setSuccess('')}
+              className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filter */}
       <div className="bg-white shadow rounded-lg mb-6 border border-slate-200">
@@ -170,8 +427,8 @@ const ModeratorManagement = () => {
                   type="text"
                   placeholder="Search by name or email..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  onChange={handleSearchChange}
+                  className="pl-10 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -180,7 +437,7 @@ const ModeratorManagement = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -196,201 +453,459 @@ const ModeratorManagement = () => {
       <div className="bg-white shadow rounded-lg mb-8 border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Current Moderators</h3>
-          <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Moderator
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Permissions
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Activity
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Last Active
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {filteredModerators.map((moderator) => (
-                  <tr key={moderator.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-900 flex items-center justify-center">
-                            <User className="h-5 w-5 text-white" />
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-slate-900">{moderator.name}</div>
-                          <div className="text-sm text-slate-500">{moderator.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(moderator.status)}`}>
-                        {moderator.status.charAt(0).toUpperCase() + moderator.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-900">{moderator.permissions.length} permissions</div>
-                      <div className="text-sm text-slate-500">
-                        {moderator.permissions.slice(0, 2).map(p => 
-                          permissions.find(perm => perm.id === p)?.name
-                        ).join(', ')}
-                        {moderator.permissions.length > 2 && '...'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-900">{moderator.actionsCount} actions</div>
-                      <div className="text-sm text-slate-500">{moderator.warningsIssued} warnings</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      {moderator.lastActivity}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={() => console.log('View details:', moderator.id)}
-                          className="text-blue-500 hover:text-blue-700"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleEditModerator(moderator)}
-                          className="text-green-500 hover:text-green-700"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => console.log('Delete moderator:', moderator.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+
+          {loading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-slate-600">Loading...</span>
+            </div>
+          )}
+
+          {!loading && (
+            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Moderator</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">City</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Experience</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Age</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Activity Log */}
-      <div className="bg-white shadow rounded-lg border border-slate-200">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Recent Moderator Activity</h3>
-          <div className="flow-root">
-            <ul className="-mb-8">
-              {activityLog.map((activity, activityIdx) => (
-                <li key={activity.id}>
-                  <div className="relative pb-8">
-                    {activityIdx !== activityLog.length - 1 ? (
-                      <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200" />
-                    ) : null}
-                    <div className="relative flex space-x-3">
-                      <div>
-                        <span className="h-8 w-8 rounded-full bg-blue-900 flex items-center justify-center ring-8 ring-white">
-                          <Shield className="h-4 w-4 text-white" />
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                        <div>
-                          <p className="text-sm text-slate-500">
-                            <span className="font-medium text-slate-900">{activity.moderatorName}</span> {activity.action.toLowerCase()}
-                          </p>
-                          <p className="text-sm text-slate-400">{activity.details}</p>
-                        </div>
-                        <div className="text-right text-sm whitespace-nowrap text-slate-500">
-                          {activity.timestamp}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Create Moderator Modal repay */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <form onSubmit={handleCreateModerator}>
-                <div>
-                  <h3 className="text-lg leading-6 font-medium text-slate-900 mb-4">Add New Moderator</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Full Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={newModerator.name}
-                        onChange={(e) => setNewModerator({...newModerator, name: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Email Address</label>
-                      <input
-                        type="email"
-                        required
-                        value={newModerator.email}
-                        onChange={(e) => setNewModerator({...newModerator, email: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Permissions</label>
-                      <div className="space-y-2">
-                        {permissions.map((permission) => (
-                          <div key={permission.id} className="flex items-start">
-                            <div className="flex items-center h-5">
-                              <input
-                                type="checkbox"
-                                checked={newModerator.permissions.includes(permission.id)}
-                                onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
-                                className="focus:ring-blue-500 h-4 w-4 text-blue-900 border-slate-200 rounded"
-                              />
-                            </div>
-                            <div className="ml-3 text-sm">
-                              <label className="font-medium text-slate-700">{permission.name}</label>
-                              <p className="text-slate-500">{permission.description}</p>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {filteredModerators.map((moderator) => (
+                    <tr key={moderator.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                              <User className="h-5 w-5 text-white" />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-slate-900">{moderator.name}</div>
+                            <div className="text-sm text-slate-500">{moderator.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                        {moderator.phone || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                        {moderator.city || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                        {moderator.experience ? `${moderator.experience} years` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                        {calculateAge(moderator.dob)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewModerator(moderator)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                            disabled={loading}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEditModerator(moderator)}
+                            className="text-yellow-600 hover:text-yellow-900 transition-colors"
+                            disabled={loading}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteModerator(moderator.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                            disabled={loading}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredModerators.length === 0 && !loading && (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-slate-500">
+                        {searchTerm ? 'No moderators found matching your search.' : 'No moderators found.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Moderator Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="fixed inset-0 bg-black/30" onClick={() => setShowAddModal(false)}></div>
+
+          <div className="relative bg-white rounded-xl shadow-2xl max-w-xl w-full p-8 z-50 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              disabled={loading}
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-2xl font-semibold text-slate-800 mb-6 text-center">
+              Add New Moderator
+            </h3>
+
+            <form onSubmit={handleModeratorAdd}>
+              <div className="grid grid-cols-1 gap-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={newModerator.name}
+                    onChange={handleInputChange}
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.name ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    placeholder="Enter name"
+                    disabled={loading}
+                  />
+                  {validationErrors.name && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Email *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={newModerator.email}
+                    onChange={handleInputChange}
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.email ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    placeholder="Enter email"
+                    disabled={loading}
+                  />
+                  {validationErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.email}</p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Password *</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={newModerator.password}
+                    onChange={handleInputChange}
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.password ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    placeholder="Enter password"
+                    disabled={loading}
+                  />
+                  {validationErrors.password && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.password}</p>
+                  )}
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Phone *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={newModerator.phone}
+                    onChange={handleInputChange}
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.phone ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    placeholder="Enter phone number"
+                    disabled={loading}
+                  />
+                  {validationErrors.phone && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.phone}</p>
+                  )}
+                </div>
+
+                {/* Date of Birth */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Date of Birth *</label>
+                  <input
+                    type="date"
+                    name="dob"
+                    value={newModerator.dob}
+                    onChange={handleInputChange}
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.dob ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    disabled={loading}
+                  />
+                  {validationErrors.dob && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.dob}</p>
+                  )}
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Address *</label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={newModerator.address}
+                    onChange={handleInputChange}
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.address ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    placeholder="Enter address"
+                    disabled={loading}
+                  />
+                  {validationErrors.address && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.address}</p>
+                  )}
+                </div>
+
+                {/* City */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">City *</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={newModerator.city}
+                    onChange={handleInputChange}
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.city ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    placeholder="Enter city"
+                    disabled={loading}
+                  />
+                  {validationErrors.city && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.city}</p>
+                  )}
+                </div>
+
+                {/* Experience */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Experience (years) *</label>
+                  <input
+                    type="number"
+                    name="experience"
+                    value={newModerator.experience}
+                    onChange={handleInputChange}
+                    min="0"
+                    className={`mt-1 w-full rounded-md border shadow-sm focus:ring focus:ring-blue-200 focus:ring-opacity-50 sm:text-sm p-2 ${validationErrors.experience ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                      }`}
+                    placeholder="Enter years of experience"
+                    disabled={loading}
+                  />
+                  {validationErrors.experience && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.experience}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Form buttons */}
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-100 disabled:opacity-50"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                  disabled={loading}
+                >
+                  {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>}
+                  Add Moderator
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Moderator Modal */}
+      {showViewModal && selectedModerator && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4">
+            <div className="fixed inset-0 bg-black/30" onClick={() => setShowViewModal(false)}></div>
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative overflow-y-auto max-h-[80vh]">
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Moderator Details</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Name</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Email</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.email || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Phone</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.phone || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.dob || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Age</label>
+                  <p className="mt-1 text-sm text-slate-900">{calculateAge(selectedModerator.dob)}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Address</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.address || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">City</label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedModerator.city || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Experience</label>
+                  <p className="mt-1 text-sm text-slate-900">
+                    {selectedModerator.experience ? `${selectedModerator.experience} years` : 'N/A'}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowViewModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Moderator Modal */}
+      {showEditModal && selectedModerator && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4">
+            <div className="fixed inset-0 bg-black/30" onClick={() => setShowEditModal(false)}></div>
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative overflow-y-auto max-h-[80vh]">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                disabled={loading}
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Edit Moderator</h3>
+              <form onSubmit={handleUpdateModerator}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={selectedModerator.name || ''}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={selectedModerator.email || ''}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={selectedModerator.phone || ''}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
+                    <input
+                      type="date"
+                      name="dob"
+                      value={selectedModerator.dob || ''}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Address</label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={selectedModerator.address || ''}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={selectedModerator.city || ''}
+                      onChange={handleEditInputChange}
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Experience (years)</label>
+                    <input
+                      type="number"
+                      name="experience"
+                      value={selectedModerator.experience || ''}
+                      onChange={handleEditInputChange}
+                      min="0"
+                      className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      disabled={loading}
+                    />
                   </div>
                 </div>
-                <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                  <button
-                    type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-900 text-base font-medium text-white hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm"
-                  >
-                    Add Moderator
-                  </button>
+                <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-slate-200 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-900 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50"
+                    disabled={loading}
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                    disabled={loading}
+                  >
+                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>}
+                    Update
                   </button>
                 </div>
               </form>

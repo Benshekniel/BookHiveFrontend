@@ -1,6 +1,6 @@
 // src/config/menuConfig.js
 import {
-  Home, User, Settings, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
+  Home, User, Settings, CreditCard, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
   ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign, Box,
   LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route,FlaskConical, CircleDashed,MessageSquareText,MessageCircle,UserCog
@@ -10,11 +10,9 @@ export const sidebarMenuConfig = {
   admin: [
     { label: 'Dashboard', icon: Home, path: '/admin' },
     { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
-    { label: 'Contents', icon: FileText, path: '/admin/content' },
     { label: 'Analytics', icon: BarChart2, path: '/admin/analytics' },
-    { label: 'Notification', icon: Bell, path: '/admin/notification' },
-    { label: 'Security', icon: ShieldCheck, path: '/admin/security' },
-    { label: 'Settings', icon: Settings, path: '/admin/settings' },
+    { label: 'Messages', icon: MessageSquare, path: '/admin/messages' },
+    { label: 'Payment', icon: CreditCard, path: '/admin/payment' },
   ],
   moderator: [
     { label: 'Dashboard', icon: Home, path: '/moderator' },
@@ -23,9 +21,9 @@ export const sidebarMenuConfig = {
     { label: 'Competitions', icon: Trophy, path: '/moderator/competitions' },
     { label: 'Users', icon: UsersRound, path: '/moderator/users' },
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
-    { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
+    // { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
     { label: 'Support', icon: Headset, path: '/moderator/support' },
-    { label: 'Testing', icon: FlaskConical, path: '/moderator/test' },
+    // { label: 'Testing', icon: FlaskConical, path: '/moderator/test' },
     { label: 'Settings', icon: Settings, path: '/moderator/settings' },
 
   ],
@@ -49,8 +47,9 @@ export const sidebarMenuConfig = {
   'delivery-agent': [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/agent' },
     { label: 'Tasks', icon: ClipboardList, path: '/agent/tasks' },
-    { label: 'Active Delivery', icon: Truck, path: '/agent/delivery' },
+    { label: 'Delivery', icon: Truck, path: '/agent/delivery' },
     { label: 'Notification', icon: Bell, path: '/agent/notification' },
+    { label: 'Messages', icon: MessageSquare, path: '/agent/message' },
     { label: 'Performance', icon: LineChart, path: '/agent/performance' },
     { label: 'Support', icon: Headset, path: '/agent/support' },
   ],
@@ -58,11 +57,9 @@ export const sidebarMenuConfig = {
     { label: 'Dashboard', icon: LayoutDashboard, path: '/hubmanager' },
     { label: 'Delivery', icon: Truck, path: '/hubmanager/deliveries' },
     { label: 'Agents', icon: Users, path: '/hubmanager/agents' },
-    { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
     { label: 'Routes', icon: Route, path: '/hubmanager/routes' },
-    { label: 'Performance', icon: LineChart, path: '/hubmanager/performance' },
+    { label: 'Messages', icon: MessageSquare, path: '/hubmanager/messages' },
     { label: 'Support', icon: Headset, path: '/hubmanager/support' },
-    { label: 'Hub Settings', icon: Settings, path: '/hubmanager/settings' },
   ]
   ,
    organization : [
@@ -86,6 +83,7 @@ export const sidebarMenuConfig = {
     { label: 'Messages', icon: MessageSquare, path: '/user/messages' },
     { label: 'Profile Settings', icon: User, path: '/user/profile-settings' },
     { label: 'Book Circle', icon: CircleDashed, path: '/user/book-circles' },
+    { label: 'Notifications', icon: Bell, path: '/user/notifications' },
     
   ],
   // guest: [

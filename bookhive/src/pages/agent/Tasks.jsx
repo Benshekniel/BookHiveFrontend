@@ -9,62 +9,62 @@ export default function Tasks() {
   const todaysTasks = [
     {
       id: 'DEL-001',
-      customer: 'Jane Smith',
-      address: '456 Oak Avenue, Apt 2B',
-      phone: '+1 (555) 123-4567',
+      customer: 'Kasun Perera',
+      address: '45/2 Galle Road, Colombo 03',
+      phone: '+94 77 123 4567',
       packageType: 'Books',
-      weight: '2.5 lbs',
+      weight: '1.1 kg',
       priority: 'high',
       estimatedTime: '15 min',
-      coordinates: [40.7589, -73.9851],
+      coordinates: [6.9271, 79.8612],
       collected: false
     },
     {
       id: 'DEL-002',
-      customer: 'Mike Johnson',
-      address: '321 Pine Street, Suite 100',
-      phone: '+1 (555) 987-6543',
+      customer: 'Nimali Fernando',
+      address: '123 Kandy Road, Maharagama',
+      phone: '+94 71 987 6543',
       packageType: 'Books',
-      weight: '1.8 lbs',
+      weight: '0.8 kg',
       priority: 'medium',
       estimatedTime: '20 min',
-      coordinates: [40.7505, -73.9934],
+      coordinates: [6.8485, 79.9267],
       collected: false
     },
     {
       id: 'DEL-003',
-      customer: 'Sarah Davis',
-      address: '987 Elm Drive, House #12',
-      phone: '+1 (555) 456-7890',
+      customer: 'Chaminda Silva',
+      address: '67 Temple Road, Mount Lavinia',
+      phone: '+94 76 456 7890',
       packageType: 'Books',
-      weight: '3.2 lbs',
+      weight: '1.5 kg',
       priority: 'low',
       estimatedTime: '12 min',
-      coordinates: [40.7614, -73.9776],
+      coordinates: [6.8389, 79.8653],
       collected: false
     },
     {
       id: 'DEL-004',
-      customer: 'Tom Wilson',
-      address: '159 Maple Lane, Apt 5A',
-      phone: '+1 (555) 321-0987',
+      customer: 'Sanduni Jayawardena',
+      address: '89 Baseline Road, Colombo 09',
+      phone: '+94 70 321 0987',
       packageType: 'Books',
-      weight: '2.1 lbs',
+      weight: '0.9 kg',
       priority: 'high',
       estimatedTime: '18 min',
-      coordinates: [40.7549, -73.9840],
+      coordinates: [6.9147, 79.8774],
       collected: false
     },
     {
       id: 'DEL-005',
-      customer: 'Lisa Brown',
-      address: '753 Cedar Court, Unit B',
-      phone: '+1 (555) 654-3210',
+      customer: 'Tharindu Wickramasinghe',
+      address: '156 High Level Road, Nugegoda',
+      phone: '+94 75 654 3210',
       packageType: 'Books',
-      weight: '4.0 lbs',
+      weight: '1.8 kg',
       priority: 'medium',
       estimatedTime: '25 min',
-      coordinates: [40.7580, -73.9855],
+      coordinates: [6.8649, 79.8997],
       collected: false
     }
   ]
@@ -113,8 +113,8 @@ export default function Tasks() {
               <Truck className="text-white" size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#0F172A]">Downtown Hub</h2>
-              <p className="text-sm text-[#0F172A]/60">123 Main Street, Downtown</p>
+              <h2 className="text-lg font-semibold text-[#0F172A]">Colombo Central Hub</h2>
+              <p className="text-sm text-[#0F172A]/60">456 Union Place, Colombo 02</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -148,7 +148,7 @@ export default function Tasks() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[#0F172A]/60">Total Weight</p>
-              <p className="text-2xl font-semibold text-[#FBBF24]">{totalWeight.toFixed(1)} lbs</p>
+              <p className="text-2xl font-semibold text-[#FBBF24]">{totalWeight.toFixed(1)} kg</p>
             </div>
             <Package className="text-[#FBBF24]" size={24} />
           </div>

@@ -9,7 +9,7 @@ const Messages = () => {
   const conversations = [
     {
       id: 1,
-      name: 'Sarah Johnson',
+      name: 'Sarah John',
       role: 'Donor',
       avatar: 'SJ',
       lastMessage: 'The books are ready for shipment. I\'ll send the tracking number once dispatched.',

@@ -1,16 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Calendar,
   Clock,
   MapPin,
   DollarSign,
   Edit3,
-  Save
+  Save,
+  RefreshCw
 } from 'lucide-react';
+import { hubApi } from '../../services/deliveryService';
 
 const Schedule = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [hubId] = useState(1); // This should come from auth context
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
   const [mainHub, setMainHub] = useState({
     name: 'Downtown Hub',
     address: '123 Main Street, Downtown District',
@@ -33,8 +41,139 @@ const Schedule = () => {
     distanceRate: 2.5
   });
 
+  // Fetch hub data from backend
+  useEffect(() => {
+    fetchHubData();
+  }, [hubId]);
+
+  const fetchHubData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch hub information
+      const hubResponse = await hubApi.getHubById(hubId);
+      
+      // Transform backend data to match frontend structure
+      setMainHub({
+        name: hubResponse.name || 'Hub',
+        address: hubResponse.address || '',
+        city: hubResponse.city || '',
+        zipCode: hubResponse.zipCode || '',
+        phone: hubResponse.phoneNumber || '',
+        email: hubResponse.email || ''
+      });
+
+      // Set delivery variables from hub data or use defaults
+      setVariables({
+        deliveryTimeBuffer: hubResponse.deliveryTimeBuffer || 15,
+        pickupTimeLimit: hubResponse.pickupTimeLimit || 60,
+        maxDeliveryTime: hubResponse.maxDeliveryTime || 10080
+      });
+
+      // Set cost factors from hub data or use defaults
+      setCostFactors({
+        fuelRate: hubResponse.fuelRate || 3.45,
+        baseCost: hubResponse.baseCost || 15.0,
+        peakHourMultiplier: hubResponse.peakHourMultiplier || 1.5,
+        distanceRate: hubResponse.distanceRate || 2.5
+      });
+
+    } catch (err) {
+      console.error('Error fetching hub data:', err);
+      setError('Failed to load hub configuration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleHubChange = (field, value) => {
+    setMainHub(prev => ({ ...prev, [field]: value }));
+    if (success) setSuccess(false);
+  };
+
+  const handleVariableChange = (field, value) => {
+    setVariables(prev => ({ ...prev, [field]: parseInt(value) || 0 }));
+    if (success) setSuccess(false);
+  };
+
+  const handleCostFactorChange = (field, value) => {
+    setCostFactors(prev => ({ ...prev, [field]: parseFloat(value) || 0 }));
+    if (success) setSuccess(false);
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      // Prepare data for backend update
+      const updateData = {
+        name: mainHub.name,
+        address: mainHub.address,
+        city: mainHub.city,
+        zipCode: mainHub.zipCode,
+        phoneNumber: mainHub.phone,
+        email: mainHub.email,
+        deliveryTimeBuffer: variables.deliveryTimeBuffer,
+        pickupTimeLimit: variables.pickupTimeLimit,
+        maxDeliveryTime: variables.maxDeliveryTime,
+        fuelRate: costFactors.fuelRate,
+        baseCost: costFactors.baseCost,
+        peakHourMultiplier: costFactors.peakHourMultiplier,
+        distanceRate: costFactors.distanceRate
+      };
+
+      await hubApi.updateHub(hubId, updateData);
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+
+    } catch (err) {
+      console.error('Error saving hub configuration:', err);
+      setError('Failed to save configuration. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const refreshData = async () => {
+    await fetchHubData();
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600">Loading hub configuration...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Status Messages */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">{error}</p>
+          <button 
+            onClick={refreshData}
+            className="mt-2 text-red-600 hover:text-red-800 underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <p className="text-green-600">Configuration saved successfully!</p>
+        </div>
+      )}
+
       {/* Travel Plan */}
       <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4 flex items-center gap-2">
@@ -73,7 +212,7 @@ const Schedule = () => {
               <input
                 type="text"
                 value={mainHub.name}
-                onChange={(e) => setMainHub({ ...mainHub, name: e.target.value })}
+                onChange={(e) => handleHubChange('name', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
               />
             </div>
@@ -82,7 +221,7 @@ const Schedule = () => {
               <input
                 type="text"
                 value={mainHub.address}
-                onChange={(e) => setMainHub({ ...mainHub, address: e.target.value })}
+                onChange={(e) => handleHubChange('address', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
               />
             </div>
@@ -92,7 +231,7 @@ const Schedule = () => {
                 <input
                   type="text"
                   value={mainHub.city}
-                  onChange={(e) => setMainHub({ ...mainHub, city: e.target.value })}
+                  onChange={(e) => handleHubChange('city', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                 />
               </div>
@@ -101,7 +240,7 @@ const Schedule = () => {
                 <input
                   type="text"
                   value={mainHub.zipCode}
-                  onChange={(e) => setMainHub({ ...mainHub, zipCode: e.target.value })}
+                  onChange={(e) => handleHubChange('zipCode', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                 />
               </div>
@@ -111,7 +250,7 @@ const Schedule = () => {
               <input
                 type="tel"
                 value={mainHub.phone}
-                onChange={(e) => setMainHub({ ...mainHub, phone: e.target.value })}
+                onChange={(e) => handleHubChange('phone', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
               />
             </div>
@@ -120,7 +259,7 @@ const Schedule = () => {
               <input
                 type="email"
                 value={mainHub.email}
-                onChange={(e) => setMainHub({ ...mainHub, email: e.target.value })}
+                onChange={(e) => handleHubChange('email', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
               />
             </div>
@@ -141,7 +280,7 @@ const Schedule = () => {
                 <input
                   type="number"
                   value={costFactors.fuelRate}
-                  onChange={(e) => setCostFactors({ ...costFactors, fuelRate: parseFloat(e.target.value) })}
+                  onChange={(e) => handleCostFactorChange('fuelRate', e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
                   step="0.01"
                 />
@@ -156,7 +295,7 @@ const Schedule = () => {
                 <input
                   type="number"
                   value={costFactors.baseCost}
-                  onChange={(e) => setCostFactors({ ...costFactors, baseCost: parseFloat(e.target.value) })}
+                  onChange={(e) => handleCostFactorChange('baseCost', e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
                   step="0.01"
                 />
@@ -171,7 +310,7 @@ const Schedule = () => {
                 <input
                   type="number"
                   value={costFactors.distanceRate}
-                  onChange={(e) => setCostFactors({ ...costFactors, distanceRate: parseFloat(e.target.value) })}
+                  onChange={(e) => handleCostFactorChange('distanceRate', e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
                   step="0.01"
                 />
@@ -184,7 +323,7 @@ const Schedule = () => {
               <input
                 type="number"
                 value={costFactors.peakHourMultiplier}
-                onChange={(e) => setCostFactors({ ...costFactors, peakHourMultiplier: parseFloat(e.target.value) })}
+                onChange={(e) => handleCostFactorChange('peakHourMultiplier', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
                 step="0.1"
               />
@@ -207,7 +346,7 @@ const Schedule = () => {
               <input
                 type="number"
                 value={variables.deliveryTimeBuffer}
-                onChange={(e) => setVariables({ ...variables, deliveryTimeBuffer: parseInt(e.target.value) })}
+                onChange={(e) => handleVariableChange('deliveryTimeBuffer', e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
               />
             </div>
@@ -221,7 +360,7 @@ const Schedule = () => {
               <input
                 type="number"
                 value={variables.pickupTimeLimit}
-                onChange={(e) => setVariables({ ...variables, pickupTimeLimit: parseInt(e.target.value) })}
+                onChange={(e) => handleVariableChange('pickupTimeLimit', e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
               />
             </div>
@@ -235,17 +374,22 @@ const Schedule = () => {
               <input
                 type="number"
                 value={variables.maxDeliveryTime}
-                onChange={(e) => setVariables({ ...variables, maxDeliveryTime: parseInt(e.target.value) })}
+                onChange={(e) => handleVariableChange('maxDeliveryTime', e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
               />
             </div>
           </div>
         </div>
       </div>
+      
       <div className="flex justify-end">
-        <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors flex items-center space-x-2">
+        <button 
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors flex items-center space-x-2 disabled:opacity-50"
+        >
           <Save size={20} />
-          <span>Save</span>
+          <span>{saving ? 'Saving...' : 'Save'}</span>
         </button>
       </div>
     </div>

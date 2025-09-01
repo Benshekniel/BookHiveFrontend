@@ -43,42 +43,42 @@ export default function AgentDashboard() {
   ]
 
   const monthlyData = [
-    { month: 'Jan', deliveries: 420, earnings: 2100 },
-    { month: 'Feb', deliveries: 380, earnings: 1900 },
-    { month: 'Mar', deliveries: 450, earnings: 2250 },
-    { month: 'Apr', deliveries: 520, earnings: 2600 },
-    { month: 'May', deliveries: 485, earnings: 2425 },
-    { month: 'Jun', deliveries: 510, earnings: 2550 },
+    { month: 'Jan', deliveries: 420, earnings: 168000 },
+    { month: 'Feb', deliveries: 380, earnings: 152000 },
+    { month: 'Mar', deliveries: 450, earnings: 180000 },
+    { month: 'Apr', deliveries: 520, earnings: 208000 },
+    { month: 'May', deliveries: 485, earnings: 194000 },
+    { month: 'Jun', deliveries: 510, earnings: 204000 },
   ]
 
   const paymentBreakdown = [
-    { name: 'Base Pay', value: 1200, color: '#3B82F6' },
-    { name: 'Tips', value: 450, color: '#22C55E' },
-    { name: 'Bonuses', value: 200, color: '#FBBF24' },
-    { name: 'Fuel Allowance', value: 150, color: '#8B5CF6' },
+    { name: 'Base Pay', value: 96000, color: '#3B82F6' },
+    { name: 'Tips', value: 36000, color: '#22C55E' },
+    { name: 'Bonuses', value: 16000, color: '#FBBF24' },
+    { name: 'Fuel Allowance', value: 12000, color: '#8B5CF6' },
   ]
 
   const ongoingDeliveries = [
-    { id: 1, address: '456 Oak Avenue', status: 'In Transit', eta: '15 min', priority: 'high' },
-    { id: 2, address: '789 Pine Street', status: 'Pickup', eta: '8 min', priority: 'medium' },
-    { id: 3, address: '123 Maple Ave', status: 'Delivered', eta: 'Complete', priority: 'low' },
+    { id: 1, address: 'No. 45, Galle Road, Colombo 03', status: 'In Transit', eta: '15 min', priority: 'high' },
+    { id: 2, address: 'No. 123, Kandy Road, Maharagama', status: 'Pickup', eta: '8 min', priority: 'medium' },
+    { id: 3, address: 'No. 67, Peradeniya Road, Kandy', status: 'Delivered', eta: 'Complete', priority: 'low' },
   ]
 
   const pendingTasks = [
-    { id: 1, address: '456 Oak Avenue', priority: 'high', time: '11:30 AM' },
-    { id: 2, address: '789 Pine Street', priority: 'medium', time: '2:15 PM' },
-    { id: 3, address: '321 Elm Drive', priority: 'low', time: '4:00 PM' },
+    { id: 1, address: 'No. 45, Galle Road, Colombo 03', priority: 'high', time: '11:30 AM' },
+    { id: 2, address: 'No. 123, Kandy Road, Maharagama', priority: 'medium', time: '2:15 PM' },
+    { id: 3, address: 'No. 89, Negombo Road, Wattala', priority: 'low', time: '4:00 PM' },
   ]
 
   const weatherPrediction = [
-    { time: '12 PM', temp: '22°C', condition: 'Sunny' },
-    { time: '3 PM', temp: '24°C', condition: 'Cloudy' },
-    { time: '6 PM', temp: '20°C', condition: 'Rain' },
+    { time: '12 PM', temp: '32°C', condition: 'Sunny' },
+    { time: '3 PM', temp: '34°C', condition: 'Partly Cloudy' },
+    { time: '6 PM', temp: '28°C', condition: 'Rain' },
   ]
 
   const weatherAlerts = [
-    { type: 'warning', message: 'Light rain expected at 6 PM', icon: CloudRain },
-    { type: 'alert', message: 'Strong winds after 8 PM', icon: AlertTriangle },
+    { type: 'warning', message: 'Afternoon showers expected at 6 PM', icon: CloudRain },
+    { type: 'alert', message: 'Heavy traffic on Galle Road after 8 PM', icon: AlertTriangle },
   ]
 
   const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
@@ -135,11 +135,11 @@ export default function AgentDashboard() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-[#0F172A] mb-4 flex items-center">
             <CloudRain className="mr-2 text-blue-500" size={20} />
-            Weather
+            Weather - Colombo
           </h2>
           <div className="text-center mb-4">
-            <div className="text-4xl font-bold text-[#0F172A] mb-2">22°C</div>
-            <div className="text-sm text-[#0F172A]/60 mb-4">Partly Cloudy</div>
+            <div className="text-4xl font-bold text-[#0F172A] mb-2">32°C</div>
+            <div className="text-sm text-[#0F172A]/60 mb-4">Tropical & Humid</div>
           </div>
           
           {/* Weather Prediction */}
@@ -180,9 +180,9 @@ export default function AgentDashboard() {
         {/* Ongoing Deliveries Map */}
         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-[#0F172A] mb-4">
-            Ongoing Deliveries
+            Ongoing Deliveries - Colombo Area
           </h2>
-          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg h-64 flex items-center justify-center relative overflow-hidden">
+          {/* <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg h-64 flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 to-green-100/20"></div>
             <div className="text-center z-10">
               <MapPin className="mx-auto mb-2 text-blue-500" size={48} />
@@ -205,7 +205,7 @@ export default function AgentDashboard() {
                 ))}
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Distance & Deliveries Summary */}
@@ -272,7 +272,7 @@ export default function AgentDashboard() {
               <Tooltip />
               <Legend />
               <Bar dataKey="deliveries" fill="#3B82F6" name="Deliveries" />
-              <Bar dataKey="earnings" fill="#22C55E" name="Earnings ($)" />
+              <Bar dataKey="earnings" fill="#22C55E" name="Earnings (LKR)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -309,7 +309,7 @@ export default function AgentDashboard() {
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
                   <span>{item.name}</span>
                 </div>
-                <span className="font-medium">${item.value}</span>
+                <span className="font-medium">LKR {item.value.toLocaleString()}</span>
               </div>
             ))}
           </div>

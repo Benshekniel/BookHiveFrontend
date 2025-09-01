@@ -6,14 +6,16 @@ import { books } from "../../data/mockData";
 
 const BookDetailsPage = () => {
   const { id } = useParams();
+  console.log("Book ID from URL:", id);
   const navigate = useNavigate();
   const [book, setBook] = useState(null);
   const [bidAmount, setBidAmount] = useState("");
   const [showBidModal, setShowBidModal] = useState(false);
-
+  console.log(id);
   useEffect(() => {
     if (id) {
-      const foundBook = books.find((b) => b.id === parseInt(id));
+      const foundBook = books.find((b) => b.id == id);
+      
       setBook(foundBook || null);
     } else if (location.state?.book) {
       setBook(location.state.book);
@@ -33,7 +35,7 @@ const BookDetailsPage = () => {
   if (!book) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading book details...</p>
+        <p className="text-gray-600">Loading book details     gfjfyjgy</p>
       </div>
     );
   }

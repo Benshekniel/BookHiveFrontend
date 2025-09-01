@@ -352,12 +352,7 @@ const Compliance = () => {
           )}
         </div>
       </div>
-      <div className="flex justify-end">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-          <FileText className="w-4 h-4" />
-          <span>Generate Report</span>
-        </button>
-      </div>
+
     </div>
   );
 };

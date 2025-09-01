@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trophy, Calendar, Star, Send, Search, Users, FileText, X, Crown } from "lucide-react";
+import { Trophy, Calendar, Star, Send, Search, Users, FileText, X, Crown, Edit, Trash2, Eye, Clock, Award, TrendingUp } from "lucide-react";
 
 const mockData = {
   currentUser: {
@@ -13,13 +13,13 @@ const mockData = {
       title: "Short Story Championship 2024",
       category: "Writing",
       description: "Unleash your creativity in this premier writing competition...",
-      prize: "Rs. 50,000 + Publication",
+      prize: "Trustscore Increment",
       deadline: "March 15, 2024",
       featured: true,
       participants: 45,
       maxParticipants: 100,
       organizer: { name: "Literary Society", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" },
-      rules: ["Original work only - no plagiarism", "Word limit: 1,500-3,000 words", "Submit in PDF format", "One entry per participant"],
+      rules: ["Original work only - no plagiarism", "Word limit: 1,500-3,000 words", "One entry per participant"],
       judgesCriteria: ["Creativity and originality (40%)", "Writing style and technique (30%)", "Character development (20%)", "Overall impact (10%)"],
       submissions: [
         { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest, where whispers of forgotten legends guide his path...", votes: 72 },
@@ -37,7 +37,7 @@ const mockData = {
       title: "Young Writers Challenge 2025",
       category: "Writing",
       description: "A platform for young writers to showcase their skills...",
-      prize: "Rs. 15,000 + Mentorship",
+      prize: "Trustscore Increment",
       deadline: "July 15, 2025",
       featured: false,
       participants: 28,
@@ -56,7 +56,37 @@ const mockData = {
       submittedAt: "2024-01-20",
       wordCount: 2450,
       votes: 85,
+      content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate. As Sarah walked through the crumbling gates of her grandmother's property, memories flooded back like autumn leaves caught in a whirlwind. The manor, once grand and imposing, now stood as a testament to time's relentless march. Yet within its weathered walls lay secrets that would reshape her understanding of her family's past and her own identity.",
+      feedback: "Excellent character development and vivid descriptions. The narrative flow is compelling.",
+      ranking: 1,
+      totalEntries: 45
     },
+    {
+      id: 2,
+      title: "Future Horizons",
+      competitionId: 2,
+      status: "Submitted",
+      submittedAt: "2024-02-15",
+      wordCount: 1150,
+      votes: 0,
+      content: "The future of writing lies not in replacing human creativity with artificial intelligence, but in embracing technology as a powerful tool for enhancement. As we stand on the precipice of a new era, writers must adapt while preserving the essential human elements that make storytelling meaningful. Technology can assist with research, editing, and distribution, but the heart of writing—the ability to capture human emotion and experience—remains uniquely ours.",
+      feedback: null,
+      ranking: null,
+      totalEntries: 28
+    },
+    {
+      id: 3,
+      title: "Whispers of the Past",
+      competitionId: 1,
+      status: "Draft",
+      submittedAt: null,
+      wordCount: 890,
+      votes: 0,
+      content: "In the quiet corners of the old library, where dust motes danced in shafts of golden sunlight, Elena discovered a letter that would change everything. The yellowed paper crackled between her fingers as she unfolded it, revealing words written in her great-grandmother's delicate script. The letter spoke of a hidden treasure, not of gold or jewels, but of stories—family histories that had been carefully preserved and hidden away during the war.",
+      feedback: null,
+      ranking: null,
+      totalEntries: null
+    }
   ],
 };
 
@@ -66,6 +96,8 @@ const Button = ({ children, variant = "primary", size = "md", icon, className = 
     primary: "bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500 disabled:hover:bg-yellow-500",
     secondary: "bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 focus:ring-blue-500",
     outline: "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
+    danger: "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500 disabled:hover:bg-red-500",
+    success: "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500 disabled:hover:bg-green-500",
   };
   const sizes = {
     sm: "px-3 py-1.5 text-sm",
@@ -84,18 +116,22 @@ const Button = ({ children, variant = "primary", size = "md", icon, className = 
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
     case "under review":
-      return "bg-yellow-100 text-yellow-800";
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
     case "submitted":
-      return "bg-green-100 text-green-800";
+      return "bg-green-100 text-green-800 border-green-200";
     case "active":
-      return "bg-blue-100 text-blue-800";
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "draft":
+      return "bg-gray-100 text-gray-800 border-gray-200";
+    case "winner":
+      return "bg-purple-100 text-purple-800 border-purple-200";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
 const Competitions = () => {
-  const [activeTab, setActiveTab] = useState("voting");
+  const [activeTab, setActiveTab] = useState("yourSubmissions");
   const [selectedCompetition, setSelectedCompetition] = useState(null);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [submissionForm, setSubmissionForm] = useState({
@@ -105,12 +141,17 @@ const Competitions = () => {
   });
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showContentModal, setShowContentModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingSubmission, setEditingSubmission] = useState(null);
+  const [editForm, setEditForm] = useState({ title: "", content: "", wordCount: 0 });
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [votes, setVotes] = useState({});
+  const [votes, setVotes] = useState({}); // Tracks user's vote contribution (0 or 1) per submission
+  const [userSubmissions, setUserSubmissions] = useState(mockData.userSubmissions);
 
-  const { writingCompetitions, userSubmissions } = mockData;
+  const { writingCompetitions } = mockData;
 
   const handleSubmissionChange = (field, value) => {
     setSubmissionForm((prev) => ({
@@ -120,19 +161,103 @@ const Competitions = () => {
     }));
   };
 
+  const handleEditChange = (field, value) => {
+    setEditForm((prev) => ({
+      ...prev,
+      [field]: value,
+      wordCount: field === "content" ? value.split(" ").filter((word) => word.length > 0).length : prev.wordCount,
+    }));
+  };
+
   const handleSubmitEntry = () => {
-    console.log("Submitting entry:", { selectedCompetition, ...submissionForm });
+    if (selectedCompetition && submissionForm.title && submissionForm.content) {
+      // Create new submission
+      const newSubmission = {
+        id: userSubmissions.length + Date.now(), // Simple ID generation
+        title: submissionForm.title,
+        competitionId: selectedCompetition.id,
+        status: "Draft", // Start as draft so it can be edited
+        submittedAt: null, // Will be set when actually submitted
+        wordCount: submissionForm.wordCount,
+        votes: 0,
+        content: submissionForm.content,
+        feedback: null,
+        ranking: null,
+        totalEntries: null
+      };
+      
+      // Add to submissions list
+      setUserSubmissions(prev => [...prev, newSubmission]);
+      
+      console.log("Entry added to submissions:", newSubmission);
+    }
+    
     setShowSubmissionModal(false);
     setSubmissionForm({ title: "", content: "", wordCount: 0 });
     setSelectedCompetition(null);
+    
+    // Switch to submissions tab to show the new entry
+    setActiveTab("yourSubmissions");
+  };
+
+  const handleEditSubmission = () => {
+    if (editingSubmission) {
+      setUserSubmissions(prev => prev.map(sub => 
+        sub.id === editingSubmission.id 
+          ? { ...sub, title: editForm.title, content: editForm.content, wordCount: editForm.wordCount }
+          : sub
+      ));
+      setShowEditModal(false);
+      setEditingSubmission(null);
+      setEditForm({ title: "", content: "", wordCount: 0 });
+    }
+  };
+
+  const handleDeleteSubmission = (submissionId) => {
+    setUserSubmissions(prev => prev.filter(sub => sub.id !== submissionId));
+    setShowDeleteModal(false);
+    setSelectedSubmission(null);
   };
 
   const handleVote = (competitionId, submissionId) => {
+    const key = `${competitionId}-${submissionId}`;
     setVotes((prev) => ({
       ...prev,
-      [`${competitionId}-${submissionId}`]: (prev[`${competitionId}-${submissionId}`] || 0) + 1,
+      [key]: (prev[key] || 0) === 0 ? 1 : 0, // Toggle between 0 and 1
     }));
-    setShowContentModal(false);
+    // Do not close modal automatically so user can see the updated count
+  };
+
+  const getCurrentVotes = (competitionId, submissionId, originalVotes) => {
+    const key = `${competitionId}-${submissionId}`;
+    return originalVotes + (votes[key] || 0);
+  };
+
+  const getLeaderboard = (competition) => {
+    if (!competition.submissions) return [];
+    return competition.submissions
+      .map((sub) => ({
+        userId: sub.userId,
+        name: sub.name,
+        votes: getCurrentVotes(competition.id, sub.id, sub.votes),
+        submissionTitle: sub.title,
+      }))
+      .sort((a, b) => b.votes - a.votes);
+  };
+
+  const openEditModal = (submission) => {
+    setEditingSubmission(submission);
+    setEditForm({
+      title: submission.title,
+      content: submission.content,
+      wordCount: submission.wordCount
+    });
+    setShowEditModal(true);
+  };
+
+  const openDeleteModal = (submission) => {
+    setSelectedSubmission(submission);
+    setShowDeleteModal(true);
   };
 
   const isDeadlinePassed = (deadline) => {
@@ -157,10 +282,16 @@ const Competitions = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-8xl mx-auto p-6">
         {/* Tabs */}
         <div className="mb-6">
           <div className="flex space-x-4 border-b border-gray-200">
+            <button
+              className={`pb-2 px-4 ${activeTab === "yourSubmissions" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setActiveTab("yourSubmissions")}
+            >
+              Your Submissions
+            </button>
             <button
               className={`pb-2 px-4 ${activeTab === "voting" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
               onClick={() => setActiveTab("voting")}
@@ -173,14 +304,162 @@ const Competitions = () => {
             >
               New Competitions
             </button>
-            <button
-              className={`pb-2 px-4 ${activeTab === "yourSubmissions" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setActiveTab("yourSubmissions")}
-            >
-              Your Submissions
-            </button>
           </div>
         </div>
+
+        {/* Your Submissions Tab */}
+        {activeTab === "yourSubmissions" && (
+          <section>
+            <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-6 text-white mb-6">
+              <h2 className="text-2xl font-bold mb-2">Your Writing Submissions</h2>
+              <p className="text-green-100">Manage your submitted entries and track your progress</p>
+            </div>
+            
+            {userSubmissions.length > 0 ? (
+              <div className="space-y-6">
+                {userSubmissions.map((submission) => {
+                  const competition = writingCompetitions.find((c) => c.id === submission.competitionId);
+                  const isWinner = submission.ranking === 1;
+                  const isTopThree = submission.ranking && submission.ranking <= 3;
+                  
+                  return (
+                    <div
+                      key={submission.id}
+                      className={`bg-white rounded-xl shadow-sm border-2 hover:shadow-md transition-all duration-300 ${
+                        isWinner ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50' :
+                        isTopThree ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50' :
+                        'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-grow">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="font-bold text-gray-900 text-xl">{submission.title}</h3>
+                              {isWinner && (
+                                <div className="flex items-center bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                  <Crown size={16} className="mr-1" />
+                                  Winner
+                                </div>
+                              )}
+                              {isTopThree && !isWinner && (
+                                <div className="flex items-center bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                  <Award size={16} className="mr-1" />
+                                  Top {submission.ranking}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-gray-600 mb-2">{competition?.title}</p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <span className="flex items-center">
+                                <Calendar size={14} className="mr-1" />
+                                {submission.submittedAt ? `Submitted: ${submission.submittedAt}` : 'Not submitted yet'}
+                              </span>
+                              <span className="flex items-center">
+                                <FileText size={14} className="mr-1" />
+                                {submission.wordCount} words
+                              </span>
+                              {submission.votes > 0 && (
+                                <span className="flex items-center">
+                                  <Star size={14} className="mr-1" />
+                                  {submission.votes} votes
+                                </span>
+                              )}
+                              {submission.ranking && (
+                                <span className="flex items-center">
+                                  <TrendingUp size={14} className="mr-1" />
+                                  Rank {submission.ranking} of {submission.totalEntries}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(submission.status)}`}>
+                              {submission.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {submission.feedback && (
+                          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="font-semibold text-blue-900 mb-2">Judge Feedback</h4>
+                            <p className="text-blue-800">{submission.feedback}</p>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSubmission(submission);
+                                setShowContentModal(true);
+                              }}
+                              icon={<Eye size={16} />}
+                            >
+                              View
+                            </Button>
+                            {submission.status === 'Draft' && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => openEditModal(submission)}
+                                icon={<Edit size={16} />}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => openDeleteModal(submission)}
+                              icon={<Trash2 size={16} />}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                          
+                          {submission.status === 'Draft' && (
+                            <Button
+                              variant="success"
+                              size="sm"
+                              onClick={() => {
+                                setUserSubmissions(prev => prev.map(sub => 
+                                  sub.id === submission.id 
+                                    ? { ...sub, status: 'Submitted', submittedAt: new Date().toISOString().split('T')[0] }
+                                    : sub
+                                ));
+                              }}
+                              icon={<Send size={16} />}
+                            >
+                              Submit
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+                  <FileText className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No submissions yet</h3>
+                  <p className="text-gray-500 mb-6">Ready to showcase your writing skills? Submit your first entry!</p>
+                  <Button
+                    variant="primary"
+                    onClick={() => setActiveTab("newCompetitions")}
+                    icon={<Trophy size={16} />}
+                  >
+                    Browse Competitions
+                  </Button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Voting Tab */}
         {activeTab === "voting" && (
@@ -209,11 +488,15 @@ const Competitions = () => {
                           {competition.submissions
                             .filter((s) => s.userId !== mockData.currentUser.id)
                             .map((submission) => {
-                              const currentVotes = votes[`${competition.id}-${submission.id}`] || submission.votes;
+                              const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
                               return (
                                 <div key={submission.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition">
                                   <h5 className="font-medium text-gray-900">{submission.title} by {submission.name}</h5>
                                   <p className="text-gray-600 text-sm mb-2 line-clamp-2">{submission.content.substring(0, 50)}...</p>
+                                  <div className="flex items-center text-sm text-gray-600 mb-2">
+                                    <Star size={14} className="mr-1 text-yellow-500" />
+                                    {currentVotes} votes
+                                  </div>
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -233,7 +516,7 @@ const Competitions = () => {
                         <div className="mt-6">
                           <h4 className="font-semibold text-gray-900 text-lg mb-4">Leaderboard</h4>
                           <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-4 rounded-lg shadow-inner">
-                            {competition.leaderboard.map((entry, index) => {
+                            {getLeaderboard(competition).map((entry, index) => {
                               const isCurrentUser = entry.userId === mockData.currentUser.id;
                               return (
                                 <div
@@ -267,7 +550,7 @@ const Competitions = () => {
                           {competition.submissions
                             .filter(s => s.userId === mockData.currentUser.id)
                             .map((submission) => {
-                              const currentVotes = votes[`${competition.id}-${submission.id}`] || submission.votes;
+                              const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
                               return (
                                 <div key={submission.id} className="p-4 bg-green-50 rounded-lg border border-green-200">
                                   <h5 className="font-medium text-gray-900">{submission.title}</h5>
@@ -293,6 +576,7 @@ const Competitions = () => {
           </section>
         )}
 
+        {/* New Competitions Tab */}
         {activeTab === "newCompetitions" && (
           <section>
             <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-6 text-white mb-6">
@@ -387,59 +671,9 @@ const Competitions = () => {
           </section>
         )}
 
-        {activeTab === "yourSubmissions" && (
-          <section>
-            <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-6 text-white mb-6">
-              <h2 className="text-2xl font-bold mb-2">Your Writing Submissions</h2>
-              <p className="text-blue-100">Track your submitted entries</p>
-            </div>
-            <div className="grid grid-cols-1 gap-6">
-              {userSubmissions.length > 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                  <div className="p-6">
-                    {userSubmissions.map((submission) => {
-                      const competition = writingCompetitions.find((c) => c.id === submission.competitionId);
-                      return (
-                        <div
-                          key={submission.id}
-                          className="p-6 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition mb-4"
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex-grow">
-                              <h3 className="font-semibold text-gray-900 text-lg mb-1">{submission.title}</h3>
-                              <p className="text-sm text-gray-600">{competition?.title}</p>
-                            </div>
-                          </div>
-                          <p className="text-gray-600 text-sm mb-4">
-                            Submitted: {submission.submittedAt} •{" "}
-                            {submission.wordCount > 0 ? `${submission.wordCount} words` : "Writing submission"}
-                          </p>
-                          <span
-                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              submission.status
-                            )}`}
-                          >
-                            {submission.status}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No submissions yet</h3>
-                  <p className="text-gray-500">Submit an entry in the New Competitions tab to get started.</p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
         {/* Competition Details Modal */}
         {selectedCompetition && !showSubmissionModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -509,12 +743,12 @@ const Competitions = () => {
 
         {/* Submission Modal */}
         {showSubmissionModal && selectedCompetition && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-bold mb-2">Submit Entry</h3>
+                    <h3 className="text-xl font-bold mb-2">Create Entry</h3>
                     <p className="text-gray-600">{selectedCompetition.title}</p>
                   </div>
                   <button
@@ -573,7 +807,83 @@ const Competitions = () => {
                     disabled={!submissionForm.title || !submissionForm.content || isDeadlinePassed(selectedCompetition.deadline)}
                     icon={<Send size={16} />}
                   >
-                    Submit Entry
+                    Save as Draft
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Submission Modal */}
+        {showEditModal && editingSubmission && (
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Edit Submission</h3>
+                    <p className="text-gray-600">{editingSubmission.title}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingSubmission(null);
+                      setEditForm({ title: "", content: "", wordCount: 0 });
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Entry Title
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.title}
+                      onChange={(e) => handleEditChange("title", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter your submission title..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Entry
+                    </label>
+                    <textarea
+                      rows={12}
+                      value={editForm.content}
+                      onChange={(e) => handleEditChange("content", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Write your entry here..."
+                    />
+                    <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+                      <span>Word count: {editForm.wordCount}</span>
+                      <span>Changes will be saved as draft</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingSubmission(null);
+                      setEditForm({ title: "", content: "", wordCount: 0 });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleEditSubmission}
+                    disabled={!editForm.title || !editForm.content}
+                    icon={<Edit size={16} />}
+                  >
+                    Save Changes
                   </Button>
                 </div>
               </div>
@@ -583,13 +893,13 @@ const Competitions = () => {
 
         {/* Content View Modal */}
         {showContentModal && selectedSubmission && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-xl font-bold mb-2">View Submission</h3>
-                    <p className="text-gray-600">{selectedSubmission.title} by {selectedSubmission.name}</p>
+                    <p className="text-gray-600">{selectedSubmission.title} {selectedSubmission.name && `by ${selectedSubmission.name}`}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -604,7 +914,18 @@ const Competitions = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                    <p className="text-gray-700 whitespace-pre-wrap">{selectedSubmission.content}</p>
+                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
+                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedSubmission.content}</p>
+                    </div>
+                  </div>
+                  {selectedSubmission.wordCount && (
+                    <div className="text-sm text-gray-500">
+                      Word count: {selectedSubmission.wordCount}
+                    </div>
+                  )}
+                  <div className="flex items-center text-sm font-medium text-gray-700">
+                    <Star size={16} className="mr-1 text-yellow-500" />
+                    Current Votes: {getCurrentVotes(selectedSubmission.competitionId, selectedSubmission.id, selectedSubmission.votes)}
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
@@ -617,13 +938,56 @@ const Competitions = () => {
                   >
                     Close
                   </Button>
+                  {selectedSubmission.userId && selectedSubmission.userId !== mockData.currentUser.id && (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleVote(selectedSubmission.competitionId, selectedSubmission.id)}
+                      icon={<Star size={16} />}
+                    >
+                      {(votes[`${selectedSubmission.competitionId}-${selectedSubmission.id}`] || 0) > 0 ? "Remove Vote" : "Vote"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && selectedSubmission && (
+          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-md w-full shadow-2xl">
+              <div className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="bg-red-100 p-3 rounded-full mr-4">
+                    <Trash2 className="text-red-600" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Delete Submission</h3>
+                    <p className="text-gray-600">Are you sure you want to delete this submission?</p>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <h4 className="font-medium text-gray-900">{selectedSubmission.title}</h4>
+                  <p className="text-sm text-gray-600">Status: {selectedSubmission.status}</p>
+                </div>
+                <p className="text-sm text-red-600 mb-6">This action cannot be undone.</p>
+                <div className="flex justify-end space-x-3">
                   <Button
-                    variant="primary"
-                    onClick={() => handleVote(selectedSubmission.competitionId, selectedSubmission.id)}
-                    disabled={selectedSubmission.userId === mockData.currentUser.id}
-                    icon={<Star size={16} />}
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setSelectedSubmission(null);
+                    }}
                   >
-                    Vote
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => handleDeleteSubmission(selectedSubmission.id)}
+                    icon={<Trash2 size={16} />}
+                  >
+                    Delete
                   </Button>
                 </div>
               </div>
