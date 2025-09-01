@@ -1,25 +1,55 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock } from 'lucide-react';
+import { dashboardService } from '../../services/dashboardService';
+
+const ORG_ID = 1; // TODO: Replace with real orgId from context or props
+
 
 const Dashboard = () => {
-  const stats = [
-    { icon: BookOpen, label: 'Pending Requests', value: '12', color: 'text-accent' },
-    { icon: Gift, label: 'Books Received', value: '48', color: 'text-success' },
-    { icon: Calendar, label: 'Upcoming Events', value: '3', color: 'text-secondary' },
-    { icon: TrendingUp, label: 'Total Donations', value: '156', color: 'text-primary' }
-  ];
+  const [stats, setStats] = useState([
+    { icon: BookOpen, label: 'Pending Requests', value: '-', color: 'text-accent' },
+    { icon: Gift, label: 'Books Received', value: '-', color: 'text-success' },
+    { icon: Calendar, label: 'Upcoming Events', value: '-', color: 'text-secondary' },
+    { icon: TrendingUp, label: 'Total Donations', value: '-', color: 'text-primary' }
+  ]);
+  const [recentRequests, setRecentRequests] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const recentRequests = [
-    { id: 1, title: 'Mathematics Grade 10', status: 'Approved', quantity: 25, date: '2024-01-15' },
-    { id: 2, title: 'English Literature', status: 'Pending', quantity: 15, date: '2024-01-14' },
-    { id: 3, title: 'Science Textbooks', status: 'In Delivery', quantity: 30, date: '2024-01-12' }
-  ];
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      dashboardService.getStats(ORG_ID),
+      dashboardService.getRecentRequests(ORG_ID),
+      dashboardService.getUpcomingEvents(ORG_ID)
+    ])
+      .then(([statsData, requestsData, eventsData]) => {
+        // statsData: { pendingRequests, booksReceived, upcomingEvents, totalDonations }
+        setStats([
+          { icon: BookOpen, label: 'Pending Requests', value: statsData.pendingRequests ?? '-', color: 'text-accent' },
+          { icon: Gift, label: 'Books Received', value: statsData.booksReceived ?? '-', color: 'text-success' },
+          { icon: Calendar, label: 'Upcoming Events', value: statsData.upcomingEvents ?? '-', color: 'text-secondary' },
+          { icon: TrendingUp, label: 'Total Donations', value: statsData.totalDonations ?? '-', color: 'text-primary' }
+        ]);
+        setRecentRequests(requestsData || []);
+        setUpcomingEvents(eventsData || []);
+      })
+      .catch((err) => {
+        setError('Failed to load dashboard data.');
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  const upcomingEvents = [
-    { id: 1, title: 'Book Drive Campaign', date: '2024-01-20', location: 'Community Center' },
-    { id: 2, title: 'Reading Competition', date: '2024-01-25', location: 'Local Library' },
-    { id: 3, title: 'Literacy Workshop', date: '2024-02-01', location: 'School Auditorium' }
-  ];
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Loading dashboard...</div>;
+  }
+  if (error) {
+    return <div className="flex justify-center items-center h-64 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -53,7 +83,9 @@ const Dashboard = () => {
             <button className="text-accent hover:text-accent/80 text-sm font-medium">View All</button>
           </div>
           <div className="space-y-4">
-            {recentRequests.map((request) => (
+            {recentRequests.length === 0 ? (
+              <div className="text-gray-500 text-sm">No recent requests.</div>
+            ) : recentRequests.map((request) => (
               <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
                   <h3 className="font-medium text-textPrimary">{request.title}</h3>
@@ -79,7 +111,9 @@ const Dashboard = () => {
             <button className="text-accent hover:text-accent/80 text-sm font-medium">View All</button>
           </div>
           <div className="space-y-4">
-            {upcomingEvents.map((event) => (
+            {upcomingEvents.length === 0 ? (
+              <div className="text-gray-500 text-sm">No upcoming events.</div>
+            ) : upcomingEvents.map((event) => (
               <div key={event.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
                 <div className="p-2 bg-secondary/10 rounded-lg">
                   <Calendar className="h-4 w-4 text-primary" />
