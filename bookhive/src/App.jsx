@@ -17,6 +17,7 @@ import Header from './components/shared/Header';
 import UserNavbar from './components/user/navbar';
 import './index.css';
 import UplaodPage from './pages/common/UploadForm';
+import { Toaster } from 'react-hot-toast';
 
 // Child component to use useAuth
 const AppContent = () => {
@@ -88,6 +89,17 @@ const AppContent = () => {
 const App = () => {
   return (
     <AuthProvider>
+      <Toaster toastOptions={{
+        className: '',
+        style: {
+          background: '#1E3A8A',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '0.5rem',
+          border: '4px solid #FBBF24',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+        },
+      }} />
       <AppContent />
     </AuthProvider>
   );
