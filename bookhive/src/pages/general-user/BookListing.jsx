@@ -392,7 +392,7 @@ const BookListingManagementPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
-      <div className="max-w-8xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-8 text-white">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>

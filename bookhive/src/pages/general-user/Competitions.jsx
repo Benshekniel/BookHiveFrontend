@@ -282,7 +282,7 @@ const Competitions = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-8xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Tabs */}
         <div className="mb-6">
           <div className="flex space-x-4 border-b border-gray-200">
