@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Trophy, Calendar, Star, Send, Search, Users, FileText, X, Crown, Edit, Trash2, Eye, Clock, Award, TrendingUp } from "lucide-react";
+import axios from "axios";
 
 const mockData = {
   currentUser: {
@@ -7,56 +8,16 @@ const mockData = {
     name: "Samantha Perera",
     avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
   },
-  writingCompetitions: [
-    {
-      id: 1,
-      title: "Short Story Championship 2024",
-      category: "Writing",
-      description: "Unleash your creativity in this premier writing competition...",
-      prize: "Trustscore Increment",
-      deadline: "March 15, 2024",
-      featured: true,
-      participants: 45,
-      maxParticipants: 100,
-      organizer: { name: "Literary Society", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" },
-      rules: ["Original work only - no plagiarism", "Word limit: 1,500-3,000 words", "One entry per participant"],
-      judgesCriteria: ["Creativity and originality (40%)", "Writing style and technique (30%)", "Character development (20%)", "Overall impact (10%)"],
-      submissions: [
-        { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest, where whispers of forgotten legends guide his path...", votes: 72 },
-        { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", content: "Echoes of a forgotten past resonate through an abandoned village, revealing secrets buried for centuries...", votes: 60 },
-        { id: 3, userId: 1, name: "Samantha Perera", title: "The Journey Home", content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate...", votes: 85 },
-      ],
-      leaderboard: [
-        { userId: 1, name: "Samantha Perera", votes: 85, submissionTitle: "The Journey Home" },
-        { userId: 2, name: "John Doe", votes: 72, submissionTitle: "Lost Horizons" },
-        { userId: 3, name: "Jane Smith", votes: 60, submissionTitle: "Silent Echoes" },
-      ],
-    },
-    {
-      id: 2,
-      title: "Young Writers Challenge 2025",
-      category: "Writing",
-      description: "A platform for young writers to showcase their skills...",
-      prize: "Trustscore Increment",
-      deadline: "July 15, 2025",
-      featured: false,
-      participants: 28,
-      maxParticipants: 75,
-      organizer: { name: "Education Foundation", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face" },
-      rules: ["Age limit: 16-25 years", "Word count: 800-1,200 words", "Topic: 'Future of Writing'", "Include bibliography if citing sources"],
-      judgesCriteria: ["Argument strength (40%)", "Evidence and research (25%)", "Writing clarity (20%)", "Originality of perspective (15%)"],
-    },
-  ],
   userSubmissions: [
     {
       id: 1,
       title: "The Journey Home",
-      competitionId: 1,
+      competitionId: "b7e1d4d1", // Updated to match backend competitionid
       status: "Under Review",
       submittedAt: "2024-01-20",
       wordCount: 2450,
       votes: 85,
-      content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate. As Sarah walked through the crumbling gates of her grandmother's property, memories flooded back like autumn leaves caught in a whirlwind. The manor, once grand and imposing, now stood as a testament to time's relentless march. Yet within its weathered walls lay secrets that would reshape her understanding of her family's past and her own identity.",
+      content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate...",
       feedback: "Excellent character development and vivid descriptions. The narrative flow is compelling.",
       ranking: 1,
       totalEntries: 45
@@ -64,12 +25,12 @@ const mockData = {
     {
       id: 2,
       title: "Future Horizons",
-      competitionId: 2,
+      competitionId: "34394c1e", // Updated to match backend competitionid
       status: "Submitted",
       submittedAt: "2024-02-15",
       wordCount: 1150,
       votes: 0,
-      content: "The future of writing lies not in replacing human creativity with artificial intelligence, but in embracing technology as a powerful tool for enhancement. As we stand on the precipice of a new era, writers must adapt while preserving the essential human elements that make storytelling meaningful. Technology can assist with research, editing, and distribution, but the heart of writing—the ability to capture human emotion and experience—remains uniquely ours.",
+      content: "The future of writing lies not in replacing human creativity with artificial intelligence...",
       feedback: null,
       ranking: null,
       totalEntries: 28
@@ -77,17 +38,28 @@ const mockData = {
     {
       id: 3,
       title: "Whispers of the Past",
-      competitionId: 1,
+      competitionId: "b7e1d4d1", // Updated to match backend competitionid
       status: "Draft",
       submittedAt: null,
       wordCount: 890,
       votes: 0,
-      content: "In the quiet corners of the old library, where dust motes danced in shafts of golden sunlight, Elena discovered a letter that would change everything. The yellowed paper crackled between her fingers as she unfolded it, revealing words written in her great-grandmother's delicate script. The letter spoke of a hidden treasure, not of gold or jewels, but of stories—family histories that had been carefully preserved and hidden away during the war.",
+      content: "In the quiet corners of the old library, where dust motes danced in shafts of golden sunlight...",
       feedback: null,
       ranking: null,
       totalEntries: null
     }
   ],
+  // Define static mock submissions and leaderboard for voting tab
+  mockSubmissions: [
+    { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest...", votes: 72 },
+    { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", content: "Echoes of a forgotten past resonate through an abandoned village...", votes: 60 },
+    { id: 3, userId: 1, name: "Samantha Perera", title: "The Journey Home", content: "A journey back to roots uncovers a family legacy...", votes: 85 },
+  ],
+  mockLeaderboard: [
+    { userId: 1, name: "Samantha Perera", votes: 85, submissionTitle: "The Journey Home" },
+    { userId: 2, name: "John Doe", votes: 72, submissionTitle: "Lost Horizons" },
+    { userId: 3, name: "Jane Smith", votes: 60, submissionTitle: "Silent Echoes" },
+  ]
 };
 
 const Button = ({ children, variant = "primary", size = "md", icon, className = "", onClick, disabled = false, ...props }) => {
@@ -148,10 +120,61 @@ const Competitions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [votes, setVotes] = useState({}); // Tracks user's vote contribution (0 or 1) per submission
+  const [votes, setVotes] = useState({});
   const [userSubmissions, setUserSubmissions] = useState(mockData.userSubmissions);
+  const [competitions, setCompetitions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const { writingCompetitions } = mockData;
+  const baseUrl = "http://localhost:9090";
+
+  const formatDateForDisplay = (dateStr) => {
+    if (!dateStr) return "Not set";
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? "Not set" : date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  };
+
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await axios.get(`${baseUrl}/api/getAllCompetitions`);
+        console.log("Fetched competitions:", response.data);
+
+        const fetchedCompetitions = response.data.map((comp) => ({
+          id: comp.competitionid,
+          title: comp.title || "Untitled",
+          category: comp.theme || "Writing",
+          description: comp.description || "No description",
+          prize: comp.prizetrustscore ? `Trustscore Increment: ${comp.prizetrustscore}` : "Trustscore Increment",
+          deadline: formatDateForDisplay(comp.votingenddatetime),
+          featured: comp.activestatus || false,
+          participants: comp.currentparticipants || 0,
+          maxParticipants: comp.maxparticipants || 100,
+          organizer: {
+            name: comp.createdby || "Unknown Organizer",
+            avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
+          },
+          rules: comp.rules ? JSON.parse(comp.rules) : [],
+          judgesCriteria: comp.judgingcriteria ? JSON.parse(comp.judgingcriteria) : [],
+          submissions: comp.competitionid === "b7e1d4d1" ? mockData.mockSubmissions : [],
+          leaderboard: comp.competitionid === "b7e1d4d1" ? mockData.mockLeaderboard : [],
+        }));
+
+        console.log("Mapped competitions:", fetchedCompetitions);
+        setCompetitions(fetchedCompetitions);
+      } catch (err) {
+        const errorMessage = "Failed to fetch competitions: " + (err.response?.data?.message || err.message);
+        console.error("Fetch error:", err);
+        setError(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCompetitions();
+  }, []);
 
   const handleSubmissionChange = (field, value) => {
     setSubmissionForm((prev) => ({
@@ -171,13 +194,12 @@ const Competitions = () => {
 
   const handleSubmitEntry = () => {
     if (selectedCompetition && submissionForm.title && submissionForm.content) {
-      // Create new submission
       const newSubmission = {
-        id: userSubmissions.length + Date.now(), // Simple ID generation
+        id: userSubmissions.length + Date.now(),
         title: submissionForm.title,
         competitionId: selectedCompetition.id,
-        status: "Draft", // Start as draft so it can be edited
-        submittedAt: null, // Will be set when actually submitted
+        status: "Draft",
+        submittedAt: null,
         wordCount: submissionForm.wordCount,
         votes: 0,
         content: submissionForm.content,
@@ -186,17 +208,13 @@ const Competitions = () => {
         totalEntries: null
       };
       
-      // Add to submissions list
       setUserSubmissions(prev => [...prev, newSubmission]);
-      
       console.log("Entry added to submissions:", newSubmission);
     }
     
     setShowSubmissionModal(false);
     setSubmissionForm({ title: "", content: "", wordCount: 0 });
     setSelectedCompetition(null);
-    
-    // Switch to submissions tab to show the new entry
     setActiveTab("yourSubmissions");
   };
 
@@ -223,9 +241,8 @@ const Competitions = () => {
     const key = `${competitionId}-${submissionId}`;
     setVotes((prev) => ({
       ...prev,
-      [key]: (prev[key] || 0) === 0 ? 1 : 0, // Toggle between 0 and 1
+      [key]: (prev[key] || 0) === 0 ? 1 : 0,
     }));
-    // Do not close modal automatically so user can see the updated count
   };
 
   const getCurrentVotes = (competitionId, submissionId, originalVotes) => {
@@ -262,11 +279,11 @@ const Competitions = () => {
 
   const isDeadlinePassed = (deadline) => {
     const deadlineDate = new Date(deadline);
-    const currentDate = new Date("2025-06-27");
+    const currentDate = new Date("2025-09-03");
     return deadlineDate < currentDate;
   };
 
-  const filteredCompetitions = writingCompetitions.filter((competition) => {
+  const filteredCompetitions = competitions.filter((competition) => {
     const matchesSearch =
       competition.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       competition.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -278,12 +295,22 @@ const Competitions = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const pastCompetitions = writingCompetitions.filter((competition) => isDeadlinePassed(competition.deadline));
+  const pastCompetitions = competitions.filter((competition) => isDeadlinePassed(competition.deadline));
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Tabs */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+        {isLoading && (
+          <div className="flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-2 text-gray-600">Loading competitions...</span>
+          </div>
+        )}
         <div className="mb-6">
           <div className="flex space-x-4 border-b border-gray-200">
             <button
@@ -307,7 +334,6 @@ const Competitions = () => {
           </div>
         </div>
 
-        {/* Your Submissions Tab */}
         {activeTab === "yourSubmissions" && (
           <section>
             <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-6 text-white mb-6">
@@ -318,7 +344,7 @@ const Competitions = () => {
             {userSubmissions.length > 0 ? (
               <div className="space-y-6">
                 {userSubmissions.map((submission) => {
-                  const competition = writingCompetitions.find((c) => c.id === submission.competitionId);
+                  const competition = competitions.find((c) => c.id === submission.competitionId);
                   const isWinner = submission.ranking === 1;
                   const isTopThree = submission.ranking && submission.ranking <= 3;
                   
@@ -349,7 +375,7 @@ const Competitions = () => {
                                 </div>
                               )}
                             </div>
-                            <p className="text-gray-600 mb-2">{competition?.title}</p>
+                            <p className="text-gray-600 mb-2">{competition?.title || "Unknown Competition"}</p>
                             <div className="flex items-center space-x-4 text-sm text-gray-500">
                               <span className="flex items-center">
                                 <Calendar size={14} className="mr-1" />
@@ -461,7 +487,6 @@ const Competitions = () => {
           </section>
         )}
 
-        {/* Voting Tab */}
         {activeTab === "voting" && (
           <section>
             <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-6 text-white mb-6">
@@ -482,7 +507,7 @@ const Competitions = () => {
                         </div>
                       </div>
                       <p className="text-gray-600 text-sm mb-4">Deadline: {competition.deadline} (Closed)</p>
-                      {competition.submissions && (
+                      {competition.submissions && competition.submissions.length > 0 && (
                         <div className="space-y-4 mb-6">
                           <h4 className="font-semibold text-gray-900 text-lg mb-2">Competitor Submissions</h4>
                           {competition.submissions
@@ -512,7 +537,7 @@ const Competitions = () => {
                             })}
                         </div>
                       )}
-                      {competition.leaderboard && (
+                      {competition.leaderboard && competition.leaderboard.length > 0 && (
                         <div className="mt-6">
                           <h4 className="font-semibold text-gray-900 text-lg mb-4">Leaderboard</h4>
                           <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-4 rounded-lg shadow-inner">
@@ -576,102 +601,101 @@ const Competitions = () => {
           </section>
         )}
 
-        {/* New Competitions Tab */}
         {activeTab === "newCompetitions" && (
           <section>
             <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-6 text-white mb-6">
               <h2 className="text-2xl font-bold mb-2">New Writing Competitions</h2>
               <p className="text-blue-100">Submit your content before the deadline</p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredCompetitions.map((competition) => (
-                <div key={competition.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-grow">
-                        <h3 className="font-semibold text-gray-900 text-lg mb-1">{competition.title}</h3>
-                        <span className="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                          {competition.category}
-                        </span>
-                      </div>
-                      {competition.featured && (
-                        <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Featured
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{competition.description}</p>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Trophy className="mr-2 text-yellow-500" size={16} />
-                        <span className="text-yellow-600 font-medium">{competition.prize}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="mr-2" size={16} />
-                        <span>Deadline: {competition.deadline}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Star className="mr-2" size={16} />
-                        <span>
-                          {competition.participants}/{competition.maxParticipants} participants
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <img
-                          src={competition.organizer.avatar}
-                          alt={competition.organizer.name}
-                          className="w-6 h-6 rounded-full object-cover mr-2"
-                        />
-                        <span className="text-xs text-gray-600">{competition.organizer.name}</span>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedCompetition(competition)}
-                        >
-                          View Details
-                        </Button>
-                        {!isDeadlinePassed(competition.deadline) && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCompetition(competition);
-                              setShowSubmissionModal(true);
-                            }}
-                            icon={<Send size={14} />}
-                          >
-                            Submit Entry
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-6 pb-4">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(competition.participants / competition.maxParticipants) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {filteredCompetitions.length === 0 && (
+            {!isLoading && !error && filteredCompetitions.length === 0 ? (
               <div className="text-center py-12">
                 <Trophy className="mx-auto h-12 w-12 text-gray-300 mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No competitions found</h3>
                 <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {filteredCompetitions.map((competition) => (
+                  <div key={competition.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-grow">
+                          <h3 className="font-semibold text-gray-900 text-lg mb-1">{competition.title}</h3>
+                          <span className="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                            {competition.category}
+                          </span>
+                        </div>
+                        {competition.featured && (
+                          <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            Featured
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">{competition.description}</p>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Trophy className="mr-2 text-yellow-500" size={16} />
+                          <span className="text-yellow-600 font-medium">{competition.prize}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="mr-2" size={16} />
+                          <span>Deadline: {competition.deadline}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Star className="mr-2" size={16} />
+                          <span>
+                            {competition.participants}/{competition.maxParticipants} participants
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <img
+                            src={competition.organizer.avatar}
+                            alt={competition.organizer.name}
+                            className="w-6 h-6 rounded-full object-cover mr-2"
+                          />
+                          <span className="text-xs text-gray-600">{competition.organizer.name}</span>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedCompetition(competition)}
+                          >
+                            View Details
+                          </Button>
+                          {!isDeadlinePassed(competition.deadline) && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedCompetition(competition);
+                                setShowSubmissionModal(true);
+                              }}
+                              icon={<Send size={14} />}
+                            >
+                              Submit Entry
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 pb-4">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(competition.participants / competition.maxParticipants) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </section>
         )}
 
-        {/* Competition Details Modal */}
         {selectedCompetition && !showSubmissionModal && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -741,7 +765,6 @@ const Competitions = () => {
           </div>
         )}
 
-        {/* Submission Modal */}
         {showSubmissionModal && selectedCompetition && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -815,7 +838,6 @@ const Competitions = () => {
           </div>
         )}
 
-        {/* Edit Submission Modal */}
         {showEditModal && editingSubmission && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -891,7 +913,6 @@ const Competitions = () => {
           </div>
         )}
 
-        {/* Content View Modal */}
         {showContentModal && selectedSubmission && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -953,7 +974,6 @@ const Competitions = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         {showDeleteModal && selectedSubmission && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-md w-full shadow-2xl">
