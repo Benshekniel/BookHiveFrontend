@@ -1,106 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, Send, Search, User, Clock, CheckCheck } from 'lucide-react';
+import messageService from '../../services/messageService';
+
+const ORG_ID = 1; // TODO: Replace with real orgId/hubManagerId from context or props
 
 const Messages = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const conversations = [
-    {
-      id: 1,
-      name: 'Sarah John',
-      role: 'Donor',
-      avatar: 'SJ',
-      lastMessage: 'The books are ready for shipment. I\'ll send the tracking number once dispatched.',
-      timestamp: '2 hours ago',
-      unread: 2,
-      status: 'online'
-    },
-    {
-      id: 2,
-      name: 'BookHive Moderator',
-      role: 'Moderator',
-      avatar: 'BM',
-      lastMessage: 'Your request for Mathematics textbooks has been approved and forwarded to potential donors.',
-      timestamp: '1 day ago',
-      unread: 0,
-      status: 'offline'
-    },
-    {
-      id: 3,
-      name: 'Dr. Michael Chen',
-      role: 'Donor',
-      avatar: 'MC',
-      lastMessage: 'I have some additional science books that might interest you. Would you like me to include them?',
-      timestamp: '2 days ago',
-      unread: 1,
-      status: 'online'
-    },
-    {
-      id: 4,
-      name: 'Education First Foundation',
-      role: 'Organization',
-      avatar: 'EF',
-      lastMessage: 'Thank you for participating in our book drive event. Here are the photos from the event.',
-      timestamp: '3 days ago',
-      unread: 0,
-      status: 'offline'
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Fetch conversations from backend (e.g., donors, moderators, etc.)
+      const convs = await messageService.getHubConversations(ORG_ID);
+      const convArray = Array.isArray(convs) ? convs : [];
+      setConversations(convArray.map(conv => ({
+        id: conv.id || conv.userId || conv.conversationId,
+        name: conv.name || conv.userName || conv.displayName || 'User',
+        avatar: (conv.name || conv.userName || 'U').split(' ').map(n => n[0]).join('').toUpperCase(),
+        lastMessage: conv.lastMessage || '',
+        timestamp: conv.timestamp || '',
+        unread: conv.unread || 0,
+        status: conv.status || 'offline',
+        ...conv
+      })));
+      // Initialize empty messages for all conversations
+      const initialMessages = {};
+      convArray.forEach(conv => {
+        const id = conv.id || conv.userId || conv.conversationId;
+        initialMessages[id] = [];
+      });
+      setMessages(initialMessages);
+    } catch (err) {
+      setError('Failed to load conversations');
+      setConversations([]);
+      setMessages({});
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const messages = {
-    1: [
-      {
-        id: 1,
-        sender: 'Sarah Johnson',
-        message: 'Hi! I saw your request for Mathematics Grade 10 textbooks. I have exactly what you need.',
-        timestamp: '10:30 AM',
-        isOwn: false
-      },
-      {
-        id: 2,
-        sender: 'You',
-        message: 'That\'s wonderful! We need 25 copies for our students. Are they in good condition?',
-        timestamp: '10:45 AM',
-        isOwn: true
-      },
-      {
-        id: 3,
-        sender: 'Sarah Johnson',
-        message: 'Yes, they\'re brand new with answer keys included. I can ship them this week.',
-        timestamp: '11:00 AM',
-        isOwn: false
-      },
-      {
-        id: 4,
-        sender: 'You',
-        message: 'Perfect! Please let me know the shipping details and tracking information.',
-        timestamp: '11:15 AM',
-        isOwn: true
-      },
-      {
-        id: 5,
-        sender: 'Sarah Johnson',
-        message: 'The books are ready for shipment. I\'ll send the tracking number once dispatched.',
-        timestamp: '2:30 PM',
-        isOwn: false
+  const fetchMessages = async (conversationId, partnerId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const msgs = await messageService.getConversation(ORG_ID, partnerId);
+      setMessages(prev => ({ ...prev, [conversationId]: Array.isArray(msgs) ? msgs : [] }));
+    } catch (err) {
+      setError('Failed to load messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectChat = (conversation) => {
+    setSelectedChat(conversation);
+    fetchMessages(conversation.id, conversation.partnerId || conversation.id);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (newMessage.trim() && selectedChat) {
+      setLoading(true);
+      setError(null);
+      try {
+        await messageService.sendMessage({
+          senderId: ORG_ID,
+          receiverId: selectedChat.partnerId || selectedChat.id,
+          content: newMessage
+        });
+        fetchMessages(selectedChat.id, selectedChat.partnerId || selectedChat.id);
+        setNewMessage('');
+      } catch (err) {
+        setError('Failed to send message');
+      } finally {
+        setLoading(false);
       }
-    ]
+    }
   };
 
   const filteredConversations = conversations.filter(conv =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     conv.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (newMessage.trim() && selectedChat) {
-      console.log('Sending message:', newMessage);
-      setNewMessage('');
-    }
-  };
 
   const getRoleColor = (role) => {
     switch (role) {
@@ -138,9 +130,9 @@ const Messages = () => {
             {filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                onClick={() => setSelectedChat(conversation.id)}
+                onClick={() => handleSelectChat(conversation)}
                 className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                  selectedChat === conversation.id ? 'bg-accent/5' : ''
+                  selectedChat?.id === conversation.id ? 'bg-accent/5' : ''
                 }`}
               >
                 <div className="flex items-start space-x-3">
@@ -185,17 +177,17 @@ const Messages = () => {
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-medium">
-                      {conversations.find(c => c.id === selectedChat)?.avatar}
+                      {conversations.find(c => c.id === selectedChat.id)?.avatar}
                     </div>
-                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${getStatusColor(conversations.find(c => c.id === selectedChat)?.status)} rounded-full border-2 border-white`}></div>
+                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${getStatusColor(conversations.find(c => c.id === selectedChat.id)?.status)} rounded-full border-2 border-white`}></div>
                   </div>
                   
                   <div>
                     <h3 className="font-medium text-textPrimary">
-                      {conversations.find(c => c.id === selectedChat)?.name}
+                      {conversations.find(c => c.id === selectedChat.id)?.name}
                     </h3>
-                    <p className={`text-sm ${getRoleColor(conversations.find(c => c.id === selectedChat)?.role)}`}>
-                      {conversations.find(c => c.id === selectedChat)?.role}
+                    <p className={`text-sm ${getRoleColor(conversations.find(c => c.id === selectedChat.id)?.role)}`}>
+                      {conversations.find(c => c.id === selectedChat.id)?.role}
                     </p>
                   </div>
                 </div>
@@ -203,22 +195,22 @@ const Messages = () => {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {(messages[selectedChat] || []).map((message) => (
+                {messages[selectedChat.id]?.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${message.senderId === ORG_ID ? 'justify-end' : 'justify-start'}`}
                   >
                     <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      message.isOwn
+                      message.senderId === ORG_ID
                         ? 'bg-primary text-white'
                         : 'bg-gray-100 text-textPrimary'
                     }`}>
-                      <p className="text-sm">{message.message}</p>
+                      <p className="text-sm">{message.content}</p>
                       <div className={`flex items-center justify-end mt-1 space-x-1 ${
-                        message.isOwn ? 'text-blue-100' : 'text-gray-500'
+                        message.senderId === ORG_ID ? 'text-blue-100' : 'text-gray-500'
                       }`}>
-                        <span className="text-xs">{message.timestamp}</span>
-                        {message.isOwn && <CheckCheck className="h-3 w-3" />}
+                        <span className="text-xs">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}</span>
+                        {message.senderId === ORG_ID && <CheckCheck className="h-3 w-3" />}
                       </div>
                     </div>
                   </div>
@@ -237,12 +229,13 @@ const Messages = () => {
                   />
                   <button
                     type="submit"
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || loading}
                     className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send className="h-4 w-4" />
+                    {loading ? 'Sending...' : <Send className="h-4 w-4" />}
                   </button>
                 </form>
+                {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
               </div>
             </>
           ) : (
