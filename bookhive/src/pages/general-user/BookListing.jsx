@@ -196,12 +196,6 @@ const BookListingManagementPage = () => {
   const handleSaveBook = async (e) => {
     e.preventDefault();
 
-    const formDataToSend = new FormData();
-
-    if (newBook.imageFile) {
-      formDataToSend.append('coverImage', newBook.imageFile);
-    }
-
     const bookData = {
       userEmail: user?.email || '',
       title: newBook.title,
@@ -227,25 +221,44 @@ const BookListingManagementPage = () => {
       bookData.bookId = editBook.bookId;
     }
 
-    const jsonBlob = new Blob([JSON.stringify(bookData)], {
-      type: 'application/json',
-    });
-
-    formDataToSend.append('bookData', jsonBlob);
-
     try {
       let response;
       if (editBook) {
-        response = await axios.put(
-          `${baseUrl}/api/updateBook/${editBook.bookId}`,
-          formDataToSend,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
+        if (newBook.imageFile) {
+          // If updating image, use FormData and POST (if backend supports)
+          const formDataToSend = new FormData();
+          formDataToSend.append('coverImage', newBook.imageFile);
+          const jsonBlob = new Blob([JSON.stringify(bookData)], { type: 'application/json' });
+          formDataToSend.append('bookData', jsonBlob);
+          response = await axios.post(
+            `${baseUrl}/api/updateBook/${editBook.bookId}`,
+            formDataToSend,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }
+          );
+        } else {
+          // No image update, send JSON
+          response = await axios.put(
+            `${baseUrl}/api/updateBook/${editBook.bookId}`,
+            bookData,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+        }
       } else {
+        // Add new book (always FormData)
+        const formDataToSend = new FormData();
+        if (newBook.imageFile) {
+          formDataToSend.append('coverImage', newBook.imageFile);
+        }
+        const jsonBlob = new Blob([JSON.stringify(bookData)], { type: 'application/json' });
+        formDataToSend.append('bookData', jsonBlob);
         response = await axios.post(
           `${baseUrl}/api/saveBook-User`,
           formDataToSend,
