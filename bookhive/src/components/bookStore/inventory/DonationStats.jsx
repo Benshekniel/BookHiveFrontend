@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useAuth } from '../../AuthContext';
 
+import LoadingSpinner from '../LoadingSpinner';
+
 const DonationStats = () => {
   // const { user } = useAuth();
   const user = { userId: 603 };
@@ -54,6 +56,11 @@ const DonationStats = () => {
 
 	return (
 		<>
+		{ isPending ? (
+			<div className='bg-red-50 border-red-200 border-2 border-opacity-20 rounded-xl p-6 my-5'>
+				<LoadingSpinner />
+			</div>
+		) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {donationStatEnhanced.map((stat, index) => {
           const IconComponent = stat.icon;
@@ -73,6 +80,7 @@ const DonationStats = () => {
           );
         })}
       </div>
+		)}
 		</>);
 };
 export default DonationStats;
