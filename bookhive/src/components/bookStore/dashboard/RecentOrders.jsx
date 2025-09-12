@@ -70,7 +70,7 @@ const RecentOrders = () => {
     
     const geRecentOrders = async () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        const response = await api.get("users");
+        const response = await api.get("???");
         console.log(response.data);
         return response.data;
     }
