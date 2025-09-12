@@ -1080,4 +1080,230 @@ export const cacheUtils = {
   }
 };
 
+// Add this new API service for document downloads
+// Updated API service for document downloads
+export const documentApi = {
+  // Download document by URL
+  downloadDocument: async (documentUrl, filename = 'document') => {
+    try {
+      if (!documentUrl) {
+        throw new Error('Document URL is required');
+      }
+
+      const response = await fetch(documentUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download document: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      throw error;
+    }
+  },
+
+  // Download application document by application ID and document type
+  downloadApplicationDocument: async (applicationId, documentType) => {
+    try {
+      const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/download`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/octet-stream, image/*, application/pdf'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download document: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      
+      // Get filename from Content-Disposition header or use default
+      let filename = `${applicationId}_${documentType}`;
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      } else {
+        // Determine extension from content type
+        const contentType = response.headers.get('Content-Type');
+        let extension = 'jpg';
+        if (contentType) {
+          if (contentType.includes('pdf')) extension = 'pdf';
+          else if (contentType.includes('png')) extension = 'png';
+          else if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = 'jpg';
+          else if (contentType.includes('gif')) extension = 'gif';
+          else if (contentType.includes('webp')) extension = 'webp';
+        }
+        filename += `.${extension}`;
+      }
+      
+      const url2 = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url2;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url2);
+      
+      return { success: true };
+    } catch (error) {
+      console.error(`Error downloading ${documentType} for application ${applicationId}:`, error);
+      throw error;
+    }
+  },
+
+  // Get document as base64 (alternative method)
+  getDocumentBase64: async (applicationId, documentType) => {
+    try {
+      const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/base64`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get document base64: ${response.status} ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting ${documentType} base64 for application ${applicationId}:`, error);
+      throw error;
+    }
+  },
+
+  // Download all documents for an application as a ZIP
+  downloadAllDocuments: async (applicationId) => {
+    try {
+      const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/download-all`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/zip'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download all documents: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      
+      // Get filename from Content-Disposition header or use default
+      let filename = `application_${applicationId}_documents.zip`;
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      const url2 = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url2;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url2);
+      
+      return { success: true };
+    } catch (error) {
+      console.error(`Error downloading all documents for application ${applicationId}:`, error);
+      throw error;
+    }
+  },
+
+  // Check if document exists and is accessible
+  checkDocumentExists: async (applicationId, documentType) => {
+    try {
+      const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/exists`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to check document: ${response.status} ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Error checking ${documentType} for application ${applicationId}:`, error);
+      throw error;
+    }
+  },
+
+  // Get document information without downloading
+  getDocumentInfo: async (applicationId, documentType) => {
+    try {
+      const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/info`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get document info: ${response.status} ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Error getting ${documentType} info for application ${applicationId}:`, error);
+      throw error;
+    }
+  }
+};
+
+// Add this helper object as well
+export const documentHelpers = {
+  getDocumentTypeDisplayName: (documentType) => {
+    const displayNames = {
+      'idFront': 'ID Front',
+      'idBack': 'ID Back', 
+      'vehicleRc': 'Vehicle RC',
+      'profileImage': 'Profile Image'
+    };
+    return displayNames[documentType] || documentType;
+  },
+
+  generateFilename: (applicationId, documentType, extension = 'jpg') => {
+    const typeMap = {
+      'idFront': 'id_front',
+      'idBack': 'id_back',
+      'vehicleRc': 'vehicle_rc', 
+      'profileImage': 'profile_image'
+    };
+    const mappedType = typeMap[documentType] || documentType;
+    return `app_${applicationId}_${mappedType}.${extension}`;
+  },
+
+  getFileExtension: (contentType) => {
+    const typeMap = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg', 
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+      'application/pdf': 'pdf'
+    };
+    return typeMap[contentType] || 'jpg';
+  }
+};
+
 export default apiClient;

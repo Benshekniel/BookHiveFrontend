@@ -1,4 +1,4 @@
-// src/components/hubmanager/RouteEditor.jsx - Updated with red other routes and removed note
+// RouteEditor.jsx - Updated with proper route colors and current route display
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   GoogleMap,
@@ -107,6 +107,18 @@ const drawingManagerOptions = {
   }
 };
 
+// Edit mode polygon options (orange for current route being edited)
+const editModePolygonOptions = {
+  fillColor: '#FF6B35',
+  fillOpacity: 0.3,
+  strokeColor: '#FF6B35',
+  strokeOpacity: 0.9,
+  strokeWeight: 3,
+  clickable: true,
+  editable: true,
+  draggable: false
+};
+
 // Error Boundary Component for Autocomplete
 class AutocompleteErrorBoundary extends React.Component {
   constructor(props) {
@@ -141,11 +153,11 @@ class AutocompleteErrorBoundary extends React.Component {
   }
 }
 
-const RouteEditor = ({ 
-  routeId = null, 
-  hubId = 1, 
-  onSave, 
-  onCancel, 
+const RouteEditor = ({
+  routeId = null,
+  hubId = 1,
+  onSave,
+  onCancel,
   initialCenter = { lat: 6.9271, lng: 79.8612 }, // Colombo, Sri Lanka
   mode = 'create' // 'create' or 'edit'
 }) => {
@@ -160,7 +172,7 @@ const RouteEditor = ({
   const [estimatedDeliveryTime, setEstimatedDeliveryTime] = useState(30);
   const [maxDailyDeliveries, setMaxDailyDeliveries] = useState(50);
   const [priorityLevel, setPriorityLevel] = useState(3);
-  
+
   const [polygon, setPolygon] = useState(null);
   const [polygonPath, setPolygonPath] = useState([]);
   const [isEditing, setIsEditing] = useState(mode === 'edit');
@@ -177,8 +189,13 @@ const RouteEditor = ({
 
   // Other routes state
   const [otherRoutes, setOtherRoutes] = useState([]);
+  const [currentRoute, setCurrentRoute] = useState(null); // Current route being edited
+  const [currentRouteOriginalCoords, setCurrentRouteOriginalCoords] = useState([]); // Original coordinates
   const [showOtherRoutes, setShowOtherRoutes] = useState(true);
   const [otherRoutePolygons, setOtherRoutePolygons] = useState([]);
+  const [currentRoutePolygon, setCurrentRoutePolygon] = useState(null); // Current route polygon
+  const [routeDataLoaded, setRouteDataLoaded] = useState(false); // Track if route data is loaded
+  const [isEditingCurrentRoute, setIsEditingCurrentRoute] = useState(false); // Track if currently editing the loaded route
 
   // Search state
   const [placesReady, setPlacesReady] = useState(false);
@@ -218,14 +235,20 @@ const RouteEditor = ({
   const loadOtherRoutes = async () => {
     try {
       const allRoutes = await routeApi.getRoutesByHub(hubId);
-      
-      const filteredRoutes = allRoutes.filter(route => 
+
+      // Separate current route from other routes
+      const currentRouteData = allRoutes.find(route =>
+        routeId && route.routeId === parseInt(routeId)
+      );
+
+      const otherRoutesData = allRoutes.filter(route =>
         !routeId || route.routeId !== parseInt(routeId)
       );
-      
-      const formattedOtherRoutes = filteredRoutes.map(route => {
+
+      // Format other routes
+      const formattedOtherRoutes = otherRoutesData.map(route => {
         const boundaryCoordinates = routeHelpers.parseBoundaryCoordinates(route.boundaryCoordinates);
-        
+
         return {
           id: route.routeId,
           name: route.name,
@@ -237,15 +260,42 @@ const RouteEditor = ({
           }
         };
       });
-      
+
+      // Format current route if editing
+      let formattedCurrentRoute = null;
+      if (currentRouteData && isEditing) {
+        const boundaryCoordinates = routeHelpers.parseBoundaryCoordinates(currentRouteData.boundaryCoordinates);
+
+        formattedCurrentRoute = {
+          id: currentRouteData.routeId,
+          name: currentRouteData.name,
+          routeType: currentRouteData.routeType || 'RESIDENTIAL',
+          boundaryCoordinates: boundaryCoordinates,
+          coordinates: {
+            lat: currentRouteData.centerLatitude || 6.9271,
+            lng: currentRouteData.centerLongitude || 79.8612
+          }
+        };
+
+        // Store original coordinates for display
+        if (boundaryCoordinates && boundaryCoordinates.length >= 3) {
+          setCurrentRouteOriginalCoords(boundaryCoordinates);
+        }
+      }
+
       setOtherRoutes(formattedOtherRoutes);
+      setCurrentRoute(formattedCurrentRoute);
+
       console.log(`Loaded ${formattedOtherRoutes.length} other routes for context`);
+      if (formattedCurrentRoute) {
+        console.log(`Current route: ${formattedCurrentRoute.name}`);
+      }
     } catch (err) {
       console.error('Error loading other routes:', err);
     }
   };
 
-  // Create polygons for other routes
+  // Create polygons for other routes (always red) and current route (orange in edit mode)
   const createOtherRoutePolygons = useCallback(() => {
     if (!mapRef.current || !window.google || !isLoaded) return;
 
@@ -256,19 +306,24 @@ const RouteEditor = ({
       }
     });
 
+    // Clear existing current route polygon
+    if (currentRoutePolygon) {
+      currentRoutePolygon.setMap(null);
+      setCurrentRoutePolygon(null);
+    }
+
     const newOtherPolygons = [];
 
+    // Create polygons for other routes (always red)
     otherRoutes.forEach(route => {
       if (route.boundaryCoordinates && route.boundaryCoordinates.length >= 3) {
-        const routeColor = getOtherRouteColor(route.routeType);
-        
         const otherPolygon = new window.google.maps.Polygon({
           paths: route.boundaryCoordinates,
-          strokeColor: routeColor.stroke,
-          strokeOpacity: 0.8, // Increased opacity for better visibility
+          strokeColor: '#DC2626', // Red color for other routes
+          strokeOpacity: 0.8,
           strokeWeight: 2,
-          fillColor: routeColor.fill,
-          fillOpacity: 0.2, // Increased opacity for better visibility
+          fillColor: '#DC2626', // Red color for other routes
+          fillOpacity: 0.2,
           clickable: true,
           editable: false,
           draggable: false,
@@ -280,7 +335,7 @@ const RouteEditor = ({
             <div style="padding: 8px;">
               <h4 style="margin: 0 0 4px 0; color: #1f2937;">${route.name}</h4>
               <p style="margin: 0; color: #6b7280; font-size: 12px;">Type: ${route.routeType}</p>
-              <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px;">Click to view details</p>
+              <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px;">Other route (view only)</p>
             </div>
           `
         });
@@ -294,14 +349,43 @@ const RouteEditor = ({
       }
     });
 
-    setOtherRoutePolygons(newOtherPolygons);
-  }, [otherRoutes, showOtherRoutes, mapRef, isLoaded]);
+    // Create polygon for current route being edited (orange) - only if not currently editing it
+    if (currentRoute && currentRoute.boundaryCoordinates && currentRoute.boundaryCoordinates.length >= 3 && !isEditingCurrentRoute) {
+      const currentPolygon = new window.google.maps.Polygon({
+        paths: currentRoute.boundaryCoordinates,
+        strokeColor: '#FF6B35', // Orange outline for current route
+        strokeOpacity: 0.9,
+        strokeWeight: 3,
+        fillColor: '#FF6B35', // Orange fill for current route
+        fillOpacity: 0.15,
+        clickable: true,
+        editable: false,
+        draggable: false,
+        map: mapRef.current,
+        zIndex: 1 // Lower z-index so editing polygon appears on top
+      });
 
-  // Get colors for other routes - All red for better visibility
-  const getOtherRouteColor = (routeType) => {
-    // All other routes in red color for better visibility
-    return { stroke: '#DC2626', fill: '#DC2626' }; // Red color
-  };
+      const currentRouteInfoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px;">
+            <h4 style="margin: 0 0 4px 0; color: #1f2937;">${currentRoute.name} <span style="color: #FF6B35;">(Current Route)</span></h4>
+            <p style="margin: 0; color: #6b7280; font-size: 12px;">Type: ${currentRoute.routeType}</p>
+            <p style="margin: 4px 0 0 0; color: #FF6B35; font-size: 12px;">Click "Load Current Route" to edit this boundary</p>
+            <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 11px;">${currentRoute.boundaryCoordinates.length} boundary points</p>
+          </div>
+        `
+      });
+
+      currentPolygon.addListener('click', (event) => {
+        currentRouteInfoWindow.setPosition(event.latLng);
+        currentRouteInfoWindow.open(mapRef.current);
+      });
+
+      setCurrentRoutePolygon(currentPolygon);
+    }
+
+    setOtherRoutePolygons(newOtherPolygons);
+  }, [otherRoutes, currentRoute, showOtherRoutes, mapRef, isLoaded, currentRoutePolygon, isEditingCurrentRoute]);
 
   // Toggle other routes visibility
   const toggleOtherRoutes = () => {
@@ -313,6 +397,40 @@ const RouteEditor = ({
     });
   };
 
+  // Load current route for editing
+  // Load current route for editing
+  const loadCurrentRouteForEditing = () => {
+    if (!currentRoute || !currentRoute.boundaryCoordinates || currentRoute.boundaryCoordinates.length < 3) {
+      setError('No current route boundary to load');
+      return;
+    }
+
+    // Clear any existing polygon
+    if (polygon) {
+      polygon.setMap(null);
+      setPolygon(null);
+    }
+
+    // Hide the orange current route polygon
+    if (currentRoutePolygon) {
+      currentRoutePolygon.setMap(null);
+    }
+
+    // Set the polygon path and editing state
+    const coordinates = [...currentRoute.boundaryCoordinates];
+    setPolygonPath(coordinates);
+    setIsEditingCurrentRoute(true);
+
+    // Create the editable polygon immediately to show both vertices and edges
+    setTimeout(() => {
+      if (mapRef.current && window.google && coordinates.length >= 3) {
+        createPolygonFromCoordinates(coordinates);
+      }
+    }, 100); // Small delay to ensure state updates are processed
+
+    setSuccess(`Loaded ${currentRoute.name} for editing - ${currentRoute.boundaryCoordinates.length} vertices`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
   // Handle place selection from search with error handling
   const onPlaceChanged = useCallback(() => {
     try {
@@ -325,12 +443,12 @@ const RouteEditor = ({
           };
           setMapCenter(newCenter);
           setMapZoom(15);
-          
+
           if (mapRef.current) {
             mapRef.current.panTo(newCenter);
             mapRef.current.setZoom(15);
           }
-          
+
           setSuccess(`Moved to: ${place.formatted_address || place.name}`);
           setTimeout(() => setSuccess(''), 3000);
         }
@@ -349,11 +467,11 @@ const RouteEditor = ({
   // Manual search function as fallback
   const handleManualSearch = useCallback((searchTerm) => {
     if (!searchTerm.trim()) return;
-    
+
     // Simple geocoding fallback
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode(
-      { 
+      {
         address: searchTerm,
         componentRestrictions: { country: 'LK' }
       },
@@ -366,12 +484,12 @@ const RouteEditor = ({
           };
           setMapCenter(newCenter);
           setMapZoom(15);
-          
+
           if (mapRef.current) {
             mapRef.current.panTo(newCenter);
             mapRef.current.setZoom(15);
           }
-          
+
           setSuccess(`Found: ${results[0].formatted_address}`);
           setTimeout(() => setSuccess(''), 3000);
         } else {
@@ -437,33 +555,33 @@ const RouteEditor = ({
 
   // Create other route polygons when loaded
   useEffect(() => {
-    if (isLoaded && otherRoutes.length > 0) {
+    if (isLoaded && (otherRoutes.length > 0 || currentRoute)) {
       createOtherRoutePolygons();
     }
-  }, [otherRoutes, isLoaded, createOtherRoutePolygons, showOtherRoutes]);
+  }, [otherRoutes, currentRoute, isLoaded, createOtherRoutePolygons, showOtherRoutes, isEditingCurrentRoute]);
 
   // Add calculatePolygonPerimeter function if missing
   const calculatePolygonPerimeter = useCallback((coordinates) => {
     if (!coordinates || coordinates.length < 3) return 0;
-    
+
     let perimeter = 0;
     for (let i = 0; i < coordinates.length; i++) {
       const current = coordinates[i];
       const next = coordinates[(i + 1) % coordinates.length];
-      
+
       // Use Haversine formula for distance
       const R = 6371; // Earth radius in kilometers
       const dLat = (next.lat - current.lat) * Math.PI / 180;
       const dLng = (next.lng - current.lng) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(current.lat * Math.PI / 180) * Math.cos(next.lat * Math.PI / 180) *
-                Math.sin(dLng/2) * Math.sin(dLng/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(current.lat * Math.PI / 180) * Math.cos(next.lat * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const distance = R * c;
-      
+
       perimeter += distance;
     }
-    
+
     return parseFloat(perimeter.toFixed(2));
   }, []);
 
@@ -491,8 +609,11 @@ const RouteEditor = ({
           polygon.setMap(null);
         }
       });
+      if (currentRoutePolygon) {
+        currentRoutePolygon.setMap(null);
+      }
     };
-  }, [cleanupEventListeners, polygon, otherRoutePolygons]);
+  }, [cleanupEventListeners, polygon, otherRoutePolygons, currentRoutePolygon]);
 
   // Load existing route data if editing
   useEffect(() => {
@@ -522,9 +643,9 @@ const RouteEditor = ({
       };
       localStorage.setItem(draftKey, JSON.stringify(draftData));
     }
-  }, [routeName, routeDescription, routeType, trafficPattern, postalCodes, 
-      neighborhoods, landmarks, estimatedDeliveryTime, maxDailyDeliveries, 
-      priorityLevel, polygonPath, mapCenter, isEditing, hubId]);
+  }, [routeName, routeDescription, routeType, trafficPattern, postalCodes,
+    neighborhoods, landmarks, estimatedDeliveryTime, maxDailyDeliveries,
+    priorityLevel, polygonPath, mapCenter, isEditing, hubId]);
 
   // Load draft data
   useEffect(() => {
@@ -535,7 +656,7 @@ const RouteEditor = ({
         try {
           const parsed = JSON.parse(draftData);
           const hoursSinceLastEdit = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
-          
+
           if (hoursSinceLastEdit < 24) { // Only restore if less than 24 hours old
             setRouteName(parsed.routeName || '');
             setRouteDescription(parsed.routeDescription || '');
@@ -568,9 +689,9 @@ const RouteEditor = ({
     try {
       setIsLoading(true);
       setError('');
-      
+
       const route = await routeApi.getRouteById(routeId);
-      
+
       setRouteName(route.name || '');
       setRouteDescription(route.description || '');
       setRouteType(route.routeType || 'RESIDENTIAL');
@@ -578,7 +699,7 @@ const RouteEditor = ({
       setEstimatedDeliveryTime(route.estimatedDeliveryTime || 30);
       setMaxDailyDeliveries(route.maxDailyDeliveries || 50);
       setPriorityLevel(route.priorityLevel || 3);
-      
+
       // Handle postal codes
       if (route.postalCodes) {
         const codes = routeHelpers.parsePostalCodes(route.postalCodes);
@@ -610,8 +731,11 @@ const RouteEditor = ({
       if (route.boundaryCoordinates) {
         const boundaryCoords = routeHelpers.parseBoundaryCoordinates(route.boundaryCoordinates);
         if (boundaryCoords && boundaryCoords.length >= 3) {
-          setPolygonPath(boundaryCoords);
+          setCurrentRouteOriginalCoords(boundaryCoords);
           console.log('Loaded existing route boundary:', boundaryCoords.length, 'points');
+
+          // Mark that route data is loaded
+          setRouteDataLoaded(true);
         }
       }
     } catch (err) {
@@ -625,13 +749,18 @@ const RouteEditor = ({
   // Handle polygon completion from drawing manager
   const onPolygonComplete = useCallback((newPolygon) => {
     console.log('Polygon completed');
-    
+
     // Clean up previous event listeners
     cleanupEventListeners();
-    
+
     // Remove any existing polygon
     if (polygon) {
       polygon.setMap(null);
+    }
+
+    // Hide the current route polygon if it exists
+    if (currentRoutePolygon) {
+      currentRoutePolygon.setMap(null);
     }
 
     // Disable drawing mode
@@ -642,11 +771,12 @@ const RouteEditor = ({
     // Set the new polygon
     setPolygon(newPolygon);
     polygonRef.current = newPolygon;
+    setIsEditingCurrentRoute(false); // This is a new polygon, not editing current route
 
     // Get the path coordinates
     const path = newPolygon.getPath();
     const coordinates = [];
-    
+
     for (let i = 0; i < path.getLength(); i++) {
       const point = path.getAt(i);
       coordinates.push({
@@ -654,10 +784,10 @@ const RouteEditor = ({
         lng: parseFloat(point.lng().toFixed(6))
       });
     }
-    
+
     setPolygonPath(coordinates);
     setError(''); // Clear any previous errors
-    setSuccess(`Polygon created with ${coordinates.length} vertices`);
+    setSuccess(`New boundary created with ${coordinates.length} vertices`);
     setTimeout(() => setSuccess(''), 3000);
 
     // Add listeners for path changes
@@ -665,11 +795,11 @@ const RouteEditor = ({
       const insertListener = window.google.maps.event.addListener(path, 'insert_at', () => {
         updatePolygonPath(newPolygon);
       });
-      
+
       const removeListener = window.google.maps.event.addListener(path, 'remove_at', () => {
         updatePolygonPath(newPolygon);
       });
-      
+
       const setListener = window.google.maps.event.addListener(path, 'set_at', () => {
         updatePolygonPath(newPolygon);
       });
@@ -678,8 +808,8 @@ const RouteEditor = ({
       eventListenersRef.current.push(insertListener, removeListener, setListener);
     }
 
-    console.log('Polygon created with', coordinates.length, 'vertices');
-  }, [polygon, cleanupEventListeners]);
+    console.log('New polygon created with', coordinates.length, 'vertices');
+  }, [polygon, cleanupEventListeners, currentRoutePolygon]);
 
   // Update polygon path when vertices change
   const updatePolygonPath = useCallback((currentPolygon) => {
@@ -687,7 +817,7 @@ const RouteEditor = ({
 
     const path = currentPolygon.getPath();
     const coordinates = [];
-    
+
     for (let i = 0; i < path.getLength(); i++) {
       const point = path.getAt(i);
       coordinates.push({
@@ -695,7 +825,7 @@ const RouteEditor = ({
         lng: parseFloat(point.lng().toFixed(6))
       });
     }
-    
+
     setPolygonPath(coordinates);
   }, []);
 
@@ -703,7 +833,7 @@ const RouteEditor = ({
   const createPolygonFromCoordinates = useCallback((coordinates) => {
     if (!mapRef.current || !window.google || coordinates.length < 3) return;
 
-    console.log('Creating polygon from coordinates:', coordinates.length, 'points');
+    console.log('Creating editable polygon from coordinates:', coordinates.length, 'points');
 
     // Clean up previous event listeners
     cleanupEventListeners();
@@ -713,11 +843,15 @@ const RouteEditor = ({
       polygon.setMap(null);
     }
 
-    // Create new polygon
+    // Choose polygon options based on whether we're editing current route
+    const polygonOptions = isEditingCurrentRoute ? editModePolygonOptions : drawingManagerOptions.polygonOptions;
+
+    // Create new editable polygon with higher z-index
     const newPolygon = new window.google.maps.Polygon({
       paths: coordinates,
-      ...drawingManagerOptions.polygonOptions,
-      map: mapRef.current
+      ...polygonOptions,
+      map: mapRef.current,
+      zIndex: 2 // Higher z-index so it appears above other polygons
     });
 
     setPolygon(newPolygon);
@@ -725,16 +859,16 @@ const RouteEditor = ({
 
     // Add event listeners
     const path = newPolygon.getPath();
-    
+
     if (window.google && window.google.maps) {
       const insertListener = window.google.maps.event.addListener(path, 'insert_at', () => {
         updatePolygonPath(newPolygon);
       });
-      
+
       const removeListener = window.google.maps.event.addListener(path, 'remove_at', () => {
         updatePolygonPath(newPolygon);
       });
-      
+
       const setListener = window.google.maps.event.addListener(path, 'set_at', () => {
         updatePolygonPath(newPolygon);
       });
@@ -748,10 +882,10 @@ const RouteEditor = ({
     coordinates.forEach(coord => {
       bounds.extend(new window.google.maps.LatLng(coord.lat, coord.lng));
     });
-    
+
     if (mapRef.current) {
       mapRef.current.fitBounds(bounds);
-      
+
       // Ensure minimum zoom level
       const listener = window.google.maps.event.addListener(mapRef.current, 'idle', () => {
         if (mapRef.current.getZoom() > 16) {
@@ -761,8 +895,8 @@ const RouteEditor = ({
       });
     }
 
-    console.log('Polygon created successfully');
-  }, [polygon, cleanupEventListeners, updatePolygonPath]);
+    console.log('Editable polygon created successfully');
+  }, [polygon, cleanupEventListeners, updatePolygonPath, isEditingCurrentRoute]);
 
   // Effect to create polygon when path is loaded
   useEffect(() => {
@@ -774,7 +908,7 @@ const RouteEditor = ({
   // Clear current polygon - modified to ensure map is visible
   const clearPolygon = useCallback(() => {
     cleanupEventListeners();
-    
+
     if (polygon) {
       polygon.setMap(null);
       setPolygon(null);
@@ -782,18 +916,24 @@ const RouteEditor = ({
     }
     setPolygonPath([]);
     setSelectedVertex(null);
+    setIsEditingCurrentRoute(false);
     setError('');
-    setSuccess('Polygon cleared - Draw a new polygon using the tools above');
+    setSuccess('Boundary cleared - Draw a new boundary using the drawing tools');
     setTimeout(() => setSuccess(''), 3000);
-    
+
+    // Show the current route polygon again if it exists
+    if (currentRoutePolygon && currentRoute) {
+      currentRoutePolygon.setMap(mapRef.current);
+    }
+
     // Ensure map is visible
     setShowMap(true);
-    
+
     // Re-enable drawing mode
     if (drawingManagerRef.current && window.google) {
       drawingManagerRef.current.setDrawingMode(window.google.maps.drawing.OverlayType.POLYGON);
     }
-  }, [polygon, cleanupEventListeners]);
+  }, [polygon, cleanupEventListeners, currentRoutePolygon, currentRoute]);
 
   // Clear draft
   const clearDraft = () => {
@@ -810,14 +950,14 @@ const RouteEditor = ({
     const path = polygon.getPath();
     const currentPoint = polygonPath[index];
     const nextPoint = polygonPath[(index + 1) % polygonPath.length];
-    
+
     // Calculate midpoint
     const midLat = (currentPoint.lat + nextPoint.lat) / 2;
     const midLng = (currentPoint.lng + nextPoint.lng) / 2;
-    
+
     const newPoint = new window.google.maps.LatLng(midLat, midLng);
     path.insertAt(index + 1, newPoint);
-    
+
     // Update selected vertex to the new one
     setSelectedVertex(index + 1);
     setSuccess('Vertex added (Keyboard: + key)');
@@ -827,14 +967,14 @@ const RouteEditor = ({
   // Remove vertex from polygon
   const removeVertex = (index) => {
     if (!polygon || polygonPath.length <= 3) {
-      setError('Polygon must have at least 3 vertices');
+      setError('Boundary must have at least 3 vertices');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
     const path = polygon.getPath();
     path.removeAt(index);
-    
+
     // Reset selected vertex
     setSelectedVertex(null);
     setSuccess('Vertex removed (Keyboard: Delete/- key)');
@@ -850,12 +990,17 @@ const RouteEditor = ({
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        
+
         // Validate the imported data
         if (Array.isArray(data) && data.length >= 3) {
           const validation = routeHelpers.validateBoundaryCoordinates(data);
           if (validation.isValid) {
+            // Hide current route polygon if showing
+            if (currentRoutePolygon) {
+              currentRoutePolygon.setMap(null);
+            }
             setPolygonPath(data);
+            setIsEditingCurrentRoute(false);
             setSuccess(`Imported ${data.length} coordinates successfully`);
             setTimeout(() => setSuccess(''), 3000);
           } else {
@@ -868,7 +1013,7 @@ const RouteEditor = ({
         setError('Invalid JSON file format');
       }
     };
-    
+
     reader.readAsText(file);
     event.target.value = ''; // Reset file input
   };
@@ -883,14 +1028,14 @@ const RouteEditor = ({
     const dataStr = JSON.stringify(polygonPath, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `route_${routeName.replace(/[^a-zA-Z0-9]/g, '_')}_coordinates.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     URL.revokeObjectURL(url);
     setSuccess('Coordinates exported successfully');
     setTimeout(() => setSuccess(''), 3000);
@@ -989,13 +1134,13 @@ const RouteEditor = ({
       if (isEditing && routeId) {
         result = await routeApi.updateRoute(routeId, routeData);
         setSuccess('Route updated successfully!');
-        
+
         // Clear draft if updating
         clearDraft();
       } else {
         result = await routeApi.createRoute(routeData);
         setSuccess('Route created successfully!');
-        
+
         // Clear draft after successful creation
         clearDraft();
       }
@@ -1046,8 +1191,14 @@ const RouteEditor = ({
 
   // Generate sample polygon for testing
   const generateSamplePolygon = () => {
+    // Hide current route polygon if showing
+    if (currentRoutePolygon) {
+      currentRoutePolygon.setMap(null);
+    }
+
     const sampleCoords = routeHelpers.generateSampleBoundary(mapCenter, 1);
     setPolygonPath(sampleCoords);
+    setIsEditingCurrentRoute(false);
     setError('');
     setSuccess('Sample polygon generated');
     setTimeout(() => setSuccess(''), 3000);
@@ -1061,11 +1212,17 @@ const RouteEditor = ({
     }
 
     try {
+      // Hide current route polygon if showing
+      if (currentRoutePolygon) {
+        currentRoutePolygon.setMap(null);
+      }
+
       const codes = postalCodes.split(',').map(code => code.trim());
       // This would typically call a geocoding service
       // For now, generate a polygon around the map center
       const smartCoords = routeHelpers.generateSampleBoundary(mapCenter, 1.5);
       setPolygonPath(smartCoords);
+      setIsEditingCurrentRoute(false);
       setSuccess('Smart polygon generated based on postal codes');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -1119,6 +1276,11 @@ const RouteEditor = ({
   }
 
   const stats = getPolygonStats();
+  const originalStats = currentRouteOriginalCoords.length >= 3 ? {
+    area: routeHelpers.calculatePolygonArea(currentRouteOriginalCoords),
+    perimeter: calculatePolygonPerimeter(currentRouteOriginalCoords),
+    vertices: currentRouteOriginalCoords.length
+  } : null;
 
   return (
     <div className="w-full bg-white rounded-lg shadow-lg overflow-hidden max-h-screen">
@@ -1130,14 +1292,28 @@ const RouteEditor = ({
             <div>
               <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                 <Map className="w-8 h-8 mr-3 text-blue-600" />
-                {isEditing ? 'Edit Route' : 'Create New Route'}
+                {isEditing ? `Edit Route: ${currentRoute?.name || routeName || 'Loading...'}` : 'Create New Route'}
               </h2>
               <p className="text-gray-600 mt-1">
-                {isEditing ? 'Modify the route boundary and settings' : 'Draw a polygon on the map to define the route boundary'}
+                {isEditing
+                  ? 'Use "Load Current Route" button to edit the existing boundary'
+                  : 'Draw a polygon on the map to define the route boundary'
+                }
               </p>
-              {/* Removed the other routes count note */}
+              {isEditing && currentRoute && (
+                <div className="mt-2 flex items-center space-x-4 text-sm">
+                  <span className="text-orange-600 font-medium">
+                    Route type: {currentRoute.routeType}
+                  </span>
+                  {otherRoutes.length > 0 && (
+                    <span className="text-gray-500">
+                      {otherRoutes.length} other routes shown in red for context
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            
+
             <div className="flex space-x-2">
               <button
                 onClick={() => setShowCoordinates(!showCoordinates)}
@@ -1152,14 +1328,13 @@ const RouteEditor = ({
               >
                 {showAdvanced ? 'Basic' : 'Advanced'} Options
               </button>
-              {otherRoutes.length > 0 && (
+              {(otherRoutes.length > 0 || currentRoute) && (
                 <button
                   onClick={toggleOtherRoutes}
-                  className={`px-3 py-2 text-sm border rounded-lg transition-colors flex items-center space-x-2 ${
-                    showOtherRoutes 
-                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' 
+                  className={`px-3 py-2 text-sm border rounded-lg transition-colors flex items-center space-x-2 ${showOtherRoutes
+                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <Eye className="w-4 h-4" />
                   <span>{showOtherRoutes ? 'Hide' : 'Show'} Other Routes</span>
@@ -1167,6 +1342,28 @@ const RouteEditor = ({
               )}
             </div>
           </div>
+
+          {/* Load Current Route Button - Only show in edit mode */}
+          {isEditing && currentRoute && currentRoute.boundaryCoordinates && currentRoute.boundaryCoordinates.length >= 3 && !isEditingCurrentRoute && (
+            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-orange-900 mb-1">Current Route Boundary Available</h4>
+                  <p className="text-sm text-orange-700">
+                    {currentRoute.name} has {currentRoute.boundaryCoordinates.length} boundary points.
+                    Load it to edit the existing boundary with draggable vertices.
+                  </p>
+                </div>
+                <button
+                  onClick={loadCurrentRouteForEditing}
+                  className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Load Current Route
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Map Container */}
           {showMap && (
@@ -1198,8 +1395,8 @@ const RouteEditor = ({
                     draggable={true}
                     icon={{
                       path: window.google.maps.SymbolPath.CIRCLE,
-                      scale: 8,
-                      fillColor: selectedVertex === index ? '#EF4444' : '#3B82F6',
+                      scale: selectedVertex === index ? 10 : 8,
+                      fillColor: selectedVertex === index ? '#EF4444' : (isEditingCurrentRoute ? '#FF6B35' : '#3B82F6'),
                       fillOpacity: 1,
                       strokeColor: '#FFFFFF',
                       strokeWeight: 2
@@ -1207,7 +1404,7 @@ const RouteEditor = ({
                     onDragEnd={(e) => {
                       const newLat = e.latLng.lat();
                       const newLng = e.latLng.lng();
-                      
+
                       // Update the polygon path
                       const path = polygon.getPath();
                       path.setAt(index, new window.google.maps.LatLng(newLat, newLng));
@@ -1259,60 +1456,65 @@ const RouteEditor = ({
                 </AutocompleteErrorBoundary>
               </div>
 
-              {/* Map Controls */}
-              {/* <div className="absolute top-16 left-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs">
-                <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                  <Navigation className="w-4 h-4 mr-2" />
-                  Instructions
-                </h4>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Use the polygon tool to draw route boundaries</li>
-                  <li>• Click vertices to select and edit them</li>
-                  <li>• Drag vertices to adjust the shape</li>
-                  <li>• Press + to add vertex, Delete/- to remove</li>
-                  <li>• Orange lines show postal code boundaries</li>
-                  <li>• Red polygons show other existing routes</li>
-                  <li>• Use search box to navigate to locations</li>
-                </ul>
-              </div> */}
+              {/* Route Legend */}
+              {(otherRoutes.length > 0 || (currentRoute && isEditing)) && showOtherRoutes && (
+                <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg border max-w-xs">
+                  <h4 className="font-medium text-gray-900 mb-2 text-sm">Route Legend</h4>
 
-              {/* Keyboard Shortcuts Info */}
-              {/* <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg border max-w-xs">
-                <h4 className="font-medium text-gray-900 mb-2 text-sm">Keyboard Shortcuts</h4>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li><kbd className="bg-gray-100 px-1 rounded">+</kbd> Add vertex</li>
-                  <li><kbd className="bg-gray-100 px-1 rounded">Delete</kbd> Remove vertex</li>
-                  <li><kbd className="bg-gray-100 px-1 rounded">-</kbd> Remove vertex</li>
-                  <li><kbd className="bg-gray-100 px-1 rounded">Esc</kbd> Deselect vertex</li>
-                  <li><kbd className="bg-gray-100 px-1 rounded">Ctrl+H</kbd> Toggle other routes</li>
-                </ul>
-              </div> */}
+                  {/* Current Route Legend */}
+                  {isEditing && currentRoute && !isEditingCurrentRoute && (
+                    <div className="mb-3 pb-2 border-b border-gray-200">
+                      <div className="flex items-center space-x-2 text-xs mb-1">
+                        <div className="w-3 h-3 border-2 border-orange-500 bg-orange-100 rounded-sm"></div>
+                        <span className="text-gray-700 font-medium">{currentRoute.name} (Current)</span>
+                      </div>
+                      <div className="text-xs text-gray-500">Click "Load Current Route" to edit</div>
+                      <div className="text-xs text-gray-500">{currentRoute.boundaryCoordinates?.length || 0} boundary points</div>
+                    </div>
+                  )}
 
-              {/* Other Routes Legend - Updated to show all as red */}
-              {/* {otherRoutes.length > 0 && showOtherRoutes && (
-                <div className="absolute top-32 right-4 bg-white p-3 rounded-lg shadow-lg border max-w-xs">
-                  <h4 className="font-medium text-gray-900 mb-2 text-sm">Other Routes ({otherRoutes.length})</h4>
+                  {/* Editing Current Route Legend */}
+                  {isEditingCurrentRoute && polygonPath.length > 0 && (
+                    <div className="mb-3 pb-2 border-b border-gray-200">
+                      <div className="flex items-center space-x-2 text-xs mb-1">
+                        <div className="w-3 h-3 border-2 border-orange-500 bg-orange-100 rounded-sm"></div>
+                        <span className="text-gray-700 font-medium">{currentRoute?.name || routeName} (Editing)</span>
+                      </div>
+                      <div className="text-xs text-gray-500">Orange editable boundary</div>
+                      <div className="text-xs text-gray-500">{polygonPath.length} vertices - drag to modify</div>
+                    </div>
+                  )}
+
+                  {/* Other Routes Legend */}
                   <div className="max-h-32 overflow-y-auto">
                     {otherRoutes.slice(0, 5).map(route => (
                       <div key={route.id} className="flex items-center space-x-2 text-xs mb-1">
-                        <div 
-                          className="w-3 h-3 rounded-sm border"
-                          style={{ 
-                            backgroundColor: '#DC2626', // Red color
-                            opacity: 0.4
-                          }}
-                        ></div>
+                        <div className="w-3 h-3 rounded-sm border bg-red-100 border-red-500"></div>
                         <span className="text-gray-600 truncate">{route.name}</span>
+                        <span className="text-gray-400">({route.routeType})</span>
                       </div>
                     ))}
                     {otherRoutes.length > 5 && (
                       <div className="text-xs text-gray-500 mt-1">
-                        +{otherRoutes.length - 5} more routes
+                        +{otherRoutes.length - 5} more routes (all in red)
                       </div>
                     )}
                   </div>
+
+                  {/* New Boundary Legend for Create Mode or New Polygon */}
+                  {(!isEditing || (!isEditingCurrentRoute && polygonPath.length > 0)) && (
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <div className="flex items-center space-x-2 text-xs mb-1">
+                        <div className="w-3 h-3 border-2 border-blue-600 bg-blue-100 rounded-sm"></div>
+                        <span className="text-gray-700 font-medium">
+                          {isEditing ? 'New Boundary (Replaces Current)' : 'New Boundary (Editable)'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">Draw or edit this boundary</div>
+                    </div>
+                  )}
                 </div>
-              )} */}
+              )}
 
               {/* Vertex Control Panel */}
               {selectedVertex !== null && (
@@ -1352,62 +1554,94 @@ const RouteEditor = ({
               )}
 
               {/* Drawing Status */}
-              {/* <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg border">
+              <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg border">
                 <div className="flex items-center space-x-2">
                   <div className={`w-3 h-3 rounded-full ${polygonPath.length >= 3 ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                   <span className="text-sm font-medium text-gray-700">
-                    {polygonPath.length === 0 ? 'No boundary drawn' : 
-                     polygonPath.length < 3 ? `${polygonPath.length} points (need ${3 - polygonPath.length} more)` :
-                     `Boundary ready (${polygonPath.length} vertices)`}
+                    {polygonPath.length === 0 ? 'No boundary drawn' :
+                      polygonPath.length < 3 ? `${polygonPath.length} points (need ${3 - polygonPath.length} more)` :
+                        `${isEditingCurrentRoute ? 'Editing current route' : isEditing ? 'New boundary ready' : 'New boundary ready'} (${polygonPath.length} vertices)`}
                   </span>
                 </div>
                 {stats && (
                   <div className="text-xs text-gray-500 mt-1">
-                    Area: {stats.area} km² | Perimeter: {stats.perimeter} km
+                    {isEditingCurrentRoute ? 'Current route' : 'New boundary'}: {stats.area} km² | {stats.perimeter} km
                   </div>
                 )}
-              </div> */}
-
-              {/* Map Info */}
-              {/* <div className="absolute bottom-4 right-4 bg-white p-2 rounded-lg shadow-lg border">
-                <div className="text-xs text-gray-600 mb-2">Zoom: {mapZoom}</div>
-                <div className="text-xs text-gray-600">
-                  Center: {mapCenter.lat.toFixed(4)}, {mapCenter.lng.toFixed(4)}
-                </div>
-                <div className="text-xs text-gray-600">
-                  Search: {placesReady ? 'Ready' : 'Fallback'}
-                </div>
-              </div> */}
+                {originalStats && isEditing && polygonPath.length > 0 && isEditingCurrentRoute && (
+                  <div className="text-xs text-orange-600 mt-1">
+                    {JSON.stringify(currentRouteOriginalCoords) !== JSON.stringify(polygonPath) ? 'Modified from original' : 'Matches original boundary'}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {/* Coordinates Display */}
-          {showCoordinates && polygonPath.length > 0 && (
-            <div className="p-4 border-t border-gray-200 bg-gray-50 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-900">Boundary Coordinates ({polygonPath.length} points)</h4>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={copyCoordinates}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center space-x-1"
-                  >
-                    <Copy className="w-3 h-3" />
-                    <span>Copy</span>
-                  </button>
-                  <button
-                    onClick={exportCoordinates}
-                    className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center space-x-1"
-                  >
-                    <Download className="w-3 h-3" />
-                    <span>Export</span>
-                  </button>
+          {showCoordinates && (
+            <div className="mb-6">
+              {/* Current/New Boundary Coordinates */}
+              {polygonPath.length > 0 && (
+                <div className="p-4 border border-gray-200 bg-blue-50 mb-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-blue-900">
+                      {isEditingCurrentRoute ? 'Current Route (Editing)' : isEditing ? 'New Route Boundary' : 'New Route'} Coordinates ({polygonPath.length} points)
+                    </h4>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={copyCoordinates}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>Copy</span>
+                      </button>
+                      <button
+                        onClick={exportCoordinates}
+                        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center space-x-1"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Export</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto bg-white p-3 rounded border border-blue-300">
+                    <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                      {JSON.stringify(polygonPath, null, 2)}
+                    </pre>
+                  </div>
                 </div>
-              </div>
-              <div className="max-h-48 overflow-y-auto bg-white p-3 rounded border border-gray-300">
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-                  {JSON.stringify(polygonPath, null, 2)}
-                </pre>
-              </div>
+              )}
+
+              {/* Original Route Coordinates (Edit Mode) - Only show if different from current */}
+              {isEditing && currentRouteOriginalCoords.length > 0 && (!isEditingCurrentRoute || JSON.stringify(currentRouteOriginalCoords) !== JSON.stringify(polygonPath)) && (
+                <div className="p-4 border border-orange-200 bg-orange-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-orange-900">
+                      Original Route Boundary ({currentRouteOriginalCoords.length} points)
+                    </h4>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(JSON.stringify(currentRouteOriginalCoords, null, 2));
+                          setSuccess('Original coordinates copied to clipboard');
+                          setTimeout(() => setSuccess(''), 3000);
+                        } catch (err) {
+                          setError('Failed to copy coordinates');
+                        }
+                      }}
+                      className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors flex items-center space-x-1"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>Copy Original</span>
+                    </button>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto bg-white p-3 rounded border border-orange-300">
+                    <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                      {JSON.stringify(currentRouteOriginalCoords, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1426,7 +1660,7 @@ const RouteEditor = ({
                 disabled={isSaving}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Route Type
@@ -1598,32 +1832,62 @@ const RouteEditor = ({
           )}
 
           {/* Polygon Statistics */}
-          {stats && (
+          {(stats || originalStats) && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-3 flex items-center">
                 <Info className="w-4 h-4 mr-2" />
                 Route Statistics
               </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="bg-white p-3 rounded border shadow-sm">
-                  <span className="text-blue-700 font-medium">Vertices:</span>
-                  <span className="ml-2 text-lg font-bold">{stats.vertices}</span>
+
+              {/* New/Current Boundary Stats */}
+              {stats && (
+                <div className="mb-4">
+                  <h5 className="text-sm font-medium text-blue-800 mb-2">
+                    {isEditingCurrentRoute ? 'Current Route Boundary (Editing)' : isEditing ? 'New Boundary' : 'New Boundary'}
+                  </h5>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="bg-white p-3 rounded border shadow-sm">
+                      <span className="text-blue-700 font-medium">Vertices:</span>
+                      <span className="ml-2 text-lg font-bold">{stats.vertices}</span>
+                    </div>
+                    <div className="bg-white p-3 rounded border shadow-sm">
+                      <span className="text-blue-700 font-medium">Area:</span>
+                      <span className="ml-2 text-lg font-bold">{stats.area} km²</span>
+                    </div>
+                    <div className="bg-white p-3 rounded border shadow-sm">
+                      <span className="text-blue-700 font-medium">Perimeter:</span>
+                      <span className="ml-2 text-lg font-bold">{stats.perimeter} km</span>
+                    </div>
+                    <div className="bg-white p-3 rounded border shadow-sm">
+                      <span className="text-blue-700 font-medium">Center:</span>
+                      <span className="ml-2 text-xs font-medium">
+                        {stats.center.lat.toFixed(4)}, {stats.center.lng.toFixed(4)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-white p-3 rounded border shadow-sm">
-                  <span className="text-blue-700 font-medium">Area:</span>
-                  <span className="ml-2 text-lg font-bold">{stats.area} km²</span>
+              )}
+
+              {/* Original Boundary Stats (Edit Mode) - Only show if different */}
+              {originalStats && isEditing && (!isEditingCurrentRoute || JSON.stringify(currentRouteOriginalCoords) !== JSON.stringify(polygonPath)) && (
+                <div>
+                  <h5 className="text-sm font-medium text-orange-800 mb-2">Original Boundary (Reference)</h5>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div className="bg-orange-50 p-3 rounded border border-orange-200 shadow-sm">
+                      <span className="text-orange-700 font-medium">Vertices:</span>
+                      <span className="ml-2 text-lg font-bold">{originalStats.vertices}</span>
+                    </div>
+                    <div className="bg-orange-50 p-3 rounded border border-orange-200 shadow-sm">
+                      <span className="text-orange-700 font-medium">Area:</span>
+                      <span className="ml-2 text-lg font-bold">{originalStats.area} km²</span>
+                    </div>
+                    <div className="bg-orange-50 p-3 rounded border border-orange-200 shadow-sm">
+                      <span className="text-orange-700 font-medium">Perimeter:</span>
+                      <span className="ml-2 text-lg font-bold">{originalStats.perimeter} km</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-white p-3 rounded border shadow-sm">
-                  <span className="text-blue-700 font-medium">Perimeter:</span>
-                  <span className="ml-2 text-lg font-bold">{stats.perimeter} km</span>
-                </div>
-                <div className="bg-white p-3 rounded border shadow-sm">
-                  <span className="text-blue-700 font-medium">Center:</span>
-                  <span className="ml-2 text-xs font-medium">
-                    {stats.center.lat.toFixed(4)}, {stats.center.lng.toFixed(4)}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -1646,14 +1910,14 @@ const RouteEditor = ({
                 </>
               )}
             </button>
-            
+
             <button
               onClick={clearPolygon}
               disabled={isSaving}
               className="flex items-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Clear Polygon
+              Clear Boundary
             </button>
 
             <button
