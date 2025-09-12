@@ -1,27 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, BookOpen, Gift, Calendar, MessageCircle, Settings, CheckCircle, X } from 'lucide-react';
-import { notificationService } from '../../services/notificationService';
+import { Bell, BookOpen, Gift, Calendar, MessageCircle, Settings, CheckCircle, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { notificationService } from '../../services/organizationService';
 
 const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
 const Notifications = () => {
   const [filter, setFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
 
   useEffect(() => {
-    setLoading(true);
-    notificationService.getByOrganization(ORG_ID)
-      .then(data => {
-        setNotifications(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError('Failed to load notifications');
-        setLoading(false);
-      });
+    loadNotifications();
   }, []);
+
+  const loadNotifications = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await notificationService.getByOrganization(ORG_ID);
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error loading notifications:', err);
+      setError('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredNotifications = notifications.filter(notification => {
     if (filter === 'unread') return !notification.read;
@@ -30,7 +37,7 @@ const Notifications = () => {
   });
 
   const getNotificationIcon = (type) => {
-    switch (type) {
+    switch (type?.toLowerCase()) {
       case 'donation': return Gift;
       case 'request': return BookOpen;
       case 'event': return Calendar;
@@ -42,7 +49,7 @@ const Notifications = () => {
   };
 
   const getNotificationColor = (type) => {
-    switch (type) {
+    switch (type?.toLowerCase()) {
       case 'donation': return 'text-success bg-success/10';
       case 'request': return 'text-accent bg-accent/10';
       case 'event': return 'text-secondary bg-secondary/10';
@@ -54,52 +61,88 @@ const Notifications = () => {
   };
 
   const markAsRead = async (id) => {
-    setLoading(true);
+    setActionLoading(prev => ({ ...prev, [id]: true }));
     setError(null);
     try {
       await notificationService.markAsRead(id);
-      // Refresh notifications
-      const data = await notificationService.getByOrganization(ORG_ID);
-      setNotifications(Array.isArray(data) ? data : []);
+      setSuccess('Notification marked as read');
+      await loadNotifications();
     } catch (err) {
+      console.error('Error marking as read:', err);
       setError('Failed to mark as read');
     } finally {
-      setLoading(false);
+      setActionLoading(prev => ({ ...prev, [id]: false }));
     }
   };
 
   const markAllAsRead = async () => {
-    setLoading(true);
+    setActionLoading(prev => ({ ...prev, markAll: true }));
     setError(null);
     try {
       await notificationService.markAllAsRead(ORG_ID);
-      const data = await notificationService.getByOrganization(ORG_ID);
-      setNotifications(Array.isArray(data) ? data : []);
+      setSuccess('All notifications marked as read');
+      await loadNotifications();
     } catch (err) {
+      console.error('Error marking all as read:', err);
       setError('Failed to mark all as read');
     } finally {
-      setLoading(false);
+      setActionLoading(prev => ({ ...prev, markAll: false }));
     }
   };
 
   const deleteNotification = async (id) => {
-    setLoading(true);
+    if (!window.confirm('Are you sure you want to delete this notification?')) return;
+    
+    setActionLoading(prev => ({ ...prev, [id]: true }));
     setError(null);
     try {
       await notificationService.delete(id);
-      const data = await notificationService.getByOrganization(ORG_ID);
-      setNotifications(Array.isArray(data) ? data : []);
+      setSuccess('Notification deleted');
+      await loadNotifications();
     } catch (err) {
+      console.error('Error deleting notification:', err);
       setError('Failed to delete notification');
     } finally {
-      setLoading(false);
+      setActionLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return 'No date';
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) return 'Today';
+      if (diffDays === 2) return 'Yesterday';
+      if (diffDays <= 7) return `${diffDays - 1} days ago`;
+      
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return timestamp;
     }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-gray-600">Loading notifications...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold text-textPrimary">Notifications</h1>
@@ -113,16 +156,50 @@ const Notifications = () => {
           </p>
         </div>
         
-        {unreadCount > 0 && (
+        <div className="flex items-center space-x-3">
           <button
-            onClick={markAllAsRead}
-            className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            onClick={loadNotifications}
+            disabled={loading}
+            className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            <CheckCircle className="h-4 w-4" />
-            <span>Mark All Read</span>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
-        )}
+          
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllAsRead}
+              disabled={actionLoading.markAll}
+              className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>{actionLoading.markAll ? 'Marking...' : 'Mark All Read'}</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Success Message */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+          <p className="text-green-800">{success}</p>
+          <button onClick={() => setSuccess(null)} className="ml-auto text-green-600 hover:text-green-700">
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+          <p className="text-red-800">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-700">
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -160,32 +237,37 @@ const Notifications = () => {
             <div
               key={notification.id}
               className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow ${
-                !notification.read ? 'border-l-4 border-l-primary' : ''
+                !notification.read ? 'border-l-4 border-l-primary bg-blue-50/30' : ''
               }`}
             >
               <div className="flex items-start space-x-4">
-                <div className={`p-2 rounded-lg ${colorClasses}`}>
+                <div className={`p-2 rounded-lg flex-shrink-0 ${colorClasses}`}>
                   <IconComponent className="h-5 w-5" />
                 </div>
                 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className={`font-medium ${!notification.read ? 'text-textPrimary' : 'text-gray-700'}`}>
-                        {notification.title}
+                        {notification.title || 'Notification'}
                         {!notification.read && (
                           <span className="ml-2 w-2 h-2 bg-primary rounded-full inline-block"></span>
                         )}
                       </h3>
-                      <p className="text-gray-600 mt-1">{notification.message}</p>
-                      <p className="text-sm text-gray-500 mt-2">{notification.timestamp}</p>
+                      <p className="text-gray-600 mt-1">
+                        {notification.message || 'No message content'}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {formatTimestamp(notification.timestamp || notification.createdAt)}
+                      </p>
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-4">
                       {!notification.read && (
                         <button
                           onClick={() => markAsRead(notification.id)}
-                          className="p-1 text-gray-400 hover:text-primary transition-colors"
+                          disabled={actionLoading[notification.id]}
+                          className="p-1 text-gray-400 hover:text-primary transition-colors disabled:opacity-50"
                           title="Mark as read"
                         >
                           <CheckCircle className="h-4 w-4" />
@@ -193,7 +275,8 @@ const Notifications = () => {
                       )}
                       <button
                         onClick={() => deleteNotification(notification.id)}
-                        className="p-1 text-gray-400 hover:text-error transition-colors"
+                        disabled={actionLoading[notification.id]}
+                        className="p-1 text-gray-400 hover:text-error transition-colors disabled:opacity-50"
                         title="Delete notification"
                       >
                         <X className="h-4 w-4" />

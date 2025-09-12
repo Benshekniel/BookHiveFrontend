@@ -1,38 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, Search, Filter, Eye } from 'lucide-react';
-
-import { bookRequestService } from '../../services/bookRequestService';
+import { BookOpen, Plus, Search, Filter, Eye, Edit, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { bookRequestService } from '../../services/organizationService';
 
 const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
 const BookRequest = () => {
   const [showForm, setShowForm] = useState(false);
+  const [editingRequest, setEditingRequest] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [form, setForm] = useState({
     title: '',
     subject: '',
     quantity: '',
-    urgency: 'high',
+    urgency: 'medium',
     description: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
+  // Subject options
+  const subjects = [
+    'Mathematics', 'English', 'Science', 'History', 'Geography', 
+    'Physics', 'Chemistry', 'Biology', 'Literature', 'Arts', 'Other'
+  ];
+
   useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const loadRequests = async () => {
     setLoading(true);
     setError(null);
-    bookRequestService.getByOrganization(ORG_ID)
-      .then(data => {
-        setRequests(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to load book requests');
-        setLoading(false);
-      });
-  }, []);
+    try {
+      const data = await bookRequestService.getByOrganization(ORG_ID);
+      setRequests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Failed to load book requests');
+      console.error('Error loading requests:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setForm({
+      title: '',
+      subject: '',
+      quantity: '',
+      urgency: 'medium',
+      description: ''
+    });
+    setEditingRequest(null);
+  };
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -43,6 +66,8 @@ const BookRequest = () => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setSuccess(null);
+
     try {
       const payload = {
         ...form,
@@ -50,25 +75,66 @@ const BookRequest = () => {
         quantity: Number(form.quantity),
         urgency: form.urgency,
       };
-      await bookRequestService.create(payload);
-      // Refresh list
-      const data = await bookRequestService.getByOrganization(ORG_ID);
-      setRequests(Array.isArray(data) ? data : []);
+
+      if (editingRequest) {
+        await bookRequestService.update(editingRequest.id, payload);
+        setSuccess('Request updated successfully!');
+      } else {
+        await bookRequestService.create(payload);
+        setSuccess('Request submitted successfully!');
+      }
+
+      await loadRequests();
       setShowForm(false);
-      setForm({ title: '', subject: '', quantity: '', urgency: 'high', description: '' });
+      resetForm();
     } catch (err) {
-      setError('Failed to submit request');
+      setError(editingRequest ? 'Failed to update request' : 'Failed to submit request');
+      console.error('Form submission error:', err);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const filteredRequests = requests.filter(request => 
-    filter === 'all' || request.status === filter
-  );
+  const handleEdit = (request) => {
+    setForm({
+      title: request.title || '',
+      subject: request.subject || '',
+      quantity: request.quantity?.toString() || '',
+      urgency: request.urgency || 'medium',
+      description: request.description || ''
+    });
+    setEditingRequest(request);
+    setShowForm(true);
+  };
+
+  const handleCancel = async (requestId) => {
+    if (!window.confirm('Are you sure you want to cancel this request?')) return;
+    
+    setLoading(true);
+    try {
+      await bookRequestService.cancel(requestId);
+      setSuccess('Request cancelled successfully!');
+      await loadRequests();
+    } catch (err) {
+      setError('Failed to cancel request');
+      console.error('Cancel error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredRequests = requests.filter(request => {
+    const matchesFilter = filter === 'all' || request.status?.toLowerCase() === filter.toLowerCase();
+    const matchesSearch = !searchTerm || 
+      request.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'approved': return 'bg-success/10 text-success';
       case 'pending': return 'bg-secondary/10 text-primary';
       case 'delivered': return 'bg-accent/10 text-accent';
@@ -78,7 +144,7 @@ const BookRequest = () => {
   };
 
   const getUrgencyColor = (urgency) => {
-    switch (urgency) {
+    switch (urgency?.toLowerCase()) {
       case 'high': return 'bg-error/10 text-error';
       case 'medium': return 'bg-secondary/10 text-primary';
       case 'low': return 'bg-success/10 text-success';
@@ -86,22 +152,41 @@ const BookRequest = () => {
     }
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading book requests...</div>;
-  }
-  if (error) {
-    return <div className="flex justify-center items-center h-64 text-red-500">{error}</div>;
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No date';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  if (loading && !submitting) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-gray-600">Loading book requests...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold text-textPrimary">Book Requests</h1>
           <p className="text-gray-600 mt-2">Manage your book requests and track their status</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            resetForm();
+            setShowForm(!showForm);
+          }}
           className="flex items-center space-x-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-5 w-5" />
@@ -109,17 +194,39 @@ const BookRequest = () => {
         </button>
       </div>
 
+      {/* Success Message */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+          <p className="text-green-800">{success}</p>
+          <button onClick={() => setSuccess(null)} className="ml-auto text-green-600 hover:text-green-700">
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+          <p className="text-red-800">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-700">
+            ×
+          </button>
+        </div>
+      )}
+
       {/* New Request Form */}
       {showForm && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">
-            Create New Book Request
+            {editingRequest ? 'Edit Book Request' : 'Create New Book Request'}
           </h2>
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Book Title/Subject
+                  Book Title/Subject *
                 </label>
                 <input
                   type="text"
@@ -129,11 +236,12 @@ const BookRequest = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   placeholder="Mathematics Grade 10 Textbooks"
                   required
+                  disabled={submitting}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Subject Category
+                  Subject Category *
                 </label>
                 <select
                   name="subject"
@@ -141,14 +249,12 @@ const BookRequest = () => {
                   onChange={handleFormChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   required
+                  disabled={submitting}
                 >
                   <option value="">Select subject</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="English">English</option>
-                  <option value="Science">Science</option>
-                  <option value="History">History</option>
-                  <option value="Geography">Geography</option>
-                  <option value="Other">Other</option>
+                  {subjects.map(subject => (
+                    <option key={subject} value={subject}>{subject}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -156,7 +262,7 @@ const BookRequest = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Quantity Needed
+                  Quantity Needed *
                 </label>
                 <input
                   type="number"
@@ -167,11 +273,13 @@ const BookRequest = () => {
                   placeholder="25"
                   required
                   min="1"
+                  max="1000"
+                  disabled={submitting}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Urgency Level
+                  Urgency Level *
                 </label>
                 <select
                   name="urgency"
@@ -179,6 +287,7 @@ const BookRequest = () => {
                   onChange={handleFormChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   required
+                  disabled={submitting}
                 >
                   <option value="high">High - Urgent</option>
                   <option value="medium">Medium - Moderate</option>
@@ -189,7 +298,7 @@ const BookRequest = () => {
 
             <div>
               <label className="block text-sm font-medium text-textPrimary mb-2">
-                Description of Need
+                Description of Need *
               </label>
               <textarea
                 name="description"
@@ -199,20 +308,24 @@ const BookRequest = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                 placeholder="Please describe why you need these books, who will benefit, and any specific requirements..."
                 required
+                disabled={submitting}
               ></textarea>
             </div>
 
             <div className="flex items-center space-x-4">
               <button
                 type="submit"
-                className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={submitting}
               >
-                {submitting ? 'Submitting...' : 'Submit Request'}
+                {submitting ? 'Processing...' : editingRequest ? 'Update Request' : 'Submit Request'}
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  resetForm();
+                }}
                 className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"
                 disabled={submitting}
               >
@@ -231,6 +344,8 @@ const BookRequest = () => {
             <input
               type="text"
               placeholder="Search requests..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
             />
           </div>
@@ -243,11 +358,11 @@ const BookRequest = () => {
                 onChange={(e) => setFilter(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
               >
-                <option value="all">All Requests</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="delivered">Delivered</option>
-                <option value="rejected">Rejected</option>
+                <option value="all">All Requests ({requests.length})</option>
+                <option value="pending">Pending ({requests.filter(r => r.status?.toLowerCase() === 'pending').length})</option>
+                <option value="approved">Approved ({requests.filter(r => r.status?.toLowerCase() === 'approved').length})</option>
+                <option value="delivered">Delivered ({requests.filter(r => r.status?.toLowerCase() === 'delivered').length})</option>
+                <option value="rejected">Rejected ({requests.filter(r => r.status?.toLowerCase() === 'rejected').length})</option>
               </select>
             </div>
           </div>
@@ -261,50 +376,79 @@ const BookRequest = () => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-start space-x-4">
-                  <div className="p-3 bg-secondary/10 rounded-lg">
+                  <div className="p-3 bg-secondary/10 rounded-lg flex-shrink-0">
                     <BookOpen className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-heading font-semibold text-textPrimary">
-                        {request.title}
-                      </h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(request.urgency)}`}>
-                        {request.urgency.charAt(0).toUpperCase() + request.urgency.slice(1)} Priority
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-2">{request.description}</p>
-                    <div className="flex items-center space-x-6 text-sm text-gray-500">
-                      <span>Subject: {request.subject}</span>
-                      <span>Quantity: {request.quantity} books</span>
-                      <span>Requested: {request.dateRequested}</span>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="text-lg font-heading font-semibold text-textPrimary">
+                            {request.title || 'Untitled Request'}
+                          </h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                            {request.status?.charAt(0).toUpperCase() + request.status?.slice(1) || 'Unknown'}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(request.urgency)}`}>
+                            {request.urgency?.charAt(0).toUpperCase() + request.urgency?.slice(1) || 'Medium'} Priority
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mb-2">{request.description || 'No description provided'}</p>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                          <span>Subject: {request.subject || 'Not specified'}</span>
+                          <span>Quantity: {request.quantity || 0} books</span>
+                          <span>Requested: {formatDate(request.dateRequested || request.createdAt)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-600 hover:text-primary transition-colors">
+              <div className="flex items-center space-x-2 ml-4">
+                {(request.status?.toLowerCase() === 'pending' || request.status?.toLowerCase() === 'draft') && (
+                  <button 
+                    onClick={() => handleEdit(request)}
+                    className="p-2 text-gray-600 hover:text-primary transition-colors"
+                    title="Edit request"
+                  >
+                    <Edit className="h-5 w-5" />
+                  </button>
+                )}
+                <button className="p-2 text-gray-600 hover:text-primary transition-colors" title="View details">
                   <Eye className="h-5 w-5" />
                 </button>
+                {(request.status?.toLowerCase() === 'pending' || request.status?.toLowerCase() === 'draft') && (
+                  <button 
+                    onClick={() => handleCancel(request.id)}
+                    className="p-2 text-gray-600 hover:text-error transition-colors"
+                    title="Cancel request"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {filteredRequests.length === 0 && (
+      {filteredRequests.length === 0 && !loading && (
         <div className="text-center py-12">
           <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No requests found</h3>
           <p className="text-gray-500">
-            {filter === 'all' 
-              ? "You haven't made any book requests yet." 
-              : `No ${filter} requests found.`
-            }
+            {searchTerm ? `No requests match "${searchTerm}"` :
+             filter === 'all' ? "You haven't made any book requests yet." : 
+             `No ${filter} requests found.`}
           </p>
+          {!searchTerm && filter === 'all' && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="mt-4 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Create your first request
+            </button>
+          )}
         </div>
       )}
     </div>

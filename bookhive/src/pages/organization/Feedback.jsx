@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Star, User, Gift, Calendar, MessageSquare, Plus, Filter } from 'lucide-react';
-import { feedbackService } from '../../services/feedbackService';
+import { Star, User, Gift, Calendar, MessageSquare, Plus, Filter, AlertCircle, CheckCircle } from 'lucide-react';
+import { feedbackService } from '../../services/organizationService';
 
 const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
@@ -10,28 +10,37 @@ const Feedback = () => {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [feedbacks, setFeedbacks] = useState([]);
-  const [pendingDonations, setPendingDonations] = useState([
-    // TODO: Replace with backend data
-    { id: 1, donorName: 'Alex Rodriguez', donorAvatar: 'AR', bookTitle: 'Geography Textbooks', deliveryDate: '2024-01-22', status: 'delivered' },
-    { id: 2, donorName: 'Lisa Thompson', donorAvatar: 'LT', bookTitle: 'Art & Craft Books', deliveryDate: '2024-01-25', status: 'delivered' }
-  ]);
+  const [pendingDonations, setPendingDonations] = useState([]);
   const [selectedDonation, setSelectedDonation] = useState('');
   const [comment, setComment] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    feedbackService.getByOrganization(ORG_ID)
-      .then(data => {
-        setFeedbacks(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError('Failed to load feedbacks');
-        setLoading(false);
-      });
+    loadFeedbackData();
   }, []);
+
+  const loadFeedbackData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const [feedbackData, donationsData] = await Promise.all([
+        feedbackService.getByOrganization(ORG_ID),
+        feedbackService.getPendingDonations(ORG_ID)
+      ]);
+      
+      setFeedbacks(Array.isArray(feedbackData) ? feedbackData : []);
+      setPendingDonations(Array.isArray(donationsData) ? donationsData : []);
+    } catch (err) {
+      console.error('Error loading feedback data:', err);
+      setError('Failed to load feedback data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredFeedbacks = feedbacks.filter(feedback => {
     if (filter === 'all') return true;
@@ -44,35 +53,47 @@ const Feedback = () => {
 
   const handleSubmitFeedback = async (e) => {
     e.preventDefault();
+    
     if (!selectedDonation) {
       setError('Please select a donation.');
       return;
     }
-    setLoading(true);
+    
+    if (rating === 0) {
+      setError('Please provide a rating.');
+      return;
+    }
+
+    setSubmitting(true);
     setError(null);
+    
     try {
       await feedbackService.create({
         organizationId: ORG_ID,
         donationId: selectedDonation,
         rating,
-        comment,
-        // Add more fields as needed
+        comment: comment.trim(),
       });
-      // Refresh feedbacks
-      const data = await feedbackService.getByOrganization(ORG_ID);
-      setFeedbacks(Array.isArray(data) ? data : []);
+      
+      setSuccess('Feedback submitted successfully!');
+      await loadFeedbackData();
+      
+      // Reset form
       setShowFeedbackForm(false);
       setRating(0);
       setComment('');
       setSelectedDonation('');
     } catch (err) {
+      console.error('Error submitting feedback:', err);
       setError('Failed to submit feedback');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const averageRating = feedbacks.reduce((sum, feedback) => sum + feedback.rating, 0) / feedbacks.length;
+  const averageRating = feedbacks.length > 0
+    ? feedbacks.reduce((sum, feedback) => sum + (feedback.rating || 0), 0) / feedbacks.length
+    : 0;
 
   const renderStars = (rating, interactive = false, onRate = null, onHover = null) => {
     return Array.from({ length: 5 }, (_, index) => {
@@ -93,8 +114,42 @@ const Feedback = () => {
     });
   };
 
+  const getRatingText = (rating) => {
+    switch (rating) {
+      case 5: return 'Excellent';
+      case 4: return 'Good';
+      case 3: return 'Average';
+      case 2: return 'Below Average';
+      case 1: return 'Poor';
+      default: return '';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No date';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-gray-600">Loading feedback...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold text-textPrimary">Feedback & Reviews</h1>
@@ -103,12 +158,35 @@ const Feedback = () => {
         
         <button
           onClick={() => setShowFeedbackForm(!showFeedbackForm)}
-          className="flex items-center space-x-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+          disabled={pendingDonations.length === 0}
+          className="flex items-center space-x-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="h-5 w-5" />
           <span>Write Feedback</span>
         </button>
       </div>
+
+      {/* Success Message */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+          <p className="text-green-800">{success}</p>
+          <button onClick={() => setSuccess(null)} className="ml-auto text-green-600 hover:text-green-700">
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+          <p className="text-red-800">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-700">
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Feedback Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -163,17 +241,19 @@ const Feedback = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Select Donation
+                  Select Donation *
                 </label>
                 <select
                   value={selectedDonation}
                   onChange={(e) => setSelectedDonation(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
+                  required
+                  disabled={submitting}
                 >
                   <option value="">Choose a completed donation...</option>
                   {pendingDonations.map((donation) => (
                     <option key={donation.id} value={donation.id}>
-                      {donation.bookTitle} - {donation.donorName}
+                      {donation.bookTitle || donation.title || 'Untitled'} - {donation.donorName || 'Anonymous Donor'}
                     </option>
                   ))}
                 </select>
@@ -181,17 +261,12 @@ const Feedback = () => {
               
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Rating
+                  Rating *
                 </label>
                 <div className="flex items-center space-x-1">
                   {renderStars(rating, true, setRating, setHoveredRating)}
                   <span className="ml-2 text-sm text-gray-600">
-                    {rating > 0 && (
-                      rating === 5 ? 'Excellent' :
-                      rating === 4 ? 'Good' :
-                      rating === 3 ? 'Average' :
-                      rating === 2 ? 'Below Average' : 'Poor'
-                    )}
+                    {rating > 0 && getRatingText(rating)}
                   </span>
                 </div>
               </div>
@@ -199,7 +274,7 @@ const Feedback = () => {
             
             <div>
               <label className="block text-sm font-medium text-textPrimary mb-2">
-                Your Review
+                Your Review *
               </label>
               <textarea
                 rows="4"
@@ -208,63 +283,84 @@ const Feedback = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                 placeholder="Share your experience with this donor and donation..."
                 required
+                disabled={submitting}
+                maxLength={500}
               ></textarea>
+              <p className="text-xs text-gray-500 mt-1">{comment.length}/500 characters</p>
             </div>
             
             <div className="flex items-center space-x-4">
               <button
                 type="submit"
-                className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={submitting || rating === 0}
               >
-                Submit Feedback
+                {submitting ? 'Submitting...' : 'Submit Feedback'}
               </button>
               <button
                 type="button"
-                onClick={() => setShowFeedbackForm(false)}
+                onClick={() => {
+                  setShowFeedbackForm(false);
+                  setRating(0);
+                  setComment('');
+                  setSelectedDonation('');
+                  setError(null);
+                }}
                 className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={submitting}
               >
                 Cancel
               </button>
             </div>
-
-            {loading && <p className="text-sm text-gray-500">Submitting feedback...</p>}
-            {error && <p className="text-sm text-red-500">{error}</p>}
           </form>
         </div>
       )}
 
       {/* Pending Feedback */}
-      {pendingDonations.length > 0 && (
+      {pendingDonations.length > 0 && !showFeedbackForm && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">
             Pending Feedback
           </h2>
           <p className="text-gray-600 mb-4">
-            You have {pendingDonations.length} completed donations waiting for your feedback.
+            You have {pendingDonations.length} completed donation{pendingDonations.length !== 1 ? 's' : ''} waiting for your feedback.
           </p>
           
           <div className="space-y-3">
-            {pendingDonations.map((donation) => (
+            {pendingDonations.slice(0, 3).map((donation) => (
               <div key={donation.id} className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-medium">
-                    {donation.donorAvatar}
+                  <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                    {donation.donorAvatar || donation.donorName?.charAt(0) || 'D'}
                   </div>
                   <div>
-                    <h3 className="font-medium text-textPrimary">{donation.bookTitle}</h3>
+                    <h3 className="font-medium text-textPrimary">
+                      {donation.bookTitle || donation.title || 'Book Donation'}
+                    </h3>
                     <p className="text-sm text-gray-600">
-                      Donated by {donation.donorName} • Delivered {donation.deliveryDate}
+                      Donated by {donation.donorName || 'Anonymous'} • 
+                      Delivered {formatDate(donation.deliveryDate || donation.date)}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowFeedbackForm(true)}
+                  onClick={() => {
+                    setSelectedDonation(donation.id.toString());
+                    setShowFeedbackForm(true);
+                  }}
                   className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Write Review
                 </button>
               </div>
             ))}
+            {pendingDonations.length > 3 && (
+              <div className="text-center">
+                <p className="text-sm text-gray-500">
+                  and {pendingDonations.length - 3} more...
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -279,10 +375,10 @@ const Feedback = () => {
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
           >
             <option value="all">All Reviews ({feedbacks.length})</option>
-            <option value="excellent">Excellent (5 stars)</option>
-            <option value="good">Good (4 stars)</option>
-            <option value="average">Average (3 stars)</option>
-            <option value="poor">Poor (1-2 stars)</option>
+            <option value="excellent">Excellent (5 stars) ({feedbacks.filter(f => f.rating === 5).length})</option>
+            <option value="good">Good (4 stars) ({feedbacks.filter(f => f.rating === 4).length})</option>
+            <option value="average">Average (3 stars) ({feedbacks.filter(f => f.rating === 3).length})</option>
+            <option value="poor">Poor (1-2 stars) ({feedbacks.filter(f => f.rating <= 2).length})</option>
           </select>
         </div>
       </div>
@@ -293,33 +389,41 @@ const Feedback = () => {
           <div key={feedback.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
               <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-medium">
-                {feedback.donorAvatar}
+                {feedback.donorAvatar || feedback.donorName?.charAt(0) || 'D'}
               </div>
               
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <h3 className="font-medium text-textPrimary">{feedback.donorName}</h3>
-                    <p className="text-sm text-gray-600">{feedback.bookTitle}</p>
+                    <h3 className="font-medium text-textPrimary">
+                      {feedback.donorName || 'Anonymous Donor'}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {feedback.bookTitle || feedback.title || 'Book Donation'}
+                    </p>
                   </div>
                   <div className="text-right">
                     <div className="flex items-center space-x-1 mb-1">
-                      {renderStars(feedback.rating)}
+                      {renderStars(feedback.rating || 0)}
                     </div>
-                    <p className="text-xs text-gray-500">{feedback.date}</p>
+                    <p className="text-xs text-gray-500">
+                      {formatDate(feedback.date || feedback.createdAt)}
+                    </p>
                   </div>
                 </div>
                 
-                <p className="text-gray-700 leading-relaxed">{feedback.comment}</p>
+                <p className="text-gray-700 leading-relaxed mb-4">
+                  {feedback.comment || 'No comment provided'}
+                </p>
                 
-                <div className="flex items-center space-x-4 mt-4 text-sm text-gray-500">
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
                   <div className="flex items-center space-x-1">
                     <Gift className="h-4 w-4" />
                     <span>Donation completed</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-4 w-4" />
-                    <span>{feedback.date}</span>
+                    <span>{formatDate(feedback.date || feedback.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -338,6 +442,14 @@ const Feedback = () => {
               : `No ${filter} reviews found.`
             }
           </p>
+          {pendingDonations.length > 0 && filter === 'all' && (
+            <button
+              onClick={() => setShowFeedbackForm(true)}
+              className="mt-4 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Write your first review
+            </button>
+          )}
         </div>
       )}
     </div>
