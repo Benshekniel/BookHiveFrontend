@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Trophy, Calendar, Star, Send, Search, Users, FileText, X, Crown, Edit, Trash2, Eye, Clock, Award, TrendingUp } from "lucide-react";
 import axios from "axios";
+import { Editor } from '@tinymce/tinymce-react';
+import CompetitionSubmission from "./CompetitionSubmission";
 
 const mockData = {
   currentUser: {
@@ -12,10 +14,9 @@ const mockData = {
     {
       id: 1,
       title: "The Journey Home",
-      competitionId: "b7e1d4d1", // Updated to match backend competitionid
+      competitionId: "b7e1d4d1", 
       status: "Under Review",
-      submittedAt: "2024-01-20",
-      wordCount: 2450,
+      submittedAt: "2024-01-20", wordCount: 2450,
       votes: 85,
       content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate...",
       feedback: "Excellent character development and vivid descriptions. The narrative flow is compelling.",
@@ -25,7 +26,7 @@ const mockData = {
     {
       id: 2,
       title: "Future Horizons",
-      competitionId: "34394c1e", // Updated to match backend competitionid
+      competitionId: "34394c1e", 
       status: "Submitted",
       submittedAt: "2024-02-15",
       wordCount: 1150,
@@ -38,7 +39,7 @@ const mockData = {
     {
       id: 3,
       title: "Whispers of the Past",
-      competitionId: "b7e1d4d1", // Updated to match backend competitionid
+      competitionId: "b7e1d4d1", 
       status: "Draft",
       submittedAt: null,
       wordCount: 890,
@@ -49,7 +50,6 @@ const mockData = {
       totalEntries: null
     }
   ],
-  // Define static mock submissions and leaderboard for voting tab
   mockSubmissions: [
     { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest...", votes: 72 },
     { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", content: "Echoes of a forgotten past resonate through an abandoned village...", votes: 60 },
@@ -106,11 +106,6 @@ const Competitions = () => {
   const [activeTab, setActiveTab] = useState("yourSubmissions");
   const [selectedCompetition, setSelectedCompetition] = useState(null);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
-  const [submissionForm, setSubmissionForm] = useState({
-    title: "",
-    content: "",
-    wordCount: 0,
-  });
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showContentModal, setShowContentModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -125,8 +120,17 @@ const Competitions = () => {
   const [competitions, setCompetitions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // New state for tracking API operations
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
 
   const baseUrl = "http://localhost:9090";
+  const editorRef = useRef(null);
 
   const formatDateForDisplay = (dateStr) => {
     if (!dateStr) return "Not set";
@@ -176,65 +180,189 @@ const Competitions = () => {
     fetchCompetitions();
   }, []);
 
-  const handleSubmissionChange = (field, value) => {
-    setSubmissionForm((prev) => ({
-      ...prev,
-      [field]: value,
-      wordCount: field === "content" ? value.split(" ").filter((word) => word.length > 0).length : prev.wordCount,
-    }));
-  };
+  // Fetch user submissions on component mount
+  useEffect(() => {
+    const fetchUserSubmissions = async () => {
+      try {
+        setIsLoading(true);
+        // You can uncomment this when your backend is ready
+        /*
+        const response = await axios.get(`${baseUrl}/api/user/getSubmissions`);
+        if (response.data && Array.isArray(response.data)) {
+          setUserSubmissions(response.data);
+        }
+        */
+      } catch (err) {
+        console.error("Error fetching user submissions:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Uncomment to enable when backend is ready
+    // fetchUserSubmissions();
+  }, []);
 
   const handleEditChange = (field, value) => {
-    setEditForm((prev) => ({
-      ...prev,
-      [field]: value,
-      wordCount: field === "content" ? value.split(" ").filter((word) => word.length > 0).length : prev.wordCount,
-    }));
+    if (field === "content") {
+      // Calculate word count from HTML content
+      const textOnly = value.replace(/<[^>]*>/g, ' ');
+      const words = textOnly.split(/\s+/).filter(word => word.length > 0);
+      
+      setEditForm((prev) => ({
+        ...prev,
+        content: value,
+        wordCount: words.length,
+      }));
+    } else {
+      setEditForm((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   };
 
-  const handleSubmitEntry = () => {
-    if (selectedCompetition && submissionForm.title && submissionForm.content) {
-      const newSubmission = {
-        id: userSubmissions.length + Date.now(),
-        title: submissionForm.title,
-        competitionId: selectedCompetition.id,
-        status: "Draft",
-        submittedAt: null,
-        wordCount: submissionForm.wordCount,
-        votes: 0,
-        content: submissionForm.content,
-        feedback: null,
-        ranking: null,
-        totalEntries: null
+  // Function to handle new submissions from the CompetitionSubmission component
+  const handleNewSubmission = (newSubmission) => {
+    setUserSubmissions(prev => [...prev, newSubmission]);
+  };
+
+  // Function to open submission modal
+  const openSubmissionModal = (competition) => {
+    setSelectedCompetition(competition);
+    setShowSubmissionModal(true);
+  };
+  
+  // Function to open competition details
+  const openCompetitionDetails = (competition) => {
+    if (!showSubmissionModal) {
+      setSelectedCompetition(competition);
+    }
+  };
+
+  // Updated to use backend integration
+  const handleEditSubmission = async () => {
+    if (editingSubmission) {
+      setIsEditing(true);
+      setEditError(null);
+      
+      try {
+        const submissionData = {
+          submissionId: editingSubmission.id, // Include the ID since we're editing
+          competitionId: editingSubmission.competitionId,
+          email: "", // Will be extracted from JWT token on the server
+          userId: "", // Will be extracted from JWT token on the server
+          title: editForm.title,
+          content: editForm.content
+        };
+        
+        const response = await axios.post(
+          'http://localhost:9090/api/userSaveStory',
+          submissionData,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+              // Auth token would be included here
+            }
+          }
+        );
+        
+        const result = response.data;
+        
+        if (result.message === 'success') {
+          // Update local state
+          setUserSubmissions(prev => prev.map(sub => 
+            sub.id === editingSubmission.id 
+              ? { ...sub, title: editForm.title, content: editForm.content, wordCount: editForm.wordCount }
+              : sub
+          ));
+          
+          setShowEditModal(false);
+          setEditingSubmission(null);
+          setEditForm({ title: "", content: "", wordCount: 0 });
+        } else {
+          setEditError('Failed to update submission: ' + result.message);
+        }
+      } catch (error) {
+        console.error("Error updating submission:", error);
+        setEditError('Error updating submission: ' + (error.response?.data?.message || error.message));
+      } finally {
+        setIsEditing(false);
+      }
+    }
+  };
+
+  // Updated to use backend integration
+  const handleSubmitToCompetition = async (submission) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      const submissionData = {
+        submissionId: submission.id,
+        competitionId: submission.competitionId,
+        email: "", // Will be extracted from JWT token on the server
+        userId: "", // Will be extracted from JWT token on the server
+        title: submission.title,
+        content: submission.content,
+        status: "Submitted" // You might need to add this to your DTO or handle it server-side
       };
       
-      setUserSubmissions(prev => [...prev, newSubmission]);
-      console.log("Entry added to submissions:", newSubmission);
+      const response = await axios.post(
+        'http://localhost:9090/api/userSaveStory',
+        submissionData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const result = response.data;
+      
+      if (result.message === 'success') {
+        setUserSubmissions(prev => prev.map(sub => 
+          sub.id === submission.id 
+            ? { ...sub, status: 'Submitted', submittedAt: new Date().toISOString().split('T')[0] }
+            : sub
+        ));
+      } else {
+        setSubmitError("Failed to submit entry: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error submitting entry:", error);
+      setSubmitError("Error submitting entry: " + (error.response?.data?.message || error.message));
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  // Updated to use backend integration
+  const handleDeleteSubmission = async (submissionId) => {
+    setIsDeleting(true);
+    setDeleteError(null);
     
-    setShowSubmissionModal(false);
-    setSubmissionForm({ title: "", content: "", wordCount: 0 });
-    setSelectedCompetition(null);
-    setActiveTab("yourSubmissions");
-  };
-
-  const handleEditSubmission = () => {
-    if (editingSubmission) {
-      setUserSubmissions(prev => prev.map(sub => 
-        sub.id === editingSubmission.id 
-          ? { ...sub, title: editForm.title, content: editForm.content, wordCount: editForm.wordCount }
-          : sub
-      ));
-      setShowEditModal(false);
-      setEditingSubmission(null);
-      setEditForm({ title: "", content: "", wordCount: 0 });
+    try {
+      // You might need a separate endpoint for deletion or use the same with a delete flag
+      const response = await axios.delete(
+        `http://localhost:9090/api/user/deleteSubmission/${submissionId}`
+      );
+      
+      const result = response.data;
+      
+      if (result.message === 'success') {
+        setUserSubmissions(prev => prev.filter(sub => sub.id !== submissionId));
+        setShowDeleteModal(false);
+        setSelectedSubmission(null);
+      } else {
+        setDeleteError("Failed to delete submission: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error deleting submission:", error);
+      setDeleteError("Error deleting submission: " + (error.response?.data?.message || error.message));
+    } finally {
+      setIsDeleting(false);
     }
-  };
-
-  const handleDeleteSubmission = (submissionId) => {
-    setUserSubmissions(prev => prev.filter(sub => sub.id !== submissionId));
-    setShowDeleteModal(false);
-    setSelectedSubmission(null);
   };
 
   const handleVote = (competitionId, submissionId) => {
@@ -270,11 +398,13 @@ const Competitions = () => {
       wordCount: submission.wordCount
     });
     setShowEditModal(true);
+    setEditError(null);
   };
 
   const openDeleteModal = (submission) => {
     setSelectedSubmission(submission);
     setShowDeleteModal(true);
+    setDeleteError(null);
   };
 
   const isDeadlinePassed = (deadline) => {
@@ -413,6 +543,12 @@ const Competitions = () => {
                           </div>
                         )}
 
+                        {submitError && submission.status === 'Draft' && (
+                          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                            {submitError}
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
                             <Button
@@ -441,8 +577,9 @@ const Competitions = () => {
                               size="sm"
                               onClick={() => openDeleteModal(submission)}
                               icon={<Trash2 size={16} />}
+                              disabled={isDeleting}
                             >
-                              Delete
+                              {isDeleting ? "Deleting..." : "Delete"}
                             </Button>
                           </div>
                           
@@ -450,16 +587,16 @@ const Competitions = () => {
                             <Button
                               variant="success"
                               size="sm"
-                              onClick={() => {
-                                setUserSubmissions(prev => prev.map(sub => 
-                                  sub.id === submission.id 
-                                    ? { ...sub, status: 'Submitted', submittedAt: new Date().toISOString().split('T')[0] }
-                                    : sub
-                                ));
-                              }}
+                              onClick={() => handleSubmitToCompetition(submission)}
                               icon={<Send size={16} />}
+                              disabled={isSubmitting}
                             >
-                              Submit
+                              {isSubmitting ? (
+                                <>
+                                  <span className="mr-2">Submitting...</span>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                </>
+                              ) : "Submit"}
                             </Button>
                           )}
                         </div>
@@ -661,7 +798,7 @@ const Competitions = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedCompetition(competition)}
+                            onClick={() => openCompetitionDetails(competition)}
                           >
                             View Details
                           </Button>
@@ -669,10 +806,7 @@ const Competitions = () => {
                             <Button
                               variant="primary"
                               size="sm"
-                              onClick={() => {
-                                setSelectedCompetition(competition);
-                                setShowSubmissionModal(true);
-                              }}
+                              onClick={() => openSubmissionModal(competition)}
                               icon={<Send size={14} />}
                             >
                               Submit Entry
@@ -696,6 +830,17 @@ const Competitions = () => {
           </section>
         )}
 
+        {/* Using the CompetitionSubmission component */}
+        <CompetitionSubmission
+          selectedCompetition={selectedCompetition}
+          showSubmissionModal={showSubmissionModal}
+          setShowSubmissionModal={setShowSubmissionModal}
+          onSubmit={handleNewSubmission}
+          setSelectedCompetition={setSelectedCompetition}
+          setActiveTab={setActiveTab}
+        />
+
+        {/* Only show competition details modal when submission modal is not visible */}
         {selectedCompetition && !showSubmissionModal && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -753,85 +898,12 @@ const Competitions = () => {
                   {!isDeadlinePassed(selectedCompetition.deadline) && (
                     <Button
                       variant="primary"
-                      onClick={() => setShowSubmissionModal(true)}
+                      onClick={() => openSubmissionModal(selectedCompetition)}
                       icon={<Send size={16} />}
                     >
                       Submit Entry
                     </Button>
                   )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showSubmissionModal && selectedCompetition && (
-          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">Create Entry</h3>
-                    <p className="text-gray-600">{selectedCompetition.title}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowSubmissionModal(false);
-                      setSubmissionForm({ title: "", content: "", wordCount: 0 });
-                    }}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Entry Title
-                    </label>
-                    <input
-                      type="text"
-                      value={submissionForm.title}
-                      onChange={(e) => handleSubmissionChange("title", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter your submission title..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Your Entry
-                    </label>
-                    <textarea
-                      rows={12}
-                      value={submissionForm.content}
-                      onChange={(e) => handleSubmissionChange("content", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Write your entry here..."
-                    />
-                    <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                      <span>Word count: {submissionForm.wordCount}</span>
-                      <span>Remember to follow the competition rules</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-6 flex justify-end space-x-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowSubmissionModal(false);
-                      setSubmissionForm({ title: "", content: "", wordCount: 0 });
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={handleSubmitEntry}
-                    disabled={!submissionForm.title || !submissionForm.content || isDeadlinePassed(selectedCompetition.deadline)}
-                    icon={<Send size={16} />}
-                  >
-                    Save as Draft
-                  </Button>
                 </div>
               </div>
             </div>
@@ -852,12 +924,20 @@ const Competitions = () => {
                       setShowEditModal(false);
                       setEditingSubmission(null);
                       setEditForm({ title: "", content: "", wordCount: 0 });
+                      setEditError(null);
                     }}
                     className="text-gray-500 hover:text-gray-700"
                   >
                     <X size={24} />
                   </button>
                 </div>
+                
+                {editError && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                    {editError}
+                  </div>
+                )}
+                
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -875,12 +955,30 @@ const Competitions = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Your Entry
                     </label>
-                    <textarea
-                      rows={12}
+                    <Editor
+                      apiKey="bt1w2ivk1v3fqe0n5lkisczo8gbyjwgw0tp7ur75kmuxobvb"
+                      onInit={(evt, editor) => editorRef.current = editor}
+                      initialValue={editForm.content}
                       value={editForm.content}
-                      onChange={(e) => handleEditChange("content", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Write your entry here..."
+                      onEditorChange={(content) => handleEditChange("content", content)}
+                      init={{
+                        height: 350,
+                        menubar: false,
+                        plugins: [
+                          'advlist', 'autolink', 'lists', 'link', 'charmap', 
+                          'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                          'insertdatetime', 'table', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | formatselect | ' +
+                          'bold italic underline | alignleft aligncenter ' +
+                          'alignright alignjustify | bullist numlist outdent indent | ' +
+                          'fontsize | removeformat | help',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                        fontsize_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt',
+                        branding: false,
+                        resize: false,
+                        statusbar: false
+                      }}
                     />
                     <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
                       <span>Word count: {editForm.wordCount}</span>
@@ -889,12 +987,12 @@ const Competitions = () => {
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
-                  <Button
-                    variant="outline"
+                  <Button variant="outline"
                     onClick={() => {
                       setShowEditModal(false);
                       setEditingSubmission(null);
                       setEditForm({ title: "", content: "", wordCount: 0 });
+                      setEditError(null);
                     }}
                   >
                     Cancel
@@ -902,10 +1000,15 @@ const Competitions = () => {
                   <Button
                     variant="primary"
                     onClick={handleEditSubmission}
-                    disabled={!editForm.title || !editForm.content}
+                    disabled={!editForm.title || !editForm.content || isEditing}
                     icon={<Edit size={16} />}
                   >
-                    Save Changes
+                    {isEditing ? (
+                      <>
+                        <span className="mr-2">Saving...</span>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </>
+                    ) : "Save Changes"}
                   </Button>
                 </div>
               </div>
@@ -936,7 +1039,11 @@ const Competitions = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
-                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedSubmission.content}</p>
+                      {/* Use dangerouslySetInnerHTML to render the HTML content */}
+                      <div 
+                        className="text-gray-700 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: selectedSubmission.content }} 
+                      />
                     </div>
                   </div>
                   {selectedSubmission.wordCount && (
@@ -991,6 +1098,13 @@ const Competitions = () => {
                   <h4 className="font-medium text-gray-900">{selectedSubmission.title}</h4>
                   <p className="text-sm text-gray-600">Status: {selectedSubmission.status}</p>
                 </div>
+                
+                {deleteError && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                    {deleteError}
+                  </div>
+                )}
+                
                 <p className="text-sm text-red-600 mb-6">This action cannot be undone.</p>
                 <div className="flex justify-end space-x-3">
                   <Button
@@ -998,6 +1112,7 @@ const Competitions = () => {
                     onClick={() => {
                       setShowDeleteModal(false);
                       setSelectedSubmission(null);
+                      setDeleteError(null);
                     }}
                   >
                     Cancel
@@ -1006,8 +1121,14 @@ const Competitions = () => {
                     variant="danger"
                     onClick={() => handleDeleteSubmission(selectedSubmission.id)}
                     icon={<Trash2 size={16} />}
+                    disabled={isDeleting}
                   >
-                    Delete
+                    {isDeleting ? (
+                      <>
+                        <span className="mr-2">Deleting...</span>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </>
+                    ) : "Delete"}
                   </Button>
                 </div>
               </div>
