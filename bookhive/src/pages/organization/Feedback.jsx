@@ -1,10 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Star, User, Gift, Calendar, MessageSquare, Plus, Filter, AlertCircle, CheckCircle } from 'lucide-react';
 import { feedbackService } from '../../services/organizationService';
+// Import organization context (uncomment and replace with your actual context)
+// import { OrganizationContext } from '../../contexts/OrganizationContext';
 
 const ORG_ID = 1; // TODO: Replace with real orgId from context or props
 
 const Feedback = () => {
+  // Replace with actual context usage when available
+  // const { organizationId } = useContext(OrganizationContext);
+  const organizationId = localStorage.getItem('orgId') || 1; // Fallback to local storage or default
+  
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [filter, setFilter] = useState('all');
   const [rating, setRating] = useState(0);
@@ -31,25 +37,15 @@ const Feedback = () => {
         feedbackService.getByOrganization(ORG_ID),
         feedbackService.getPendingDonations(ORG_ID)
       ]);
-      
       setFeedbacks(Array.isArray(feedbackData) ? feedbackData : []);
       setPendingDonations(Array.isArray(donationsData) ? donationsData : []);
     } catch (err) {
       console.error('Error loading feedback data:', err);
-      setError('Failed to load feedback data');
+      setError('Failed to load feedback data. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
-
-  const filteredFeedbacks = feedbacks.filter(feedback => {
-    if (filter === 'all') return true;
-    if (filter === 'excellent') return feedback.rating === 5;
-    if (filter === 'good') return feedback.rating === 4;
-    if (filter === 'average') return feedback.rating === 3;
-    if (filter === 'poor') return feedback.rating <= 2;
-    return true;
-  });
 
   const handleSubmitFeedback = async (e) => {
     e.preventDefault();
@@ -69,7 +65,7 @@ const Feedback = () => {
     
     try {
       await feedbackService.create({
-        organizationId: ORG_ID,
+        organizationId: organizationId,
         donationId: selectedDonation,
         rating,
         comment: comment.trim(),
@@ -83,13 +79,33 @@ const Feedback = () => {
       setRating(0);
       setComment('');
       setSelectedDonation('');
+      
+      // Auto-dismiss success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
       console.error('Error submitting feedback:', err);
-      setError('Failed to submit feedback');
+      setError('Failed to submit feedback. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+  
+  const resetForm = () => {
+    setShowFeedbackForm(false);
+    setRating(0);
+    setComment('');
+    setSelectedDonation('');
+    setError(null);
+  };
+
+  const filteredFeedbacks = feedbacks.filter(feedback => {
+    if (filter === 'all') return true;
+    if (filter === 'excellent') return feedback.rating === 5;
+    if (filter === 'good') return feedback.rating === 4;
+    if (filter === 'average') return feedback.rating === 3;
+    if (filter === 'poor') return feedback.rating <= 2;
+    return true;
+  });
 
   const averageRating = feedbacks.length > 0
     ? feedbacks.reduce((sum, feedback) => sum + (feedback.rating || 0), 0) / feedbacks.length
@@ -299,13 +315,7 @@ const Feedback = () => {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowFeedbackForm(false);
-                  setRating(0);
-                  setComment('');
-                  setSelectedDonation('');
-                  setError(null);
-                }}
+                onClick={resetForm}
                 className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"
                 disabled={submitting}
               >
@@ -339,7 +349,7 @@ const Feedback = () => {
                     </h3>
                     <p className="text-sm text-gray-600">
                       Donated by {donation.donorName || 'Anonymous'} • 
-                      Delivered {formatDate(donation.deliveryDate || donation.date)}
+                      Delivered {formatDate(donation.deliveryDate || donation.date || donation.donationDate)}
                     </p>
                   </div>
                 </div>
@@ -399,7 +409,7 @@ const Feedback = () => {
                       {feedback.donorName || 'Anonymous Donor'}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {feedback.bookTitle || feedback.title || 'Book Donation'}
+                      {feedback.bookTitle || feedback.title || feedback.donationTitle || 'Book Donation'}
                     </p>
                   </div>
                   <div className="text-right">

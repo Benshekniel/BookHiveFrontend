@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { dashboardService } from '../../services/organizationService';
 
-const ORG_ID = 1; // TODO: Replace with real orgId from context or props
-
-const Dashboard = () => {
+const Dashboard = ({ organizationId }) => {
   const [stats, setStats] = useState([
     { icon: BookOpen, label: 'Pending Requests', value: '-', color: 'text-accent' },
     { icon: Gift, label: 'Books Received', value: '-', color: 'text-success' },
@@ -21,9 +19,9 @@ const Dashboard = () => {
     try {
       setError(null);
       const [statsData, requestsData, eventsData] = await Promise.all([
-        dashboardService.getStats(ORG_ID),
-        dashboardService.getRecentRequests(ORG_ID),
-        dashboardService.getUpcomingEvents(ORG_ID)
+        dashboardService.getStats(organizationId),
+        dashboardService.getRecentRequests(organizationId),
+        dashboardService.getUpcomingEvents(organizationId)
       ]);
 
       // Update stats with real data
@@ -33,28 +31,28 @@ const Dashboard = () => {
           label: 'Pending Requests', 
           value: statsData.pendingRequests ?? 0, 
           color: 'text-accent',
-          change: statsData.pendingRequestsChange || null
+          change: statsData.pendingRequestsChange ?? null
         },
         { 
           icon: Gift, 
           label: 'Books Received', 
           value: statsData.booksReceived ?? 0, 
           color: 'text-success',
-          change: statsData.booksReceivedChange || null
+          change: statsData.booksReceivedChange ?? null
         },
         { 
           icon: Calendar, 
           label: 'Upcoming Events', 
           value: statsData.upcomingEvents ?? 0, 
           color: 'text-secondary',
-          change: statsData.upcomingEventsChange || null
+          change: statsData.upcomingEventsChange ?? null
         },
         { 
           icon: TrendingUp, 
           label: 'Total Donations', 
           value: statsData.totalDonations ?? 0, 
           color: 'text-primary',
-          change: statsData.totalDonationsChange || null
+          change: statsData.totalDonationsChange ?? null
         }
       ]);
 
@@ -74,7 +72,7 @@ const Dashboard = () => {
     };
 
     initializeDashboard();
-  }, []);
+  }, [organizationId]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
