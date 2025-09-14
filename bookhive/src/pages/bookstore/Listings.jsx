@@ -1,32 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Upload, 
-  Edit, 
-  Trash2, 
-  Grid, 
-  List, 
-  ChevronDown,
-  Eye,
-  MoreHorizontal,
-  Heart,
-  Share2,
-  Clock,
-  TrendingUp,
-  Users,
-  DollarSign,
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-  Pause,
-  XCircle,
-  BookOpen,
-  Star,
-  Award,
-  Zap
-} from 'lucide-react';
+import { Search,  Filter,  Plus,  Upload,  Edit,  Trash2,  Grid,  List,  ChevronDown, Eye, MoreHorizontal, Heart, Share2, Clock, TrendingUp, Users, DollarSign, Calendar, AlertCircle, CheckCircle, Pause, XCircle, BookOpen, Star, Award, Zap} from 'lucide-react';
+
+import SalesBookList from '../../components/bookStore/listings/SalesBookList';
 
 const ListingsPage = () => {
   const [activeTab, setActiveTab] = useState('sales');
@@ -304,108 +279,108 @@ const ListingsPage = () => {
     );
   };
 
-  const renderSalesTable = () => (
-    <table className="w-full">
-      <thead className="bg-slate-50 border-b border-gray-200">
-        <tr>
-          <th className="text-left p-4 font-semibold text-slate-700">
-            <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-          </th>
-          <th className="text-left p-4 font-semibold text-slate-700">LISTING DETAILS</th>
-          <th className="text-left p-4 font-semibold text-slate-700">PRICE</th>
-          <th className="text-left p-4 font-semibold text-slate-700">VIEWS</th>
-          <th className="text-left p-4 font-semibold text-slate-700">INQUIRIES</th>
-          <th className="text-left p-4 font-semibold text-slate-700">STATUS</th>
-          <th className="text-left p-4 font-semibold text-slate-700">LISTED DATE</th>
-          <th className="text-left p-4 font-semibold text-slate-700">ACTIONS</th>
-        </tr>
-      </thead>
-      <tbody>
-        {salesListings.map((listing) => (
-          <tr key={listing.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
-            <td className="p-4">
-              <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-            </td>
-            <td className="p-4">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <img
-                    src={listing.image}
-                    alt={listing.title}
-                    className="w-12 h-16 object-cover rounded-lg border border-gray-200"
-                  />
-                  {listing.featured && (
-                    <div className="absolute -top-1 -right-1 bg-amber-400 rounded-full p-1">
-                      <Zap className="w-3 h-3 text-white" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer transition-colors duration-200">
-                      {listing.title}
-                    </h3>
-                    {listing.featured && (
-                      <span className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full font-medium">
-                        Featured
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-slate-600">by {listing.author}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-xs text-slate-500">{listing.category}</span>
-                    <span className="text-xs text-slate-400">•</span>
-                    {getConditionBadge(listing.condition)}
-                  </div>
-                </div>
-              </div>
-            </td>
-            <td className="p-4">
-              <span className="font-semibold text-slate-800 text-lg">${listing.price}</span>
-            </td>
-            <td className="p-4">
-              <div className="flex items-center space-x-1">
-                <Eye className="w-4 h-4 text-slate-400" />
-                <span className="font-medium text-slate-700">{listing.views}</span>
-              </div>
-            </td>
-            <td className="p-4">
-              <div className="flex items-center space-x-1">
-                <Users className="w-4 h-4 text-slate-400" />
-                <span className="font-medium text-slate-700">{listing.inquiries}</span>
-              </div>
-            </td>
-            <td className="p-4">{getStatusBadge(listing.status, 'sales')}</td>
-            <td className="p-4">
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-600">{listing.listedDate}</span>
-              </div>
-            </td>
-            <td className="p-4">
-              <div className="flex items-center space-x-2">
-                <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors duration-200 group">
-                  <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
-                </button>
-                <button className="p-2 hover:bg-amber-50 rounded-lg transition-colors duration-200 group">
-                  <Edit className="w-4 h-4 text-slate-400 group-hover:text-amber-600" />
-                </button>
-                <button className="p-2 hover:bg-green-50 rounded-lg transition-colors duration-200 group">
-                  <Share2 className="w-4 h-4 text-slate-400 group-hover:text-green-600" />
-                </button>
-                <button className="p-2 hover:bg-purple-50 rounded-lg transition-colors duration-200 group">
-                  <Zap className="w-4 h-4 text-slate-400 group-hover:text-purple-600" />
-                </button>
-                <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200 group">
-                  <MoreHorizontal className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  // const renderSalesTable = () => (
+  //   <table className="w-full">
+  //     <thead className="bg-slate-50 border-b border-gray-200">
+  //       <tr>
+  //         <th className="text-left p-4 font-semibold text-slate-700">
+  //           <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+  //         </th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">LISTING DETAILS</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">PRICE</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">VIEWS</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">INQUIRIES</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">STATUS</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">LISTED DATE</th>
+  //         <th className="text-left p-4 font-semibold text-slate-700">ACTIONS</th>
+  //       </tr>
+  //     </thead>
+  //     <tbody>
+  //       {salesListings.map((listing) => (
+  //         <tr key={listing.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
+  //           <td className="p-4">
+  //             <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+  //           </td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-4">
+  //               <div className="relative">
+  //                 <img
+  //                   src={listing.image}
+  //                   alt={listing.title}
+  //                   className="w-12 h-16 object-cover rounded-lg border border-gray-200"
+  //                 />
+  //                 {listing.featured && (
+  //                   <div className="absolute -top-1 -right-1 bg-amber-400 rounded-full p-1">
+  //                     <Zap className="w-3 h-3 text-white" />
+  //                   </div>
+  //                 )}
+  //               </div>
+  //               <div>
+  //                 <div className="flex items-center space-x-2">
+  //                   <h3 className="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer transition-colors duration-200">
+  //                     {listing.title}
+  //                   </h3>
+  //                   {listing.featured && (
+  //                     <span className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full font-medium">
+  //                       Featured
+  //                     </span>
+  //                   )}
+  //                 </div>
+  //                 <p className="text-sm text-slate-600">by {listing.author}</p>
+  //                 <div className="flex items-center space-x-2 mt-1">
+  //                   <span className="text-xs text-slate-500">{listing.category}</span>
+  //                   <span className="text-xs text-slate-400">•</span>
+  //                   {getConditionBadge(listing.condition)}
+  //                 </div>
+  //               </div>
+  //             </div>
+  //           </td>
+  //           <td className="p-4">
+  //             <span className="font-semibold text-slate-800 text-lg">${listing.price}</span>
+  //           </td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-1">
+  //               <Eye className="w-4 h-4 text-slate-400" />
+  //               <span className="font-medium text-slate-700">{listing.views}</span>
+  //             </div>
+  //           </td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-1">
+  //               <Users className="w-4 h-4 text-slate-400" />
+  //               <span className="font-medium text-slate-700">{listing.inquiries}</span>
+  //             </div>
+  //           </td>
+  //           <td className="p-4">{getStatusBadge(listing.status, 'sales')}</td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-1">
+  //               <Calendar className="w-4 h-4 text-slate-400" />
+  //               <span className="text-sm text-slate-600">{listing.listedDate}</span>
+  //             </div>
+  //           </td>
+  //           <td className="p-4">
+  //             <div className="flex items-center space-x-2">
+  //               <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors duration-200 group">
+  //                 <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+  //               </button>
+  //               <button className="p-2 hover:bg-amber-50 rounded-lg transition-colors duration-200 group">
+  //                 <Edit className="w-4 h-4 text-slate-400 group-hover:text-amber-600" />
+  //               </button>
+  //               <button className="p-2 hover:bg-green-50 rounded-lg transition-colors duration-200 group">
+  //                 <Share2 className="w-4 h-4 text-slate-400 group-hover:text-green-600" />
+  //               </button>
+  //               <button className="p-2 hover:bg-purple-50 rounded-lg transition-colors duration-200 group">
+  //                 <Zap className="w-4 h-4 text-slate-400 group-hover:text-purple-600" />
+  //               </button>
+  //               <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200 group">
+  //                 <MoreHorizontal className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+  //               </button>
+  //             </div>
+  //           </td>
+  //         </tr>
+  //       ))}
+  //     </tbody>
+  //   </table>
+  // );
 
   const renderLendingTable = () => (
     <table className="w-full">
@@ -660,75 +635,13 @@ const ListingsPage = () => {
           })}
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search listings, ISBN, or title..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                />
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-3">
-              <div className="relative">
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                >
-                  <option>All Status</option>
-                  <option>Live</option>
-                  <option>Draft</option>
-                  <option>Paused</option>
-                  <option>Available</option>
-                  <option>On Loan</option>
-                  <option>Matched</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-              </div>
-
-              <div className="relative">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                >
-                  <option>All Categories</option>
-                  <option>Fiction</option>
-                  <option>Non-Fiction</option>
-                  <option>Academic</option>
-                  <option>Children's</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-              </div>
-
-              <div className="flex space-x-2">
-                <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 bg-blue-50 border-blue-200">
-                  <List className="w-4 h-4 text-blue-600" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Listings Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            {activeTab === 'sales' && renderSalesTable()}
+            {activeTab === 'sales' && <SalesBookList />}
             {activeTab === 'lending' && renderLendingTable()}
-            {/* {activeTab === 'donations' && renderDonationsTable()} */}
           </div>
         </div>
 
