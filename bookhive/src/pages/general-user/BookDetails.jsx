@@ -118,7 +118,7 @@ const BookDetailsPage = () => {
         },
         views: passedBook.views || 1240,
         wishlistedCount: passedBook.wishlistedCount || 23,
-        recentBids: passedBook.forSale && passedBook.price ? [
+        recentBids: (passedBook.forBidding || passedBook.forSale) && passedBook.price ? [
           { amount: passedBook.price - 50, bidder: "John D.", time: "2 hours ago" },
           { amount: passedBook.price - 100, bidder: "Alice M.", time: "5 hours ago" },
           { amount: passedBook.price - 150, bidder: "Mike R.", time: "1 day ago" }
@@ -414,6 +414,11 @@ const BookDetailsPage = () => {
                       For Sale
                     </span>
                   )}
+                  {book.forBidding && (
+                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">
+                      For Bidding
+                    </span>
+                  )}
                   {book.forLend && (
                     <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
                       For Lending
@@ -547,26 +552,26 @@ const BookDetailsPage = () => {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 {book.forSale && (
-                  <>
-                    <Button
-                      variant="primary"
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
-                      onClick={handleBuyClick}
-                      icon={<ShoppingCart className="w-4 h-4" />}
-                      disabled={isDisabled}
-                    >
-                      Buy Now
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-lg text-sm font-medium"
-                      onClick={handleBidClick}
-                      icon={<Gavel className="w-4 h-4" />}
-                      disabled={isDisabled}
-                    >
-                      Place Bid
-                    </Button>
-                  </>
+                  <Button
+                    variant="primary"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
+                    onClick={handleBuyClick}
+                    icon={<ShoppingCart className="w-4 h-4" />}
+                    disabled={isDisabled}
+                  >
+                    Buy Now
+                  </Button>
+                )}
+                {(book.forBidding || book.forSale) && (
+                  <Button
+                    variant="primary"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
+                    onClick={handleBidClick}
+                    icon={<Gavel className="w-4 h-4" />}
+                    disabled={isDisabled}
+                  >
+                    Place Bid
+                  </Button>
                 )}
                 {book.forLend && (
                   <Button
@@ -611,7 +616,7 @@ const BookDetailsPage = () => {
               )}
 
               {/* Recent Bids */}
-              {book.forSale && book.recentBids && book.recentBids.length > 0 && (
+              {(book.forBidding || book.forSale) && book.recentBids && book.recentBids.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Recent Bids</h3>
                   <div className="bg-gray-50 rounded-lg p-4">
@@ -732,6 +737,8 @@ const BookDetailsPage = () => {
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                   >
                     <option value="">Select request type</option>
+                    {book.forSale && <option value="purchase">Purchase the book</option>}
+                    {book.forBidding && <option value="bid">Place a bid</option>}
                     {book.forLend && <option value="borrow">Borrow the book</option>}
                     {book.forExchange && <option value="exchange">Exchange the book</option>}
                     <option value="question">Ask a question</option>

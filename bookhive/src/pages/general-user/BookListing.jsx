@@ -54,9 +54,21 @@ const BookListingManagementPage = () => {
         headers: { 'Content-Type': 'application/json' },
       });
       
-      const placeholder = "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image";
+      const placeholder = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDE1MCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMjAwIiBmaWxsPSIjNkI3MjgwIi8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjRkZGRkZGIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+";
       // Only show books for the logged-in user
-      const tempBooks = response.data.filter(book => user && book.userEmail === user.email).map((book, index) => ({
+      const tempBooks = response.data.filter(book => user && book.userEmail === user.email).map((book, index) => {
+        // Debug: Log book data to see if bidding fields are present
+        if (book.forBidding) {
+          console.log('Bidding book found:', book);
+        }
+        
+        // Debug: Test image API endpoint
+        if (book.bookImage) {
+          console.log('Book has image:', book.title, 'Image file:', book.bookImage);
+          console.log('Image API URL would be:', `${baseUrl}/getFileAsBase64?fileName=${book.bookImage}&folderName=userBooks`);
+        }
+        
+        return {
         bookId: book.bookId || Date.now() + index,
         userEmail: book.userEmail,
         title: book.title || '',
@@ -70,6 +82,10 @@ const BookListingManagementPage = () => {
         lendingPeriod: book.lendingPeriod || '',
         forExchange: book.forExchange || false,
         exchangePeriod: book.exchangePeriod || '',
+        forBidding: book.forBidding || false,
+        initialBidPrice: book.initialBidPrice || 0,
+        biddingStartDate: book.biddingStartDate || '',
+        biddingEndDate: book.biddingEndDate || '',
         description: book.description || '',
         location: book.location || '',
         publishYear: book.publishYear || '',
@@ -79,14 +95,15 @@ const BookListingManagementPage = () => {
         createdAt: book.createdAt || new Date().toISOString(),
         updatedAt: book.updatedAt || new Date().toISOString(),
         images: [],
-        cover: placeholder, // Start with placeholder
+        cover: placeholder, // LazyImage will handle the actual loading
         bookImage: book.bookImage || null,
         views: book.views || 0,
         wishlistedBy: book.wishlistedBy || 0,
         trustScore: book.trustScore || 0,
         reviews: book.reviews || 0,
         status: book.status || 'active',
-      }));
+        };
+      });
       setListings(tempBooks);
       setTimeout(() => {
         preloadImages(tempBooks);
@@ -130,6 +147,10 @@ const BookListingManagementPage = () => {
     lendingPeriod: '',
     forExchange: false,
     exchangePeriod: '',
+    forBidding: false,
+    biddingStartDate: '',
+    biddingEndDate: '',
+    initialBidPrice: '',
     description: '',
     location: '',
     publishYear: '',
@@ -141,8 +162,14 @@ const BookListingManagementPage = () => {
   });
 
   const handleAddBook = () => {
+    // Check if user is logged in
+    if (!user?.email) {
+      toast.error("Please log in to add a book.");
+      return;
+    }
+
     setNewBook({
-      userEmail: user?.email || '',
+      userEmail: user.email, // Ensure current user email is set
       title: '',
       author: '',
       genre: [],
@@ -154,6 +181,10 @@ const BookListingManagementPage = () => {
       lendingPeriod: '',
       forExchange: false,
       exchangePeriod: '',
+      forBidding: false,
+      biddingStartDate: '',
+      biddingEndDate: '',
+      initialBidPrice: '',
       description: '',
       location: '',
       publishYear: '',
@@ -162,6 +193,13 @@ const BookListingManagementPage = () => {
       hashtags: [],
       cover: '',
       imageFile: null,
+    });
+    console.log('Opening add modal for user:', user?.email);
+    console.log('New book initialized:', {
+      userEmail: user.email,
+      title: '',
+      author: '',
+      imageFile: null
     });
     setShowAddModal(true);
   };
@@ -180,6 +218,10 @@ const BookListingManagementPage = () => {
       lendingPeriod: book.lendingPeriod || '',
       forExchange: book.forExchange,
       exchangePeriod: book.exchangePeriod || '',
+      forBidding: book.forBidding || false,
+      biddingStartDate: book.biddingStartDate ? new Date(book.biddingStartDate).toISOString().slice(0, 16) : '',
+      biddingEndDate: book.biddingEndDate ? new Date(book.biddingEndDate).toISOString().slice(0, 16) : '',
+      initialBidPrice: book.initialBidPrice || '',
       description: book.description,
       location: book.location,
       publishYear: book.publishYear,
@@ -196,9 +238,32 @@ const BookListingManagementPage = () => {
   const handleSaveBook = async (e) => {
     e.preventDefault();
 
+    // Ensure user is logged in
+    if (!user?.email) {
+      toast.error("You must be logged in to add a book.");
+      return;
+    }
+
+    // Validate required fields
+    if (!newBook.title.trim()) {
+      toast.error("Book title is required.");
+      return;
+    }
+
+    if (!newBook.author.trim()) {
+      toast.error("Author name is required.");
+      return;
+    }
+
+    // For new books, image is required
+    if (!editBook && !newBook.imageFile) {
+      toast.error("Please upload a book cover image.");
+      return;
+    }
+
     const bookData = {
-      userEmail: user?.email || '',
-      title: newBook.title,
+      userEmail: user.email, // Use current user email instead of form state
+      title: newBook.title.trim(),
       authors: newBook.author.split(",").map(a => a.trim()).filter(a => a),
       genres: newBook.genre,
       condition: newBook.condition,
@@ -206,13 +271,17 @@ const BookListingManagementPage = () => {
       price: newBook.forSale ? parseFloat(newBook.price || 0) : 0,
       forLend: newBook.forLend,
       lendingAmount: newBook.forLend ? parseFloat(newBook.lendingAmount || 0) : 0,
-      lendingPeriod: newBook.forLend ? newBook.lendingPeriod : "",
+      lendingPeriod: newBook.forLend ? parseInt(newBook.lendingPeriod || 0) : 0,
       forExchange: newBook.forExchange,
-      exchangePeriod: newBook.forExchange ? newBook.exchangePeriod : "",
-      description: newBook.description,
-      location: newBook.location,
-      publishYear: newBook.publishYear,
-      isbn: newBook.isbn,
+      exchangePeriod: newBook.forExchange ? parseInt(newBook.exchangePeriod || 0) : 0,
+      forBidding: newBook.forBidding,
+      initialBidPrice: newBook.forBidding ? parseFloat(newBook.initialBidPrice || 0) : 0,
+      biddingStartDate: newBook.forBidding ? newBook.biddingStartDate : "",
+      biddingEndDate: newBook.forBidding ? newBook.biddingEndDate : "",
+      description: newBook.description.trim(),
+      location: newBook.location.trim(),
+      publishYear: newBook.publishYear.trim(),
+      isbn: newBook.isbn.trim(),
       language: newBook.language,
       hashtags: newBook.hashtags
     };
@@ -221,15 +290,25 @@ const BookListingManagementPage = () => {
       bookData.bookId = editBook.bookId;
     }
 
+    // Show loading toast
+    if (!editBook) {
+      toast.info("📤 Adding your book to the library...", {
+        toastId: "book-upload" // Prevent duplicate toasts
+      });
+    }
+
     try {
       let response;
+      
       if (editBook) {
+        // For updates, use POST with FormData if image is provided, otherwise use PUT with JSON
         if (newBook.imageFile) {
-          // If updating image, use FormData and POST (if backend supports)
+          // Use FormData for image updates (POST endpoint)
           const formDataToSend = new FormData();
           formDataToSend.append('coverImage', newBook.imageFile);
           const jsonBlob = new Blob([JSON.stringify(bookData)], { type: 'application/json' });
           formDataToSend.append('bookData', jsonBlob);
+          
           response = await axios.post(
             `${baseUrl}/api/updateBook/${editBook.bookId}`,
             formDataToSend,
@@ -240,7 +319,7 @@ const BookListingManagementPage = () => {
             }
           );
         } else {
-          // No image update, send JSON
+          // No image update, send JSON data only
           response = await axios.put(
             `${baseUrl}/api/updateBook/${editBook.bookId}`,
             bookData,
@@ -252,13 +331,27 @@ const BookListingManagementPage = () => {
           );
         }
       } else {
-        // Add new book (always FormData)
+        // Add new book (always FormData for Google Drive compatibility)
         const formDataToSend = new FormData();
+        
+        // Add image file if provided (required for new books)
         if (newBook.imageFile) {
           formDataToSend.append('coverImage', newBook.imageFile);
+          console.log('Adding image file:', newBook.imageFile.name, 'Size:', newBook.imageFile.size);
+        } else {
+          console.warn('No image file provided for new book');
         }
+        
+        // Add book data as JSON blob
         const jsonBlob = new Blob([JSON.stringify(bookData)], { type: 'application/json' });
         formDataToSend.append('bookData', jsonBlob);
+        
+        console.log('Sending book data:', bookData);
+        console.log('FormData entries:');
+        for (let [key, value] of formDataToSend.entries()) {
+          console.log(key, value);
+        }
+        
         response = await axios.post(
           `${baseUrl}/api/saveBook-User`,
           formDataToSend,
@@ -270,33 +363,80 @@ const BookListingManagementPage = () => {
         );
       }
 
-      if (response.data.message === "success") {
-        alert(editBook ? "Book Updated successfully!" : "Book Added successfully!");
+      console.log('Server response:', response.data);
+
+      // Check for various success response formats
+      if (response.data.message === "success" || response.data.status === "success" || response.status === 200) {
+        // Show appropriate success message
+        if (editBook) {
+          toast.success("🎉 Book updated successfully!");
+        } else {
+          toast.success(`📚 "${newBook.title}" has been added to your library successfully!`);
+        }
+        
         setShowAddModal(false);
         setShowEditModal(false);
         setEditBook(null);
+        
+        // Clear the cache for this book to ensure fresh data
+        if (response.data.bookImage) {
+          imageCache.delete(response.data.bookImage, 'userBooks');
+        }
+        
+        // Refresh the book list to show the new book
         fetchBooks();
       } else {
-        alert("Error: " + response.data.message);
+        console.error('Server returned error:', response.data);
+        toast.error("❌ Error: " + (response.data.message || "Failed to save book"));
       }
     } catch (error) {
       console.error("Error saving book:", error);
-      alert("Something went wrong: " + (error.response?.data?.message || error.message));
+      
+      // Dismiss loading toast
+      toast.dismiss("book-upload");
+      
+      // Provide specific error messages for different types of errors
+      let errorMessage = "❌ Something went wrong: ";
+      if (error.response?.status === 415) {
+        errorMessage += "Server does not support the request format. Please try again or contact support.";
+      } else if (error.response?.status === 400) {
+        errorMessage += "Invalid book data. Please check all required fields.";
+      } else if (error.response?.status === 413) {
+        errorMessage += "File too large for upload. Please use a smaller image (max 5MB).";
+      } else if (error.response?.status === 401) {
+        errorMessage += "You are not authorized. Please log in again.";
+      } else if (error.response?.status === 500) {
+        errorMessage += "Server error. Please try again later.";
+      } else if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else if (error.message.includes('Network Error')) {
+        errorMessage += "Network error. Please check your connection and try again.";
+      } else {
+        errorMessage += error.message;
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000 // Show error for 5 seconds
+      });
     }
   };
 
   const handleDeleteBook = async (id) => {
-    if (window.confirm("Are you sure you want to delete this listing?")) {
+    // Find the book title for better user feedback
+    const bookToDelete = listings.find(book => book.bookId === id);
+    const bookTitle = bookToDelete?.title || 'this book';
+    
+    if (window.confirm(`Are you sure you want to delete "${bookTitle}" from your library?`)) {
       try {
         const response = await axios.delete(`${baseUrl}/api/deleteBook/${id}`);
         if (response.data.message === "success") {
           setListings(listings.filter((book) => book.bookId !== id));
-          toast.success("Book deleted successfully!");
+          toast.success(`🗑️ "${bookTitle}" has been deleted from your library!`);
         } else {
-          toast.error("Failed to delete book: " + response.data.message);
+          toast.error("❌ Failed to delete book: " + response.data.message);
         }
       } catch (err) {
-        toast.error(`Failed to delete book: ${err.message}`);
+        toast.error(`❌ Failed to delete book: ${err.message}`);
       }
     }
   };
@@ -323,32 +463,49 @@ const BookListingManagementPage = () => {
 
   const allGenres = [...new Set(listings.flatMap(book => book.genres || []))];
 
-  const BookCard = ({ book }) => (
+  const BookCard = ({ book }) => {
+    // Debug: Log bidding book data
+    if (book.forBidding) {
+      console.log('Rendering bidding book:', book.title, book);
+    }
+    
+    return (
       <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
         <div className="relative h-48 mb-4 overflow-hidden rounded-xl">
-          <LazyImage
-            src={book.cover}
-            alt={book.title}
-            className="w-full h-full transition-transform duration-300 group-hover:scale-105"
-            fileName={book.bookImage}
-            folderName="userBooks"
-            baseUrl={baseUrl}
-          />
+          {book.bookImage ? (
+            <LazyImage
+              src={book.cover}
+              alt={book.title}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fileName={book.bookImage}
+              folderName="userBooks"
+              baseUrl={baseUrl}
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <div className="text-xs">No Image</div>
+                <div className="text-xs">{book.title}</div>
+              </div>
+            </div>
+          )}
         <button
           className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm z-10"
           title="Wishlist"
         >
           <Heart className="w-4 h-4" />
         </button>
-        {(book.forSale || book.forLend || book.forExchange) && (
+        {(book.forSale || book.forLend || book.forExchange || book.forBidding) && (
           <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10">
             {book.forSale && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">For Sale</span>}
             {book.forLend && <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium">For Lending</span>}
             {book.forExchange && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">For Exchange</span>}
+            {book.forBidding && <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">For Bidding</span>}
           </div>
         )}
-      </div>
-      <div className="flex justify-between items-start mb-4">
+        </div>
+        
+        <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <h3 className="font-semibold text-gray-900 text-lg group-hover:text-blue-600 transition-colors line-clamp-1">{book.title}</h3>
@@ -401,17 +558,26 @@ const BookListingManagementPage = () => {
             <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.condition === 'New' ? "bg-green-100 text-green-800" : book.condition === 'Like New' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`}>{book.condition}</span>
           </div>
           {book.forSale && book.price && <div className="text-right"><p className="text-lg font-bold text-green-600">Rs. {book.price}</p></div>}
+          {book.forBidding && book.initialBidPrice && <div className="text-right"><p className="text-lg font-bold text-orange-600">Start: Rs. {book.initialBidPrice}</p></div>}
         </div>
         <div className="flex flex-wrap gap-2">
           <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forSale ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}`}>{book.forSale ? "For Sale" : "Not for Sale"}</span>
           <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forLend ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>{book.forLend ? "For Lending" : "Not for Lending"}</span>
           <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forExchange ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-600"}`}>{book.forExchange ? "For Exchange" : "Not for Exchange"}</span>
+          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forBidding ? "bg-orange-100 text-orange-800" : "bg-gray-100 text-gray-600"}`}>{book.forBidding ? "For Bidding" : "Not for Bidding"}</span>
         </div>
-        {(book.forLend || book.forExchange) && (
+        {(book.forLend || book.forExchange || book.forBidding) && (
           <div className="bg-gray-50 rounded-lg p-3 text-xs">
             {book.forLend && book.lendingAmount && <div className="mb-1"><span className="font-medium text-gray-700">Lending Fee:</span> Rs. {book.lendingAmount}</div>}
-            {book.forLend && book.lendingPeriod && <div className="mb-1"><span className="font-medium text-gray-700">Lending Period:</span> {book.lendingPeriod}</div>}
-            {book.forExchange && book.exchangePeriod && <div><span className="font-medium text-gray-700">Exchange Period:</span> {book.exchangePeriod}</div>}
+            {book.forLend && book.lendingPeriod && <div className="mb-1"><span className="font-medium text-gray-700">Lending Period:</span> {book.lendingPeriod} days</div>}
+            {book.forExchange && book.exchangePeriod && <div className="mb-1"><span className="font-medium text-gray-700">Exchange Period:</span> {book.exchangePeriod} days</div>}
+            {book.forBidding && (
+              <div className="space-y-1">
+                {book.initialBidPrice && <div><span className="font-medium text-gray-700">Starting Bid:</span> Rs. {book.initialBidPrice}</div>}
+                {book.biddingStartDate && <div><span className="font-medium text-gray-700">Auction Start:</span> {new Date(book.biddingStartDate).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
+                {book.biddingEndDate && <div><span className="font-medium text-gray-700">Auction End:</span> {new Date(book.biddingEndDate).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
+              </div>
+            )}
           </div>
         )}
         <div className="flex gap-2 pt-2 border-t border-gray-200">
@@ -419,9 +585,10 @@ const BookListingManagementPage = () => {
           <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Share"><Share2 className="w-4 h-4 text-gray-600" /></button>
           <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Message"><MessageCircle className="w-4 h-4 text-gray-600" /></button>
         </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const stats = {
     totalBooks: listings.length,
@@ -429,6 +596,7 @@ const BookListingManagementPage = () => {
     forSale: listings.filter(b => b.forSale).length,
     forLend: listings.filter(b => b.forLend).length,
     forExchange: listings.filter(b => b.forExchange).length,
+    forBidding: listings.filter(b => b.forBidding).length,
     totalViews: listings.reduce((sum, book) => sum + (book.views || 0), 0),
     totalWishlists: listings.reduce((sum, book) => sum + (book.wishlistedBy || 0), 0)
   };
@@ -459,7 +627,7 @@ const BookListingManagementPage = () => {
               <p className="text-gray-600">Add, edit, or remove your book listings</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
             <div className="bg-blue-50 rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-blue-600">{stats.totalBooks}</div>
               <div className="text-sm text-blue-600">Total Books</div>
@@ -479,6 +647,10 @@ const BookListingManagementPage = () => {
             <div className="bg-pink-50 rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-pink-600">{stats.forExchange}</div>
               <div className="text-sm text-pink-600">For Exchange</div>
+            </div>
+            <div className="bg-amber-50 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-amber-600">{stats.forBidding}</div>
+              <div className="text-sm text-amber-600">For Bidding</div>
             </div>
             <div className="bg-indigo-50 rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-indigo-600">{stats.totalViews}</div>
@@ -652,9 +824,29 @@ const BookListingManagementPage = () => {
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
+                            // Validate file type (Google Drive compatible image formats)
+                            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                            if (!allowedTypes.includes(file.type)) {
+                              toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                              e.target.value = ''; // Clear the input
+                              return;
+                            }
+                            
+                            // Validate file size (5MB limit for Google Drive efficiency)
+                            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                            if (file.size > maxSize) {
+                              toast.error('File size must be less than 5MB for Google Drive upload');
+                              e.target.value = ''; // Clear the input
+                              return;
+                            }
+                            
+                            // Generate preview for user
                             const reader = new FileReader();
                             reader.onload = () => {
                               setNewBook({ ...newBook, imageFile: file, cover: reader.result });
+                            };
+                            reader.onerror = () => {
+                              toast.error('Failed to read image file');
                             };
                             reader.readAsDataURL(file);
                           }
@@ -781,19 +973,17 @@ const BookListingManagementPage = () => {
                             <p className="text-xs text-gray-500 mt-1">Security deposit or lending fee</p>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Lending Period</label>
-                            <select
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Lending Period (Days)</label>
+                            <input
+                              type="number"
                               value={newBook.lendingPeriod}
                               onChange={(e) => setNewBook({ ...newBook, lendingPeriod: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                            >
-                              <option value="">Select lending period</option>
-                              <option value="7 days">7 days</option>
-                              <option value="14 days">14 days</option>
-                              <option value="21 days">21 days</option>
-                              <option value="30 days">30 days</option>
-                              <option value="Custom">Custom period</option>
-                            </select>
+                              placeholder="Enter number of days (e.g., 7, 14, 30)"
+                              min="1"
+                              max="365"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">How many days you want to lend this book</p>
                           </div>
                         </div>
                       )}
@@ -810,20 +1000,66 @@ const BookListingManagementPage = () => {
                       </label>
                       {newBook.forExchange && (
                         <div className="ml-7">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Exchange Period</label>
-                          <select
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Exchange Period (Days)</label>
+                          <input
+                            type="number"
                             value={newBook.exchangePeriod}
                             onChange={(e) => setNewBook({ ...newBook, exchangePeriod: e.target.value })}
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          >
-                            <option value="">Select exchange period</option>
-                            <option value="30 days">30 days</option>
-                            <option value="45 days">45 days</option>
-                            <option value="60 days">60 days</option>
-                            <option value="90 days">90 days</option>
-                            <option value="Permanent">Permanent exchange</option>
-                          </select>
-                          <p className="text-xs text-gray-500 mt-1">How long you want to exchange books</p>
+                            placeholder="Enter number of days (e.g., 30, 45, 60)"
+                            min="1"
+                            max="365"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">How many days you want to exchange books</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <label className="flex items-center mb-3">
+                        <input
+                          type="checkbox"
+                          checked={newBook.forBidding}
+                          onChange={(e) => setNewBook({ ...newBook, forBidding: e.target.checked })}
+                          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-yellow-500"
+                        />
+                        <span className="ml-3 text-sm font-medium text-gray-700">Available for Bidding</span>
+                      </label>
+                      {newBook.forBidding && (
+                        <div className="ml-7 space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Initial Bid Price (LKR)</label>
+                            <input
+                              type="number"
+                              value={newBook.initialBidPrice}
+                              onChange={(e) => setNewBook({ ...newBook, initialBidPrice: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                              placeholder="Starting bid amount"
+                              min="0"
+                              step="10"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Minimum starting bid amount</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Bidding Start Date & Time</label>
+                            <input
+                              type="datetime-local"
+                              value={newBook.biddingStartDate}
+                              onChange={(e) => setNewBook({ ...newBook, biddingStartDate: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                              min={new Date().toISOString().slice(0, 16)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Bidding End Date & Time</label>
+                            <input
+                              type="datetime-local"
+                              value={newBook.biddingEndDate}
+                              onChange={(e) => setNewBook({ ...newBook, biddingEndDate: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                              min={newBook.biddingStartDate || new Date().toISOString().slice(0, 16)}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">Set the auction start and end times for this book</p>
                         </div>
                       )}
                     </div>
