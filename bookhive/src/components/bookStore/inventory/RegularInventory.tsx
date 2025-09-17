@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Search, Trash2, ChevronDown } from 'lucide-react';
 
-import axios from 'axios';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-
 import { useAuth } from "../../AuthContext";
+
 import LoadingSpinner from "../CommonStuff/LoadingSpinner.jsx";
 import {formatDateTime, getConditionBadge} from "../CommonStuff/CommonFunc.tsx";
 
@@ -19,6 +19,7 @@ const RegularInventory = () => {
   const user = { userId: 603 }; // hard-coded userId until login completed
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchISBN, setSearchISBN] = useState("");
   const [selectedCondition, setSelectedCondition] = useState("");
 
   const getRegularInventory = async () => {
@@ -74,6 +75,16 @@ const RegularInventory = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
               </div>
             </div>
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input value={searchISBN}
+                  type="text" placeholder="Search listings by ISBN..."
+                  onChange={(e) => setSearchISBN(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+              </div>
+            </div>
+
             <div className="relative">
               <select value={selectedCondition}
                 onChange={(e) => setSelectedCondition(e.target.value)}
@@ -95,7 +106,6 @@ const RegularInventory = () => {
               <thead className="bg-slate-50 border-b border-gray-200">
                 <tr>
                   <th className="p-4 font-semibold text-slate-700">BOOK DETAILS</th>
-                  <th className="p-4 font-semibold text-slate-700">ISBN</th>
                   <th className="p-4 font-semibold text-slate-700">CONDITION</th>
                   <th className="p-4 font-semibold text-slate-700">PRICE</th>
                   <th className="p-4 font-semibold text-slate-700">COUNT</th>
@@ -130,8 +140,10 @@ const RegularInventory = () => {
                         item.genres?.some((g: string) => g.toLowerCase().includes(term)) ||
                         item.tags?.some((t: string) => t.toLowerCase().includes(term));
 
+                      const matchesISBN = item.isbn.includes(searchISBN);
+
                       const matchesCondition = !selectedCondition || item.condition === selectedCondition;
-                      return matchesSearch && matchesCondition;
+                      return matchesSearch && matchesCondition && matchesISBN;
                     })
                     .map((item) => (
                       <tr key={item.inventoryId} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
@@ -139,8 +151,12 @@ const RegularInventory = () => {
                           <div className="flex items-center space-x-4">
                             <img src={item.coverImageURL} alt={item.title} className="w-15 h-20 object-cover rounded-lg border border-gray-200" />
                             <div>
-                              <h3 className="font-semibold text-slate-800">
-                                {item?.title} </h3>
+                              <p>
+                                <span className="font-semibold text-slate-800">{item.title}</span>
+                                {item?.seriesName && (
+                                  <span className="font-semibold text-sm text-slate-500">
+                                    : {item?.seriesName} # {item?.seriesInstallment}</span> 
+                                )}</p>
                               <p className="text-sm text-slate-600">
                                 by {item?.authors.slice(0, 3).join(', ')}
                                 {item?.authors.length > 3 && ' ...'}</p>
@@ -154,10 +170,6 @@ const RegularInventory = () => {
                               </div>
                             </div>
                           </div>
-                        </td>
-                        <td className="p-4 text-sm text-slate-600">
-                          <div className="flex justify-center items-center h-full">
-                            {item.isbn} </div>
                         </td>
                         <td className="p-4 text-center align-middle">
                           <div className="flex justify-center items-center h-full">
