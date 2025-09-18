@@ -54,7 +54,8 @@ const EditInventory = ({inventoryId}: {inventoryId: number}) => {
       reset(); 
     }
   }, [currentItem])
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, reset } = useForm({
+
+  const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm({
     resolver: zodResolver(InventorySchema),
     defaultValues: currentItem,
   });
@@ -117,7 +118,7 @@ const EditInventory = ({inventoryId}: {inventoryId: number}) => {
   const editMutation = useMutation({
     mutationFn: (data: InventoryFormFields) => editInventory(data, coverImage as File),
     onSuccess: () => {
-      toast.success("Inventory record created successfully!");
+      toast.success("Inventory details edited successfully!");
       queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
       setShowForm(false);
     },

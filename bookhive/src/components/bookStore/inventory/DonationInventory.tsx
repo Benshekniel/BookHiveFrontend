@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from "../../AuthContext.jsx";
 
 import LoadingSpinner from "../CommonStuff/LoadingSpinner.jsx";
-import { formatDateTime, getConditionBadge, getStatusBadge } from "../CommonStuff/CommonFunc.tsx";
+import { formatDateTime, getConditionBadge } from "../CommonStuff/CommonFunc.tsx";
 
 import InventoryStockAdjuster from '../Forms/InventoryStockAdjuster';
 import EditInventory from '../Forms/EditInventory';
@@ -134,7 +134,7 @@ const DonationInventory = () => {
               <tbody>
                 {isPending ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-6 text-gray-500">
+                    <td colSpan={6} className="text-center py-6 text-gray-500">
                       <LoadingSpinner />
                     </td>
                   </tr>) : error ? (

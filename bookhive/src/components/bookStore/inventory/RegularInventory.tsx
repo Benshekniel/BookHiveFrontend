@@ -117,17 +117,17 @@ const RegularInventory = () => {
               <tbody>
                 {isPending ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-6 text-gray-500">
+                    <td colSpan={7} className="text-center py-6 text-gray-500">
                       <LoadingSpinner />
                     </td>
                   </tr>) : error ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-6 text-red-500">
+                      <td colSpan={7} className="text-center py-6 text-red-500">
                         Server unreachable. Please try again later.
                       </td>
                     </tr>) : regularInventory.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-6 text-gray-400">
+                        <td colSpan={7} className="text-center py-6 text-gray-400">
                           No items found.
                         </td>
                       </tr>) :

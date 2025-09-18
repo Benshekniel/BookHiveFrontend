@@ -27,7 +27,7 @@ const NewInventoryItem = () => {
 
   const TextInput = ({ itemName, type = "text", label, placeholder, full}:
     { itemName: keyof InventoryFormFields; type?: string; label: string; placeholder?: string; full?: boolean }) => (
-    <div>
+    <div className={full ? "col-span-2" : ""}>
       <label htmlFor={itemName as string} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>

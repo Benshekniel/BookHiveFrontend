@@ -155,7 +155,7 @@ const BookFromInventory = ({inventoryId}: {inventoryId: number}) => {
             <form onSubmit={handleSubmit(onSubmit, onError)} className="p-6 space-y-4">
 
               <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-6 px-10 mb-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Book Images (max 3)</h4>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Book Images (min 1, max 3)</h4>
 
                 <div className="flex gap-4 flex-wrap justify-center">
                   {previewUrls.map((url, index) => (
@@ -190,7 +190,18 @@ const BookFromInventory = ({inventoryId}: {inventoryId: number}) => {
 
               <div className="bg-gray-50 rounded-xl py-6 px-10 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 col-span-2">
-                  Pricing Details </h4>
+                  Terms and Pricing </h4>
+
+                <div>
+                  <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-2">
+                    Select the book's condition: </label>
+                  <select id="condition" {...register("condition")}
+                    className="border border-gray-700 text-gray-700 py-3 px-3 rounded-l font-medium hover:bg-gray-50 transition-colors">
+                    <option value="NEW">New - Never been read</option>
+                    <option value="USED">Used - Good readable condition</option>
+                    <option value="FAIR">Fair - Shows wear but readable</option>
+                  </select>
+                </div>
 
                 <div className="col-span-2">
                   <label htmlFor="terms" className="block text-sm font-medium text-gray-700 mb-2">
@@ -207,17 +218,6 @@ const BookFromInventory = ({inventoryId}: {inventoryId: number}) => {
                   )}
                 </div>
 
-                <div>
-                  <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-2">
-                    Select the book's condition: </label>
-                  <select id="condition" {...register("condition")}
-                    className="border border-gray-700 text-gray-700 py-3 px-3 rounded-l font-medium hover:bg-gray-50 transition-colors">
-                    <option value="NEW">New - Never been read</option>
-                    <option value="USED">Used - Good readable condition</option>
-                    <option value="FAIR">Fair - Shows wear but readable</option>
-                  </select>
-                </div>
-                <div></div>
                 <TextInput itemName="lendFee" label="Lending Fee (Rs.)" type="number" />
                 <TextInput itemName="lendingPeriod" label="Lending Period (days)" type="number" />
                 <TextInput itemName="lateFee" label="Late Fee (Rs.)" type="number" />
