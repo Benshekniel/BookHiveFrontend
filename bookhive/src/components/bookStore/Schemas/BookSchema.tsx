@@ -44,7 +44,6 @@ const BookSchema = z.object({
   seriesInstallment: z.coerce.number().int().optional(),
   seriesTotalBooks: z.coerce.number().int().optional(),
 
-  isForLending: z.boolean().default(true),
   isForSelling: z.boolean().default(false),
 });
 export type BookFormFields = z.infer<typeof BookSchema>;

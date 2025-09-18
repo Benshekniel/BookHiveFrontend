@@ -2,8 +2,8 @@ import axios from "axios";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
 
 import { InventorySchema, InventoryFormFields } from "../Schemas/InventorySchema";
