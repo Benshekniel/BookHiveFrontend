@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Package, Clock, CheckCircle, Truck, MapPin, Calendar, Star, MessageSquare, RefreshCw, AlertCircle, Eye, BookOpen, DollarSign, User, Phone, Mail, ArrowRight, Download, FileText, Camera, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Package, Clock, CheckCircle, Truck, MapPin, Calendar, Star, MessageSquare, RefreshCw, AlertCircle, Eye, BookOpen, DollarSign, User, Phone, Mail, ArrowRight, Download, FileText, Camera, ThumbsUp, ThumbsDown, Gavel, Trophy, X, XCircle, CreditCard } from "lucide-react";
 import { books, users } from "../../data/mockData";
 
 const OrdersPage = () => {
@@ -7,6 +7,12 @@ const OrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelForm, setCancelForm] = useState({
+    reason: "",
+    otherReason: "",
+    refundMethod: "original",
+  });
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     comment: "",
@@ -139,6 +145,109 @@ const OrdersPage = () => {
         { status: "Exchange Completed", timestamp: "2024-02-20 05:00 PM", description: "Exchange period ended successfully" },
       ],
     },
+    // New mock bidding orders
+    {
+      id: "ORD007",
+      type: "bidding",
+      book: books[2] || books[0],
+      seller: users[2] || users[0],
+      orderDate: "2024-02-10",
+      status: "delivered",
+      totalAmount: 1800,
+      winningBid: 1700,
+      deliveryAmount: 100,
+      deliveryMethod: "delivery",
+      deliveryAddress: "456 University Avenue, Colombo 07",
+      auctionEndDate: "2024-02-08",
+      paymentMethod: "credit_card",
+      trackingNumber: "BH001234573",
+      tracking: [
+        { status: "Auction Won", timestamp: "2024-02-08 06:00 PM", description: "Congratulations! You won the auction" },
+        { status: "Payment Completed", timestamp: "2024-02-08 06:30 PM", description: "Payment processed successfully" },
+        { status: "Book Dispatched", timestamp: "2024-02-10 10:00 AM", description: "Book has been dispatched" },
+        { status: "Delivered", timestamp: "2024-02-12 03:00 PM", description: "Book delivered successfully" },
+      ],
+    },
+    {
+      id: "ORD008",
+      type: "bidding",
+      book: books[3] || books[1],
+      seller: users[3] || users[1],
+      orderDate: "2024-02-15",
+      status: "in_transit",
+      totalAmount: 2200,
+      winningBid: 2100,
+      deliveryAmount: 100,
+      deliveryMethod: "delivery",
+      deliveryAddress: "789 Campus Road, Colombo 03",
+      auctionEndDate: "2024-02-14",
+      paymentMethod: "cash_on_delivery",
+      trackingNumber: "BH001234574",
+      tracking: [
+        { status: "Auction Won", timestamp: "2024-02-14 08:00 PM", description: "Congratulations! You won the auction" },
+        { status: "Payment Confirmed", timestamp: "2024-02-14 08:15 PM", description: "Cash on delivery confirmed" },
+        { status: "Book Dispatched", timestamp: "2024-02-15 11:00 AM", description: "Book is on the way" },
+        { status: "Out for Delivery", timestamp: "2024-02-16 09:00 AM", description: "Book will be delivered today" },
+      ],
+    },
+    {
+      id: "ORD009",
+      type: "bidding",
+      book: books[0],
+      seller: users[0],
+      orderDate: "2024-02-20",
+      status: "active",
+      totalAmount: 1550,
+      winningBid: 1450,
+      deliveryAmount: 100,
+      deliveryMethod: "pickup",
+      deliveryAddress: "Central Library, Colombo 01",
+      auctionEndDate: "2024-02-19",
+      paymentMethod: "credit_card",
+      trackingNumber: "BH001234575",
+      tracking: [
+        { status: "Auction Won", timestamp: "2024-02-19 07:30 PM", description: "Congratulations! You won the auction" },
+        { status: "Payment Completed", timestamp: "2024-02-19 07:45 PM", description: "Payment processed successfully" },
+        { status: "Ready for Pickup", timestamp: "2024-02-20 10:00 AM", description: "Book is ready for pickup at the specified location" },
+      ],
+    },
+    // Cancellable orders for testing
+    {
+      id: "ORD010",
+      type: "purchase",
+      book: books[1] || books[0],
+      seller: users[1] || users[0],
+      orderDate: "2024-02-25",
+      status: "pending",
+      totalAmount: 1200,
+      deliveryMethod: "delivery",
+      deliveryAddress: "123 Main Street, Colombo 05",
+      estimatedDelivery: "2024-02-28",
+      paymentMethod: "credit_card",
+      trackingNumber: "BH001234576",
+      tracking: [
+        { status: "Order Placed", timestamp: "2024-02-25 11:00 AM", description: "Your order has been confirmed" },
+        { status: "Payment Confirmed", timestamp: "2024-02-25 11:05 AM", description: "Payment received successfully" },
+        { status: "Awaiting Seller Confirmation", timestamp: "2024-02-25 11:05 AM", description: "Waiting for seller to confirm the order" },
+      ],
+    },
+    {
+      id: "ORD011",
+      type: "borrow",
+      book: books[2] || books[0],
+      lender: users[2] || users[0],
+      orderDate: "2024-02-26",
+      status: "pending",
+      borrowPeriod: 14,
+      securityDeposit: 400,
+      deliveryMethod: "pickup",
+      deliveryAddress: "University Campus, Colombo 07",
+      trackingNumber: "BH001234577",
+      tracking: [
+        { status: "Borrow Request Submitted", timestamp: "2024-02-26 02:00 PM", description: "Your borrow request has been submitted" },
+        { status: "Awaiting Lender Approval", timestamp: "2024-02-26 02:00 PM", description: "Waiting for lender to approve the request" },
+      ],
+    },
   ]);
 
   const getStatusColor = (status) => {
@@ -172,6 +281,8 @@ const OrdersPage = () => {
         return <AlertCircle size={16} />;
       case "pending":
         return <Clock size={16} />;
+      case "cancelled":
+        return <XCircle size={16} />;
       default:
         return <Package size={16} />;
     }
@@ -182,6 +293,7 @@ const OrdersPage = () => {
     if (activeTab === "borrowed") return order.type === "borrow";
     if (activeTab === "purchased") return order.type === "purchase";
     if (activeTab === "exchanged") return order.type === "exchange";
+    if (activeTab === "bidding") return order.type === "bidding";
     if (activeTab === "active") return ["active", "in_transit"].includes(order.status);
     if (activeTab === "completed") return order.status === "delivered";
     return true;
@@ -192,6 +304,115 @@ const OrdersPage = () => {
     alert("Thank you for your review!");
     setShowReviewModal(false);
     setReviewForm({ rating: 5, comment: "", bookCondition: 5, ownerRating: 5 });
+  };
+
+  // Cancellation reasons based on order type
+  const getCancellationReasons = (orderType) => {
+    const commonReasons = [
+      "Changed my mind",
+      "Found a better deal",
+      "No longer needed",
+      "Delivery taking too long",
+      "Payment issues",
+      "Other"
+    ];
+
+    const specificReasons = {
+      purchase: [...commonReasons, "Book condition concerns", "Seller unavailable"],
+      borrow: [...commonReasons, "Shorter borrowing period needed", "Changed reading plans"],
+      exchange: [...commonReasons, "Changed my book preference", "Exchange terms not suitable"],
+      bidding: [...commonReasons, "Bid amount too high", "Found alternative book"]
+    };
+
+    return specificReasons[orderType] || commonReasons;
+  };
+
+  // Calculate refund amount with deductions
+  const calculateRefundAmount = (order) => {
+    if (!order.totalAmount) return { refundAmount: 0, deductionAmount: 0, deductionReasons: [] };
+
+    let baseAmount = order.totalAmount;
+    let deductionAmount = 0;
+    let deductionReasons = [];
+
+    // Time-based deductions
+    const orderDate = new Date(order.orderDate);
+    const currentDate = new Date();
+    const hoursDiff = Math.abs(currentDate - orderDate) / 36e5;
+
+    if (hoursDiff > 24) {
+      // After 24 hours, 10% processing fee
+      const processingFee = Math.round(baseAmount * 0.1);
+      deductionAmount += processingFee;
+      deductionReasons.push(`Processing fee (10%): Rs. ${processingFee}`);
+    }
+
+    // Status-based deductions
+    if (order.status === "in_transit") {
+      const shippingFee = 150;
+      deductionAmount += shippingFee;
+      deductionReasons.push(`Shipping charges: Rs. ${shippingFee}`);
+    }
+
+    // Order type specific deductions
+    if (order.type === "bidding") {
+      const auctionFee = Math.round(baseAmount * 0.05);
+      deductionAmount += auctionFee;
+      deductionReasons.push(`Auction processing fee (5%): Rs. ${auctionFee}`);
+    }
+
+    const refundAmount = Math.max(0, baseAmount - deductionAmount);
+
+    return { refundAmount, deductionAmount, deductionReasons };
+  };
+
+  const handleCancelOrder = () => {
+    if (!selectedOrder || !cancelForm.reason) {
+      alert("Please select a reason for cancellation.");
+      return;
+    }
+
+    if (cancelForm.reason === "Other" && !cancelForm.otherReason.trim()) {
+      alert("Please provide details for 'Other' reason.");
+      return;
+    }
+
+    const { refundAmount, deductionAmount, deductionReasons } = calculateRefundAmount(selectedOrder);
+
+    // Update order status to cancelled
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.id === selectedOrder.id
+          ? {
+              ...order,
+              status: "cancelled",
+              cancelReason: cancelForm.reason === "Other" ? cancelForm.otherReason : cancelForm.reason,
+              cancelDate: new Date().toLocaleDateString(),
+              refundAmount,
+              deductionAmount,
+              tracking: [
+                ...order.tracking,
+                {
+                  status: "Order Cancelled",
+                  timestamp: new Date().toLocaleString(),
+                  description: `Order cancelled by customer. Refund of Rs. ${refundAmount} will be processed within 3-5 business days.`
+                }
+              ]
+            }
+          : order
+      )
+    );
+
+    const deductionMessage = deductionReasons.length > 0 ? 
+      `\nDeductions applied: ${deductionReasons.join(', ')}` : '';
+    alert(`Order cancelled successfully! Refund of Rs. ${refundAmount} will be processed within 3-5 business days.${deductionMessage}`);
+    setShowCancelModal(false);
+    setCancelForm({ reason: "", otherReason: "", refundMethod: "original" });
+  };
+
+  const canCancelOrder = (order) => {
+    const cancellableStatuses = ["pending", "active", "in_transit"];
+    return cancellableStatuses.includes(order.status);
   };
 
   // Simulate real-time updates
@@ -249,12 +470,27 @@ const OrdersPage = () => {
           {order.type === "purchase" && (
             <p className="text-lg font-bold text-green-600 mt-2">Rs. {order.totalAmount}</p>
           )}
+          {order.type === "bidding" && (
+            <div className="mt-2 text-right">
+              <div className="flex items-center justify-end mb-1">
+                <Gavel className="w-4 h-4 text-yellow-500 mr-1" />
+                <span className="text-sm text-yellow-600 font-medium">Won Auction</span>
+              </div>
+              <p className="text-lg font-bold text-green-600">Rs. {order.totalAmount}</p>
+              <p className="text-xs text-gray-500">Winning Bid: Rs. {order.winningBid}</p>
+            </div>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <p className="text-sm text-gray-600">
-            <strong>{order.type === "purchase" ? "Seller:" : order.type === "borrow" ? "Lender:" : "Exchanger:"}</strong>{" "}
+            <strong>
+              {order.type === "purchase" ? "Seller:" : 
+               order.type === "borrow" ? "Lender:" : 
+               order.type === "exchange" ? "Exchanger:" :
+               order.type === "bidding" ? "Seller:" : "Seller:"}
+            </strong>{" "}
             {(order.seller || order.lender || order.exchanger).name}
           </p>
           <p className="text-sm text-gray-600">
@@ -264,6 +500,11 @@ const OrdersPage = () => {
           {order.trackingNumber && (
             <p className="text-sm text-gray-600">
               <strong>Tracking:</strong> {order.trackingNumber}
+            </p>
+          )}
+          {order.type === "bidding" && order.auctionEndDate && (
+            <p className="text-sm text-gray-600">
+              <strong>Auction Ended:</strong> {order.auctionEndDate}
             </p>
           )}
         </div>
@@ -298,6 +539,18 @@ const OrdersPage = () => {
           <Eye className="w-4 h-4" />
           <span>Track Order</span>
         </button>
+        {canCancelOrder(order) && (
+          <button
+            onClick={() => {
+              setSelectedOrder(order);
+              setShowCancelModal(true);
+            }}
+            className="bg-transparent border-2 border-red-300 text-red-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-red-50 transition-colors"
+          >
+            <XCircle className="w-4 h-4" />
+            <span>Cancel Order</span>
+          </button>
+        )}
         {order.status === "delivered" && (
           <button
             onClick={() => {
@@ -314,7 +567,12 @@ const OrdersPage = () => {
           className="bg-transparent border-2 border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
         >
           <MessageSquare className="w-4 h-4" />
-          <span>Contact {order.type === "purchase" ? "Seller" : order.type === "borrow" ? "Lender" : "Exchanger"}</span>
+          <span>Contact {
+            order.type === "purchase" ? "Seller" : 
+            order.type === "borrow" ? "Lender" : 
+            order.type === "exchange" ? "Exchanger" :
+            order.type === "bidding" ? "Seller" : "Seller"
+          }</span>
         </button>
         {order.status === "delivered" && (
           <button
@@ -345,7 +603,7 @@ const OrdersPage = () => {
           </div>
         </div>
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
@@ -409,6 +667,19 @@ const OrdersPage = () => {
               </div>
             </div>
           </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium mb-1">Won Auctions</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {orders.filter((o) => o.type === "bidding").length}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-yellow-100">
+                <Trophy className="w-6 h-6 text-yellow-500" />
+              </div>
+            </div>
+          </div>
         </div>
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
@@ -419,6 +690,7 @@ const OrdersPage = () => {
               { key: "borrowed", label: "Borrowed Books", count: orders.filter((o) => o.type === "borrow").length },
               { key: "purchased", label: "Purchased Books", count: orders.filter((o) => o.type === "purchase").length },
               { key: "exchanged", label: "Exchanged Books", count: orders.filter((o) => o.type === "exchange").length },
+              { key: "bidding", label: "Won Auctions", count: orders.filter((o) => o.type === "bidding").length },
               { key: "completed", label: "Completed", count: orders.filter((o) => o.status === "delivered").length },
             ].map((tab) => (
               <button
@@ -601,6 +873,153 @@ const OrdersPage = () => {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Cancel Order Modal */}
+      {showCancelModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold mb-2 text-gray-900">Cancel Order</h3>
+                <p className="text-gray-600">{selectedOrder.book.title} - Order #{selectedOrder.id}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelForm({ reason: "", otherReason: "", refundMethod: "original" });
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Refund Calculation Display */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <h4 className="font-semibold mb-3 text-gray-900 flex items-center">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Refund Calculation
+              </h4>
+              {(() => {
+                const { refundAmount, deductionReasons } = calculateRefundAmount(selectedOrder);
+                return (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Original Amount:</span>
+                      <span className="font-medium">Rs. {selectedOrder.totalAmount || 0}</span>
+                    </div>
+                    {deductionReasons.length > 0 && (
+                      <div className="border-t pt-2">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Deductions:</p>
+                        {deductionReasons.map((reason, index) => (
+                          <div key={index} className="flex justify-between text-sm text-red-600">
+                            <span>- {reason.split(': ')[0]}:</span>
+                            <span>Rs. {reason.split(': ')[1]?.replace('Rs. ', '') || '0'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="border-t pt-2 flex justify-between font-semibold text-lg">
+                      <span>Refund Amount:</span>
+                      <span className="text-green-600">Rs. {refundAmount}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      * Refund will be processed within 3-5 business days
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Cancellation Reason Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Reason for Cancellation <span className="text-red-500">*</span>
+              </label>
+              <div className="space-y-2">
+                {getCancellationReasons(selectedOrder.type).map((reason, index) => (
+                  <label key={index} className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="cancelReason"
+                      value={reason}
+                      checked={cancelForm.reason === reason}
+                      onChange={(e) => setCancelForm(prev => ({ ...prev, reason: e.target.value }))}
+                      className="mr-3 text-red-500 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-gray-700">{reason}</span>
+                  </label>
+                ))}
+              </div>
+              
+              {cancelForm.reason === "Other" && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Please specify:
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={cancelForm.otherReason}
+                    onChange={(e) => setCancelForm(prev => ({ ...prev, otherReason: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                    placeholder="Please provide details for cancellation..."
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Refund Method Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Refund Method
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="refundMethod"
+                    value="original"
+                    checked={cancelForm.refundMethod === "original"}
+                    onChange={(e) => setCancelForm(prev => ({ ...prev, refundMethod: e.target.value }))}
+                    className="mr-3 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Refund to original payment method</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="refundMethod"
+                    value="wallet"
+                    checked={cancelForm.refundMethod === "wallet"}
+                    onChange={(e) => setCancelForm(prev => ({ ...prev, refundMethod: e.target.value }))}
+                    className="mr-3 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Add to BookHive wallet</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelForm({ reason: "", otherReason: "", refundMethod: "original" });
+                }}
+                className="flex-1 bg-transparent border-2 border-gray-300 text-gray-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              >
+                Keep Order
+              </button>
+              <button
+                onClick={handleCancelOrder}
+                disabled={!cancelForm.reason || (cancelForm.reason === "Other" && !cancelForm.otherReason.trim())}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+              >
+                Cancel Order
+              </button>
             </div>
           </div>
         </div>
