@@ -8,7 +8,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   const location = useLocation();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-  console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
+  // console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
 
   const pathLabels = {
     '/admin': 'Dashboard',
@@ -66,7 +66,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/user/profile-settings': 'Profile Settings',
   };
 
-const { user } = useAuth();
+  const { user } = useAuth();
 
   if (!user) {
     return <p>Please log in.</p>;
