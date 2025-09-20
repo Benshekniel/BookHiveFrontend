@@ -37,7 +37,7 @@ const Sidebar = ({ collapsed, setCollapsed, onLogout, isMobileOpen, setIsMobileO
   const handleMouseEnter = () => setCollapsed(false);
   const handleMouseLeave = () => setCollapsed(true);
 
-  console.log('Sidebar rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'offsetHeight:', document.querySelector('.sidebar')?.offsetHeight);
+  // console.log('Sidebar rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'offsetHeight:', document.querySelector('.sidebar')?.offsetHeight);
 
   return (
     <>
