@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Search, Trash2, ChevronDown } from 'lucide-react';
+import { Search, Heart, Award, ChevronDown } from 'lucide-react';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from "../../AuthContext";
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from "../../AuthContext.jsx";
 
 import LoadingSpinner from "../CommonStuff/LoadingSpinner.jsx";
-import {formatDateTime, getConditionBadge} from "../CommonStuff/CommonFunc.tsx";
+import { formatDateTime, getConditionBadge } from "../CommonStuff/CommonFunc.tsx";
 
-import BookFromInventory from '../Forms/BookFromInventory';
 import InventoryStockAdjuster from '../Forms/InventoryStockAdjuster';
 import EditInventory from '../Forms/EditInventory';
 import DeleteInventory from '../Buttons/DeleteInventory';
 
-const RegularInventory = () => {
-  const queryClient = useQueryClient();
+const DonationInventory = () => {
   //   const { user } = useAuth();
   const user = { userId: 603 }; // hard-coded userId until login completed
 
@@ -22,10 +20,10 @@ const RegularInventory = () => {
   const [searchISBN, setSearchISBN] = useState("");
   const [selectedCondition, setSelectedCondition] = useState("");
 
-  const getRegularInventory = async () => {
+  const getDonationInventory = async () => {
     if (!user?.userId) return [];
     try {
-      const response = await axios.get(`http://localhost:9090/api/bs-inventory/regularList/${user.userId}`);
+      const response = await axios.get(`http://localhost:9090/api/bs-inventory/donationList/${user.userId}`);
       if (response.data.length === 0) return [];
       const itemsWithImages = await Promise.all(
         response.data.map(async (item: any) => {
@@ -51,9 +49,9 @@ const RegularInventory = () => {
     }
   };
 
-  const { data: regularInventory = [], isPending, error } = useQuery({
-    queryKey: ["regularInventory", user?.userId],
-    queryFn: getRegularInventory,
+  const { data: donationInventory = [], isPending, error } = useQuery({
+    queryKey: ["donationInventory", user?.userId],
+    queryFn: getDonationInventory,
     staleTime: 5 * 60 * 1000,       // cache considered fresh for 5 minutes
     enabled: !!user?.userId,
     retryDelay: 1000
@@ -62,6 +60,24 @@ const RegularInventory = () => {
   return (
     <>
       <div className="space-y-6">
+        {/* Donation Impact */}
+        <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">Your Donation Impact</h3>
+              <p className="text-slate-600">You've donated 23 books and helped 18 recipients</p>
+              <div className="flex items-center space-x-2 mt-2">
+                <Award className="w-5 h-5 text-amber-500" />
+                <span className="text-sm font-medium text-amber-700">Donated 20+ books badge earned!</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center">
+                <Heart className="w-8 h-8 text-pink-600" />
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
           <div className="flex flex-col lg:flex-row gap-4">
@@ -75,6 +91,7 @@ const RegularInventory = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
               </div>
             </div>
+            
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -100,6 +117,7 @@ const RegularInventory = () => {
           </div>
         </div>
 
+        {/* Books Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -107,9 +125,8 @@ const RegularInventory = () => {
                 <tr>
                   <th className="p-4 font-semibold text-slate-700">BOOK DETAILS</th>
                   <th className="p-4 font-semibold text-slate-700">CONDITION</th>
-                  <th className="p-4 font-semibold text-slate-700">PRICE</th>
+                  <th className="p-4 font-semibold text-slate-700">VALUE PER BOOK</th>
                   <th className="p-4 font-semibold text-slate-700">COUNT</th>
-                  <th className="p-4 font-semibold text-slate-700">FAVOURITES</th>
                   <th className="p-4 font-semibold text-slate-700">DATE ADDED</th>
                   <th className="p-4 font-semibold text-slate-700">ACTIONS</th>
                 </tr>
@@ -117,21 +134,21 @@ const RegularInventory = () => {
               <tbody>
                 {isPending ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-6 text-gray-500">
+                    <td colSpan={6} className="text-center py-6 text-gray-500">
                       <LoadingSpinner />
                     </td>
                   </tr>) : error ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-6 text-red-500">
+                      <td colSpan={6} className="text-center py-6 text-red-500">
                         Server unreachable. Please try again later.
                       </td>
-                    </tr>) : regularInventory.length === 0 ? (
+                    </tr>) : donationInventory.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="text-center py-6 text-gray-400">
+                        <td colSpan={6} className="text-center py-6 text-gray-400">
                           No items found.
                         </td>
                       </tr>) :
-                  (regularInventory
+                  (donationInventory
                     .filter((item) => {
                       const term = searchTerm.toLowerCase();
                       const matchesSearch =
@@ -151,12 +168,8 @@ const RegularInventory = () => {
                           <div className="flex items-center space-x-4">
                             <img src={item.coverImageURL} alt={item.title} className="w-15 h-20 object-cover rounded-lg border border-gray-200" />
                             <div>
-                              <p>
-                                <span className="font-semibold text-slate-800">{item.title}</span>
-                                {item?.seriesName && (
-                                  <span className="font-semibold text-sm text-slate-500">
-                                    : {item?.seriesName} # {item?.seriesInstallment}</span> 
-                                )}</p>
+                              <h3 className="font-semibold text-slate-800">
+                                {item?.title} </h3>
                               <p className="text-sm text-slate-600">
                                 by {item?.authors.slice(0, 3).join(', ')}
                                 {item?.authors.length > 3 && ' ...'}</p>
@@ -187,23 +200,16 @@ const RegularInventory = () => {
                             ) : (
                               <span>In Stock: {item.stockCount}</span>
                             )}
-                            <span>Sellable: {item.sellableCount}</span>
                           </div>
-                        </td>
-                        <td className="p-4 text-sm text-slate-600">
-                          <div className="flex justify-center items-center h-full">
-                            {item.favouritesCount ?? 0} </div>
                         </td>
                         <td className="p-4 text-sm text-slate-600">
                           <div className="flex justify-center items-center h-full">
                             {formatDateTime(item.createdAt)} </div>
                         </td>
-
                         <td className="p-4">
                           <div className="grid grid-cols-2 grid-rows-2 gap-2 justify-items-center items-center h-full">
                             <InventoryStockAdjuster inventoryId={item.inventoryId} />
                             <EditInventory inventoryId={item.inventoryId} />
-                            <BookFromInventory inventoryId={item.inventoryId} />
                             <DeleteInventory inventoryId={item.inventoryId} />
                           </div>
                         </td>
@@ -214,8 +220,7 @@ const RegularInventory = () => {
             </table>
           </div>
         </div>
-
       </div>
     </>);
 }
-export default RegularInventory;
+export default DonationInventory;
