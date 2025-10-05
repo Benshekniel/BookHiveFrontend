@@ -1,13 +1,10 @@
-import {
-  Package, DollarSign, Clock, SearchSlash
-} from 'lucide-react';
-
 import axios from 'axios';
+import { Package, DollarSign, Clock, SearchSlash } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useAuth } from '../../AuthContext';
 
-import LoadingSpinner from '../LoadingSpinner';
+import LoadingSpinner from '../CommonStuff/LoadingSpinner';
 
 const RegularStats = () => {
   // const { user } = useAuth();
@@ -16,7 +13,7 @@ const RegularStats = () => {
   const fetchRegularStats = async () => {
     if (!user?.userId) return [];
     try {
-      const response = await axios.get(`http://localhost:9090/api/bs-stats/regularInventory/${user.userId}`);
+      const response = await axios.get(`http://localhost:9090/api/bs-inventory/stats/regular/${user.userId}`);
       return response.data;
     }
     catch {
