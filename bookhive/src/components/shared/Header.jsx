@@ -93,6 +93,10 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
       };
     } else if (path.startsWith('/bookstore')) {
       return {
+        // name:  'Rohan',
+        // email: '',
+        // role: '',
+        // image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
         name: user.name || 'Rohan',
         email: user.email,
         role: user.role,
