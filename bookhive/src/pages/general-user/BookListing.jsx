@@ -54,20 +54,11 @@ const BookListingManagementPage = () => {
         headers: { 'Content-Type': 'application/json' },
       });
       
-      const placeholder = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDE1MCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMjAwIiBmaWxsPSIjNkI3MjgwIi8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjRkZGRkZGIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+";
+      // Fixed placeholder image - using a simple gray rectangle
+      const placeholder = "data:image/svg+xml,%3csvg width='150' height='200' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='150' height='200' fill='%236B7280'/%3e%3ctext x='75' y='100' text-anchor='middle' fill='%23FFFFFF' font-size='14'%3eNo Image%3c/text%3e%3c/svg%3e";
+      
       // Only show books for the logged-in user
       const tempBooks = response.data.filter(book => user && book.userEmail === user.email).map((book, index) => {
-        // Debug: Log book data to see if bidding fields are present
-        if (book.forBidding) {
-          console.log('Bidding book found:', book);
-        }
-        
-        // Debug: Test image API endpoint
-        if (book.bookImage) {
-          console.log('Book has image:', book.title, 'Image file:', book.bookImage);
-          console.log('Image API URL would be:', `${baseUrl}/getFileAsBase64?fileName=${book.bookImage}&folderName=userBooks`);
-        }
-        
         return {
         bookId: book.bookId || Date.now() + index,
         userEmail: book.userEmail,
@@ -168,8 +159,9 @@ const BookListingManagementPage = () => {
       return;
     }
 
+    // Reset form for new book
     setNewBook({
-      userEmail: user.email, // Ensure current user email is set
+      userEmail: user.email,
       title: '',
       author: '',
       genre: [],
@@ -194,17 +186,18 @@ const BookListingManagementPage = () => {
       cover: '',
       imageFile: null,
     });
-    console.log('Opening add modal for user:', user?.email);
-    console.log('New book initialized:', {
-      userEmail: user.email,
-      title: '',
-      author: '',
-      imageFile: null
-    });
+    setEditBook(null); // Make sure we're in add mode
     setShowAddModal(true);
   };
 
   const handleEditBook = (book) => {
+    // Check if user is logged in
+    if (!user?.email) {
+      toast.error("Please log in to edit a book.");
+      return;
+    }
+
+    // Populate form with existing book data
     setNewBook({
       userEmail: book.userEmail,
       title: book.title,
@@ -228,19 +221,144 @@ const BookListingManagementPage = () => {
       isbn: book.isbn,
       language: book.language,
       hashtags: book.hashtags ? book.hashtags : [],
-      cover: book.cover || (book.images ? book.images[0] : ''),
-      imageFile: null,
+      cover: book.cover || '',
+      imageFile: null, // No new image selected initially
     });
-    setEditBook(book);
+    setEditBook(book); // Set edit mode
     setShowEditModal(true);
+  };
+
+  const handleAddNewBook = async (bookData) => {
+    try {
+      // The backend expects @RequestPart("coverImage") and @RequestPart("bookData")
+      const formDataToSend = new FormData();
+      
+      // Add image file as "coverImage" (required for new books)
+      if (newBook.imageFile) {
+        formDataToSend.append('coverImage', newBook.imageFile);
+      } else {
+        // Backend might require an image, so show error if missing
+        toast.error("Please upload a book cover image.");
+        throw new Error("Book cover image is required");
+      }
+      
+      // Spring Boot @RequestPart("bookData") UserBooksDTO expects JSON with proper content-type
+      const bookDataBlob = new Blob([JSON.stringify(bookData)], {
+        type: 'application/json'
+      });
+      formDataToSend.append('bookData', bookDataBlob);
+      
+      const response = await axios.post(
+        `${baseUrl}/api/saveBook-User`,
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      return response;
+    } catch (error) {
+      console.error('Error adding new book:', error);
+      
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please log in again.');
+      } else if (error.response?.status === 405) {
+        toast.error('Invalid request method. The endpoint might not support this operation.');
+      } else if (error.response?.status === 415) {
+        toast.error('The server doesn\'t support this data format. Make sure the image and data are properly formatted.');
+      } else if (error.response?.status === 400) {
+        toast.error('Invalid book data. Please check all fields and try again.');
+      } else if (error.message === "Book cover image is required") {
+        // Don't show additional toast, already shown above
+      } else {
+        toast.error('Failed to add book. Please try again.');
+      }
+      throw error;
+    }
+  };
+
+  const handleUpdateBookWithImage = async (bookData) => {
+    try {
+      const formDataToSend = new FormData();
+      
+      // Add image file as "coverImage" (optional for updates)
+      if (newBook.imageFile) {
+        formDataToSend.append('coverImage', newBook.imageFile);
+      }
+      
+      // Add book data as "bookData" - Spring Boot expects this as a JSON part
+      const bookDataBlob = new Blob([JSON.stringify(bookData)], {
+        type: 'application/json'
+      });
+      formDataToSend.append('bookData', bookDataBlob);
+      
+      const response = await axios.put(
+        `${baseUrl}/api/updateBookWithImage/${editBook.bookId}`,
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      return response;
+    } catch (error) {
+      console.error('Error updating book with image:', error);
+      
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please log in again.');
+      } else if (error.response?.status === 404) {
+        toast.error('Book not found. It may have been deleted.');
+      } else if (error.response?.status === 405) {
+        toast.error('Invalid request method for image update.');
+      } else if (error.response?.status === 415) {
+        toast.error('The server doesn\'t support this data format. Make sure the image and data are properly formatted.');
+      } else if (error.response?.status === 400) {
+        toast.error('Invalid book data. Please check all fields and try again.');
+      } else {
+        toast.error('Failed to update book with image. Please try again.');
+      }
+      throw error;
+    }
+  };
+
+  const handleUpdateBookWithoutImage = async (bookData) => {
+    try {
+      const response = await axios.post(
+        `${baseUrl}/api/updateBook/${editBook.bookId}`,
+        bookData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      return response;
+    } catch (error) {
+      console.error('Error updating book without image:', error);
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please log in again.');
+      } else if (error.response?.status === 404) {
+        toast.error('Book not found. It may have been deleted.');
+      } else if (error.response?.status === 405) {
+        toast.error('Invalid request method for book update. Please contact support.');
+      } else {
+        toast.error('Failed to update book. Please try again.');
+      }
+      throw error;
+    }
   };
 
   const handleSaveBook = async (e) => {
     e.preventDefault();
 
-    // Ensure user is logged in
+    // Validate user authentication
     if (!user?.email) {
-      toast.error("You must be logged in to add a book.");
+      toast.error("Your session has expired. Please log in again.");
       return;
     }
 
@@ -261,8 +379,9 @@ const BookListingManagementPage = () => {
       return;
     }
 
+    // Prepare book data
     const bookData = {
-      userEmail: user.email, // Use current user email instead of form state
+      userEmail: user.email,
       title: newBook.title.trim(),
       authors: newBook.author.split(",").map(a => a.trim()).filter(a => a),
       genres: newBook.genre,
@@ -291,133 +410,109 @@ const BookListingManagementPage = () => {
     }
 
     // Show loading toast
-    if (!editBook) {
-      toast.info("📤 Adding your book to the library...", {
-        toastId: "book-upload" // Prevent duplicate toasts
-      });
-    }
+    const toastId = editBook ? "book-update" : "book-upload";
+    const loadingMessage = editBook ? "📝 Updating your book..." : "📤 Adding your book to the library...";
+    
+    toast.info(loadingMessage, { toastId });
 
     try {
       let response;
       
       if (editBook) {
-        // For updates, use POST with FormData if image is provided, otherwise use PUT with JSON
+        // UPDATE EXISTING BOOK
         if (newBook.imageFile) {
-          // Use FormData for image updates (POST endpoint)
-          const formDataToSend = new FormData();
-          formDataToSend.append('coverImage', newBook.imageFile);
-          const jsonBlob = new Blob([JSON.stringify(bookData)], { type: 'application/json' });
-          formDataToSend.append('bookData', jsonBlob);
-          
-          response = await axios.post(
-            `${baseUrl}/api/updateBook/${editBook.bookId}`,
-            formDataToSend,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-              },
-            }
-          );
+          // Update with new image using PUT endpoint
+          response = await handleUpdateBookWithImage(bookData);
         } else {
-          // No image update, send JSON data only
-          response = await axios.put(
-            `${baseUrl}/api/updateBook/${editBook.bookId}`,
-            bookData,
-            {
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }
-          );
+          // Update without changing image using POST endpoint
+          response = await handleUpdateBookWithoutImage(bookData);
         }
       } else {
-        // Add new book (always FormData for Google Drive compatibility)
-        const formDataToSend = new FormData();
-        
-        // Add image file if provided (required for new books)
-        if (newBook.imageFile) {
-          formDataToSend.append('coverImage', newBook.imageFile);
-          console.log('Adding image file:', newBook.imageFile.name, 'Size:', newBook.imageFile.size);
-        } else {
-          console.warn('No image file provided for new book');
-        }
-        
-        // Add book data as JSON blob
-        const jsonBlob = new Blob([JSON.stringify(bookData)], { type: 'application/json' });
-        formDataToSend.append('bookData', jsonBlob);
-        
-        console.log('Sending book data:', bookData);
-        console.log('FormData entries:');
-        for (let [key, value] of formDataToSend.entries()) {
-          console.log(key, value);
-        }
-        
-        response = await axios.post(
-          `${baseUrl}/api/saveBook-User`,
-          formDataToSend,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
+        // ADD NEW BOOK
+        response = await handleAddNewBook(bookData);
       }
 
-      console.log('Server response:', response.data);
+      // Dismiss loading toast
+      toast.dismiss(toastId);
 
-      // Check for various success response formats
-      if (response.data.message === "success" || response.data.status === "success" || response.status === 200) {
-        // Show appropriate success message
+      // Handle response
+      if (response.data.message === "success" || response.status === 200) {
+        // Enhanced success messages with more details
         if (editBook) {
-          toast.success("🎉 Book updated successfully!");
+          toast.success(`🎉 Success! "${newBook.title}" has been updated successfully!`, {
+            duration: 4000
+          });
         } else {
-          toast.success(`📚 "${newBook.title}" has been added to your library successfully!`);
+          toast.success(`📚 Success! "${newBook.title}" has been added to your library!`, {
+            duration: 4000
+          });
         }
         
+        // Close modals and reset state
         setShowAddModal(false);
         setShowEditModal(false);
         setEditBook(null);
         
-        // Clear the cache for this book to ensure fresh data
+        // Reset form state
+        setNewBook({
+          userEmail: user?.email || '',
+          title: '',
+          author: '',
+          genre: [],
+          condition: 'New',
+          forSale: true,
+          price: '',
+          forLend: false,
+          lendingAmount: '',
+          lendingPeriod: '',
+          forExchange: false,
+          exchangePeriod: '',
+          forBidding: false,
+          biddingStartDate: '',
+          biddingEndDate: '',
+          initialBidPrice: '',
+          description: '',
+          location: '',
+          publishYear: '',
+          isbn: '',
+          language: 'English',
+          hashtags: [],
+          cover: '',
+          imageFile: null,
+        });
+        
+        // Clear cache if needed
         if (response.data.bookImage) {
           imageCache.delete(response.data.bookImage, 'userBooks');
         }
         
-        // Refresh the book list to show the new book
+        // Refresh the book list
         fetchBooks();
       } else {
-        console.error('Server returned error:', response.data);
-        toast.error("❌ Error: " + (response.data.message || "Failed to save book"));
+        toast.error("❌ Failed to save book: " + (response.data.message || "Unknown error"));
       }
     } catch (error) {
       console.error("Error saving book:", error);
       
       // Dismiss loading toast
-      toast.dismiss("book-upload");
+      toast.dismiss(toastId);
       
-      // Provide specific error messages for different types of errors
-      let errorMessage = "❌ Something went wrong: ";
-      if (error.response?.status === 415) {
-        errorMessage += "Server does not support the request format. Please try again or contact support.";
+      // Simplified error handling with cleaner messages
+      if (error.response?.status === 401) {
+        toast.error("❌ Session expired. Please log in again.", { duration: 5000 });
       } else if (error.response?.status === 400) {
-        errorMessage += "Invalid book data. Please check all required fields.";
+        toast.error("❌ Invalid book data. Please check all required fields.", { duration: 5000 });
       } else if (error.response?.status === 413) {
-        errorMessage += "File too large for upload. Please use a smaller image (max 5MB).";
-      } else if (error.response?.status === 401) {
-        errorMessage += "You are not authorized. Please log in again.";
+        toast.error("❌ File too large for upload. Please use a smaller image (max 5MB).", { duration: 5000 });
       } else if (error.response?.status === 500) {
-        errorMessage += "Server error. Please try again later.";
-      } else if (error.response?.data?.message) {
-        errorMessage += error.response.data.message;
+        toast.error("❌ Server error. Please try again later.", { duration: 5000 });
       } else if (error.message.includes('Network Error')) {
-        errorMessage += "Network error. Please check your connection and try again.";
+        toast.error("❌ Network error. Please check your connection and try again.", { duration: 5000 });
+      } else if (error.message === "Book cover image is required") {
+        // Don't show additional toast, already shown in handleAddNewBook
       } else {
-        errorMessage += error.message;
+        toast.error(`❌ Failed to ${editBook ? 'update' : 'add'} book. Please try again.`, { duration: 5000 });
       }
-      
-      toast.error(errorMessage, {
-        duration: 5000 // Show error for 5 seconds
-      });
     }
   };
 
@@ -426,17 +521,45 @@ const BookListingManagementPage = () => {
     const bookToDelete = listings.find(book => book.bookId === id);
     const bookTitle = bookToDelete?.title || 'this book';
     
-    if (window.confirm(`Are you sure you want to delete "${bookTitle}" from your library?`)) {
+    if (window.confirm(`⚠️ Delete Book Confirmation\n\nAre you sure you want to permanently delete "${bookTitle}" from your library?\n\nThis action cannot be undone.`)) {
+      // Show loading toast for delete operation
+      toast.info(`🗑️ Deleting "${bookTitle}"...`, { 
+        autoClose: false,
+        toastId: `delete-${id}`
+      });
+      
       try {
         const response = await axios.delete(`${baseUrl}/api/deleteBook/${id}`);
+        
+        // Dismiss loading toast
+        toast.dismiss(`delete-${id}`);
+        
         if (response.data.message === "success") {
+          // Remove from local state immediately for better UX
           setListings(listings.filter((book) => book.bookId !== id));
-          toast.success(`🗑️ "${bookTitle}" has been deleted from your library!`);
+          
+          // Show success message
+          toast.success(`🗑️ Success! "${bookTitle}" has been deleted from your library!`, {
+            duration: 4000
+          });
         } else {
-          toast.error("❌ Failed to delete book: " + response.data.message);
+          toast.error(`❌ Failed to delete "${bookTitle}": ${response.data.message}`, {
+            duration: 5000
+          });
         }
       } catch (err) {
-        toast.error(`❌ Failed to delete book: ${err.message}`);
+        // Dismiss loading toast
+        toast.dismiss(`delete-${id}`);
+        
+        console.error('Delete error:', err);
+        
+        if (err.response?.status === 401) {
+          toast.error("❌ Session expired. Please log in again.", { duration: 5000 });
+        } else if (err.response?.status === 404) {
+          toast.error(`❌ Book "${bookTitle}" not found. It may have already been deleted.`, { duration: 5000 });
+        } else {
+          toast.error(`❌ Failed to delete "${bookTitle}". Please try again.`, { duration: 5000 });
+        }
       }
     }
   };
@@ -464,11 +587,6 @@ const BookListingManagementPage = () => {
   const allGenres = [...new Set(listings.flatMap(book => book.genres || []))];
 
   const BookCard = ({ book }) => {
-    // Debug: Log bidding book data
-    if (book.forBidding) {
-      console.log('Rendering bidding book:', book.title, book);
-    }
-    
     return (
       <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
         <div className="relative h-48 mb-4 overflow-hidden rounded-xl">
