@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Heart, DollarSign, BookOpen } from 'lucide-react';
 
 import SellAlsoList from '../../components/bookStore/listings/SellAlsoList.tsx';
-import SalesStats from '../../components/bookStore/listings/SalesStats';
+import SalesStats from '../../components/bookStore/listings/SellAlsoStats.jsx';
 
 import LendOnlyList from '../../components/bookStore/listings/LendOnlyList.tsx';
-import LendingStats from '../../components/bookStore/listings/LendingStats';
+import LendingStats from '../../components/bookStore/listings/LendOnlyStats.jsx';
 
 import NewBook from '../../components/bookStore/Forms/NewBook.tsx';
 
