@@ -854,7 +854,12 @@ const BookListingManagementPage = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"
                         required={!editBook}
                       />
-                      <p className="text-xs text-gray-500 mt-1">Upload a clear image of the book cover (JPEG, PNG, max 5MB)</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {editBook ? 
+                          'Upload a new image to replace the current book cover (optional)' : 
+                          'Upload a clear image of the book cover (JPEG, PNG, max 5MB)'
+                        }
+                      </p>
                     </div>
                     {newBook.cover && (
                       <div className="flex-shrink-0">
