@@ -465,6 +465,106 @@ getYearlyUsers: async () => {
   }
 },
 
+// ==================== PAYMENT ANALYTICS OPERATIONS ====================
+
+  /**
+   * Get filtered transactions
+   * @param {Object} params - Filter parameters
+   * @returns {Promise} API response
+   */
+  getFilteredTransactions: async (params) => {
+    try {
+      const response = await apiClient.get('/payment-analytics/transactions', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get payment stats
+   * @param {Object} params - Filter parameters
+   * @returns {Promise} API response
+   */
+  getPaymentStats: async (params) => {
+    try {
+      const response = await apiClient.get('/payment-analytics/stats', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Export transactions as CSV
+   * @param {Object} params - Filter parameters
+   * @returns {Promise} API response
+   */
+  exportTransactions: async (params) => {
+    try {
+      const response = await apiClient.get('/payment-analytics/export', {
+        params,
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get transaction types
+   * @returns {Promise} API response
+   */
+  getTransactionTypes: async () => {
+    try {
+      const response = await apiClient.get('/payment-analytics/transaction-types');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get transaction statuses
+   * @returns {Promise} API response
+   */
+  getTransactionStatuses: async () => {
+    try {
+      const response = await apiClient.get('/payment-analytics/transaction-statuses');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get payment statuses
+   * @returns {Promise} API response
+   */
+  getPaymentStatuses: async () => {
+    try {
+      const response = await apiClient.get('/payment-analytics/payment-statuses');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get transaction by ID
+   * @param {number} id - Transaction ID
+   * @returns {Promise} API response
+   */
+  getTransactionById: async (id) => {
+    try {
+      const response = await apiClient.get(`/payment-analytics/transactions/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // ==================== UTILITY METHODS ====================
 
   /**

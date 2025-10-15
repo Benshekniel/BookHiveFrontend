@@ -50,16 +50,12 @@ const ModeratorManagement = () => {
   /**
    * Load all moderators from the backend
    */
-  /**
- * Load all moderators from the backend
- */
   const loadModerators = async () => {
     try {
       setLoading(true);
       const response = await AdminModeratorService.getAllModerators();
       console.log('API Response:', response); // Keep this for now
 
-      // Fix: Check for success property instead of message
       if (response.success === true) {
         setModerators(response.data || []);
       } else {
@@ -75,9 +71,6 @@ const ModeratorManagement = () => {
   /**
    * Search moderators
    */
-  /**
- * Search moderators
- */
   const handleSearch = async (searchValue) => {
     if (!searchValue.trim()) {
       loadModerators();
@@ -87,7 +80,6 @@ const ModeratorManagement = () => {
     try {
       setLoading(true);
       const response = await AdminModeratorService.searchModerators(searchValue);
-      // Fix: Check for success property
       if (response.success === true) {
         setModerators(response.data || []);
       }
@@ -144,9 +136,6 @@ const ModeratorManagement = () => {
   /**
    * Handle moderator add
    */
-  /**
-   * Handle moderator add
-   */
   const handleModeratorAdd = async (e) => {
     e.preventDefault();
 
@@ -176,7 +165,6 @@ const ModeratorManagement = () => {
 
       const result = await AdminModeratorService.registerModerator(moderatorData);
 
-      // Fix: Check for success property
       if (result.message === "success") {
         setSuccess('Moderator added successfully!');
         setShowAddModal(false);
@@ -205,14 +193,11 @@ const ModeratorManagement = () => {
   /**
    * Handle view moderator
    */
-  /**
-   * Handle view moderator
-   */
   const handleViewModerator = async (moderator) => {
     try {
       setLoading(true);
       const response = await AdminModeratorService.getModeratorById(moderator.id);
-      if (response.success === true) { // Fix here
+      if (response.success === true) {
         setSelectedModerator(response.data);
         setShowViewModal(true);
       } else {
@@ -232,7 +217,7 @@ const ModeratorManagement = () => {
     try {
       setLoading(true);
       const response = await AdminModeratorService.getModeratorById(moderator.id);
-      if (response.success === true) { // Fix here
+      if (response.success === true) {
         setSelectedModerator(response.data);
         setShowEditModal(true);
       } else {
@@ -255,9 +240,27 @@ const ModeratorManagement = () => {
       setLoading(true);
       setError('');
 
-      const response = await AdminModeratorService.updateModerator(selectedModerator.id, selectedModerator);
+      // Prepare the update data with proper formatting
+      const updateData = {
+        name: selectedModerator.name?.trim(),
+        email: selectedModerator.email?.trim(),
+        phone: selectedModerator.phone ? parseInt(selectedModerator.phone, 10) : null,
+        dob: selectedModerator.dob,
+        city: selectedModerator.city?.trim(),
+        experience: selectedModerator.experience ? parseInt(selectedModerator.experience, 10) : null,
+        address: selectedModerator.address?.trim()
+      };
 
-      if (response.success === true) { // Fix here
+      // Remove any null/undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === null || updateData[key] === undefined || updateData[key] === '') {
+          delete updateData[key];
+        }
+      });
+
+      const response = await AdminModeratorService.updateModerator(selectedModerator.id, updateData);
+
+      if (response.success === true) {
         setSuccess('Moderator updated successfully!');
         setShowEditModal(false);
         loadModerators(); // Reload the list
@@ -285,7 +288,7 @@ const ModeratorManagement = () => {
 
       const response = await AdminModeratorService.deleteModerator(id);
 
-      if (response.success === true) { // Fix here
+      if (response.success === true) {
         setSuccess('Moderator deleted successfully!');
         loadModerators(); // Reload the list
       } else {
@@ -418,32 +421,53 @@ const ModeratorManagement = () => {
       {/* Search and Filter */}
       <div className="bg-white shadow rounded-lg mb-6 border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Search Moderators</label>
-              <div className="relative">
-                <Search className="h-4 w-4 absolute left-3 top-3 text-slate-400" />
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            {/* Search Input */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Search Moderators</label>
+              <div className="relative group">
+                <Search className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type="text"
                   placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  className="pl-10 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="pl-10 pr-4 py-2.5 w-full rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 sm:text-base"
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      loadModerators();
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Filter by Status</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
-              </select>
+
+            {/* Filter by Status */}
+            <div className="sm:w-48">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Filter by Status</label>
+              <div className="relative">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="appearance-none w-full py-2.5 pl-3 pr-8 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 sm:text-base"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
