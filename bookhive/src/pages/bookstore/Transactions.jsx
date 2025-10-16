@@ -1,36 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Upload, 
-  Edit, 
-  Trash2, 
-  Eye,
-  MoreHorizontal,
-  ShoppingCart,
-  Clock,
-  CheckCircle,
-  DollarSign,
-  Calendar,
-  User,
-  Package,
-  TrendingUp,
-  AlertCircle,
-  Truck,
-  RefreshCw,
-  ChevronDown,
-  ArrowRight,
-  BookOpen,
-  Heart,
-  MapPin,
-  Shield,
-  Camera,
-  FileText,
-  Ban,
-  Star,
-  Award,
-  Zap
+import {
+  Search, Filter, Plus, Upload, Edit, Trash2, Eye, MoreHorizontal, ShoppingCart, Clock, CheckCircle, DollarSign, Calendar, User, Package, TrendingUp, AlertCircle, Truck, RefreshCw, ChevronDown, ArrowRight, BookOpen, Heart, MapPin, Shield, Camera, FileText, Ban, Star, Award, Zap
 } from 'lucide-react';
 
 const TransactionsPage = () => {
@@ -46,45 +16,45 @@ const TransactionsPage = () => {
   ];
 
   const salesStats = [
-    { 
-      label: 'TOTAL ORDERS', 
-      value: '2,891', 
+    {
+      label: 'TOTAL ORDERS',
+      value: '2,891',
       change: '+12% from last month',
-      bgColor: 'bg-blue-50', 
-      borderColor: 'border-blue-200', 
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
       textColor: 'text-blue-600',
       iconBg: 'bg-blue-100',
       icon: ShoppingCart,
       changeColor: 'text-green-600'
     },
-    { 
-      label: 'PENDING ORDERS', 
-      value: '47', 
+    {
+      label: 'PENDING ORDERS',
+      value: '47',
       change: '-3% from yesterday',
-      bgColor: 'bg-amber-50', 
-      borderColor: 'border-amber-200', 
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200',
       textColor: 'text-amber-600',
       iconBg: 'bg-amber-100',
       icon: Clock,
       changeColor: 'text-red-600'
     },
-    { 
-      label: 'COMPLETED', 
-      value: '2,789', 
+    {
+      label: 'COMPLETED',
+      value: '2,789',
       change: '+8% from last week',
-      bgColor: 'bg-green-50', 
-      borderColor: 'border-green-200', 
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
       textColor: 'text-green-600',
       iconBg: 'bg-green-100',
       icon: CheckCircle,
       changeColor: 'text-green-600'
     },
-    { 
-      label: 'REVENUE', 
-      value: '$24,591', 
+    {
+      label: 'REVENUE',
+      value: '$24,591',
       change: '+18% from last month',
-      bgColor: 'bg-purple-50', 
-      borderColor: 'border-purple-200', 
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
       textColor: 'text-purple-600',
       iconBg: 'bg-purple-100',
       icon: DollarSign,
@@ -93,45 +63,45 @@ const TransactionsPage = () => {
   ];
 
   const lendingStats = [
-    { 
-      label: 'ACTIVE LOANS', 
-      value: '456', 
+    {
+      label: 'ACTIVE LOANS',
+      value: '456',
       change: '+5% from last week',
-      bgColor: 'bg-blue-50', 
-      borderColor: 'border-blue-200', 
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
       textColor: 'text-blue-600',
       iconBg: 'bg-blue-100',
       icon: BookOpen,
       changeColor: 'text-green-600'
     },
-    { 
-      label: 'OVERDUE', 
-      value: '23', 
+    {
+      label: 'OVERDUE',
+      value: '23',
       change: '+2 from yesterday',
-      bgColor: 'bg-red-50', 
-      borderColor: 'border-red-200', 
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200',
       textColor: 'text-red-600',
       iconBg: 'bg-red-100',
       icon: AlertCircle,
       changeColor: 'text-red-600'
     },
-    { 
-      label: 'RETURNED', 
-      value: '1,234', 
+    {
+      label: 'RETURNED',
+      value: '1,234',
       change: '+15% from last month',
-      bgColor: 'bg-green-50', 
-      borderColor: 'border-green-200', 
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
       textColor: 'text-green-600',
       iconBg: 'bg-green-100',
       icon: CheckCircle,
       changeColor: 'text-green-600'
     },
-    { 
-      label: 'LATE FEES', 
-      value: '$1,245', 
+    {
+      label: 'LATE FEES',
+      value: '$1,245',
       change: '-8% from last month',
-      bgColor: 'bg-amber-50', 
-      borderColor: 'border-amber-200', 
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200',
       textColor: 'text-amber-600',
       iconBg: 'bg-amber-100',
       icon: DollarSign,
@@ -140,45 +110,45 @@ const TransactionsPage = () => {
   ];
 
   const donationStats = [
-    { 
-      label: 'TOTAL DONATED', 
-      value: '89', 
+    {
+      label: 'TOTAL DONATED',
+      value: '89',
       change: '+12 this month',
-      bgColor: 'bg-pink-50', 
-      borderColor: 'border-pink-200', 
+      bgColor: 'bg-pink-50',
+      borderColor: 'border-pink-200',
       textColor: 'text-pink-600',
       iconBg: 'bg-pink-100',
       icon: Heart,
       changeColor: 'text-green-600'
     },
-    { 
-      label: 'MATCHED', 
-      value: '76', 
+    {
+      label: 'MATCHED',
+      value: '76',
       change: '+8 this week',
-      bgColor: 'bg-green-50', 
-      borderColor: 'border-green-200', 
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
       textColor: 'text-green-600',
       iconBg: 'bg-green-100',
       icon: CheckCircle,
       changeColor: 'text-green-600'
     },
-    { 
-      label: 'DELIVERED', 
-      value: '68', 
+    {
+      label: 'DELIVERED',
+      value: '68',
       change: '+5 this week',
-      bgColor: 'bg-blue-50', 
-      borderColor: 'border-blue-200', 
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
       textColor: 'text-blue-600',
       iconBg: 'bg-blue-100',
       icon: Truck,
       changeColor: 'text-green-600'
     },
-    { 
-      label: 'IMPACT SCORE', 
-      value: '4.9', 
+    {
+      label: 'IMPACT SCORE',
+      value: '4.9',
       change: '+0.1 this month',
-      bgColor: 'bg-purple-50', 
-      borderColor: 'border-purple-200', 
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
       textColor: 'text-purple-600',
       iconBg: 'bg-purple-100',
       icon: Award,
@@ -330,10 +300,10 @@ const TransactionsPage = () => {
         'Delivered': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle }
       }
     };
-    
+
     const config = statusConfigs[type][status] || statusConfigs[type]['Pending'] || statusConfigs.sales['Pending'];
     const IconComponent = config.icon;
-    
+
     return (
       <span className={`inline-flex items-center space-x-1 px-3 py-1 text-xs font-semibold rounded-full border ${config.bg} ${config.text} ${config.border}`}>
         <IconComponent className="w-3 h-3" />
@@ -665,17 +635,15 @@ const TransactionsPage = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                      activeTab === tab.id
+                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === tab.id
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <IconComponent className="w-5 h-5" />
                     <span>{tab.label}</span>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <span className={`px-2 py-1 text-xs rounded-full ${activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+                      }`}>
                       {tab.count.toLocaleString()}
                     </span>
                   </button>

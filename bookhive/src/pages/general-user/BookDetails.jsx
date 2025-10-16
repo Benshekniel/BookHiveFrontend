@@ -4,8 +4,7 @@ import {
   MapPin, Tag, Heart, MessageSquare, Gavel, ArrowLeft, X, Star, 
   Eye, Share2, Flag, User, Calendar, BookOpen, Clock, Shield,
   Phone, Mail, Award, TrendingUp, Users, ChevronDown, ArrowRight,
-  ShoppingCart, Repeat,
-  Book
+  ShoppingCart, Repeat, CheckCircle, XCircle, AlertCircle
 } from "lucide-react";
 import Button from "../../components/shared/Button";
 
@@ -20,6 +19,64 @@ const BookDetailsPage = () => {
   const [borrowDuration, setBorrowDuration] = useState("14");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showBorrowModal, setShowBorrowModal] = useState(false);
+  const [showExchangeModal, setShowExchangeModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showExchangeBookModal, setShowExchangeBookModal] = useState(false);
+  const [exchangeBook, setExchangeBook] = useState(null);
+  const [paymentType, setPaymentType] = useState("");
+  const [disabledBooks, setDisabledBooks] = useState(new Set());
+  const [myRequests, setMyRequests] = useState([]);
+  const [toast, setToast] = useState(null);
+
+  // Toast Component
+  const Toast = ({ message, type, onClose }) => {
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+      <div
+        className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+          type === "success"
+            ? "bg-green-500 text-white"
+            : type === "error"
+            ? "bg-red-500 text-white"
+            : "bg-blue-500 text-white"
+        }`}
+      >
+        <div className="flex items-center space-x-2">
+          {type === "success" && <CheckCircle className="w-5 h-5" />}
+          {type === "error" && <XCircle className="w-5 h-5" />}
+          {type === "info" && <AlertCircle className="w-5 h-5" />}
+          <span>{message}</span>
+          <button onClick={onClose} className="ml-2">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Show toast function
+  const showToast = (message, type = "info") => {
+    setToast({ message, type });
+  };
+
+  // Disable book temporarily
+  const disableBookTemporarily = (bookId) => {
+    setDisabledBooks((prev) => new Set([...prev, bookId]));
+    setTimeout(() => {
+      setDisabledBooks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(bookId);
+        return newSet;
+      });
+    }, 300000); // 5 minutes
+  };
 
   useEffect(() => {
     // Check if book data is passed through location state
@@ -61,7 +118,7 @@ const BookDetailsPage = () => {
         },
         views: passedBook.views || 1240,
         wishlistedCount: passedBook.wishlistedCount || 23,
-        recentBids: passedBook.forSale && passedBook.price ? [
+        recentBids: (passedBook.forBidding || passedBook.forSale) && passedBook.price ? [
           { amount: passedBook.price - 50, bidder: "John D.", time: "2 hours ago" },
           { amount: passedBook.price - 100, bidder: "Alice M.", time: "5 hours ago" },
           { amount: passedBook.price - 150, bidder: "Mike R.", time: "1 day ago" }
@@ -86,6 +143,7 @@ const BookDetailsPage = () => {
   };
 
   const handleBuyClick = () => {
+    disableBookTemporarily(book.id);
     navigate(`/user/browse-books/payment/${book.id}`, { 
       state: { 
         book, 
@@ -96,26 +154,127 @@ const BookDetailsPage = () => {
 
   const handleBorrowRequest = () => {
     setRequestType("borrow");
-    setShowContactModal(true);
+    setShowBorrowModal(true);
+  };
+
+  const confirmBorrowRequest = () => {
+    disableBookTemporarily(book.id);
+    const newRequest = {
+      id: `req-${Date.now()}`,
+      bookId: book.id,
+      bookTitle: book.title,
+      type: "borrow",
+      status: "pending",
+      requestedAt: new Date().toISOString(),
+      book: book,
+    };
+    setMyRequests((prev) => [...prev, newRequest]);
+    setShowBorrowModal(false);
+    showToast(
+      "Your borrow request has been sent. Wait for approval.",
+      "success"
+    );
   };
 
   const handleExchangeRequest = () => {
     setRequestType("exchange");
-    setShowContactModal(true);
+    setShowExchangeModal(true);
+  };
+
+  const confirmExchangeRequest = () => {
+    disableBookTemporarily(book.id);
+    const newRequest = {
+      id: `req-${Date.now()}`,
+      bookId: book.id,
+      bookTitle: book.title,
+      type: "exchange",
+      status: "pending",
+      requestedAt: new Date().toISOString(),
+      book: book,
+    };
+    setMyRequests((prev) => [...prev, newRequest]);
+    setShowExchangeModal(false);
+    showToast(
+      "Your exchange request has been sent. Wait for approval.",
+      "success"
+    );
+  };
+
+  const handleWishlistToggle = () => {
+    setIsWishlisted(!isWishlisted);
+    showToast(
+      isWishlisted
+        ? `"${book.title}" removed from wishlist!`
+        : `"${book.title}" added to wishlist!`,
+      "success"
+    );
+  };
+
+  const handleBorrowPayment = () => {
+    setPaymentType("borrow");
+    setShowPaymentModal(true);
+  };
+
+  const handleExchangePayment = () => {
+    setPaymentType("exchange");
+    setShowPaymentModal(true);
+  };
+
+  const processPayment = () => {
+    const amount = paymentType === "borrow" ? Math.round(book.price * 0.2) + 200 : 200;
+
+    setMyRequests((prev) =>
+      prev.map((req) =>
+        req.bookId === book.id ? { ...req, status: "completed" } : req
+      )
+    );
+
+    setShowPaymentModal(false);
+    showToast(
+      `Payment of Rs. ${amount} successful! ${
+        paymentType === "borrow"
+          ? "Book will be delivered soon."
+          : "Exchange completed successfully."
+      }`,
+      "success"
+    );
+  };
+
+  const showExchangeBookSelection = () => {
+    // Mock exchange book
+    const mockExchangeBook = {
+      id: "exchange-book-1",
+      title: "The Great Gatsby",
+      author: "F. Scott Fitzgerald",
+      condition: "Good",
+      cover: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
+    };
+    setExchangeBook(mockExchangeBook);
+    setShowExchangeBookModal(true);
+  };
+
+  const acceptExchangeBook = () => {
+    setShowExchangeBookModal(false);
+    handleExchangePayment();
+  };
+
+  const rejectExchangeBook = () => {
+    setMyRequests((prev) =>
+      prev.map((req) =>
+        req.bookId === book.id ? { ...req, status: "rejected" } : req
+      )
+    );
+    setShowExchangeBookModal(false);
+    showToast("Exchange rejected. Request has been cancelled.", "info");
   };
 
   const handleContactSubmit = () => {
     if (!requestType || !message) return;
     console.log(`Contact request: ${requestType} for ${book.title} - ${message}`);
-    alert(`Your ${requestType} request has been sent to ${book.owner.name}`);
+    showToast(`Your ${requestType} request has been sent to ${book.owner.name}`, "success");
     setShowContactModal(false);
     setMessage("");
     setRequestType("");
-  };
-
-  const handleWishlistToggle = () => {
-    setIsWishlisted(!isWishlisted);
-    // Here you would typically make an API call to update the wishlist
   };
 
   if (loading) {
@@ -147,6 +306,8 @@ const BookDetailsPage = () => {
       </div>
     );
   }
+
+  const isDisabled = disabledBooks.has(book.id);
 
   const renderStars = (rating) => {
     return [...Array(5)].map((_, i) => (
@@ -187,7 +348,16 @@ const BookDetailsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-8xl mx-auto p-4 md:p-6 space-y-6">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        {/* Toast */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+
         {/* Header */}
         <div className="bg-white/90 backdrop-blur-md rounded-xl p-4 md:p-6 shadow-lg border border-gray-200">
           <div className="flex items-center justify-between">
@@ -207,16 +377,24 @@ const BookDetailsPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-4 md:p-6 border border-gray-200">
+        <div className={`bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-4 md:p-6 border border-gray-200 ${isDisabled ? "opacity-50" : ""}`}>
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Left Column - Book Image */}
             <div className="w-full lg:w-1/3">
               <div className="relative h-64 md:h-80 overflow-hidden rounded-xl">
                 <img 
-                  src={book.cover} 
+                  src={book.cover || "https://via.placeholder.com/150"} 
                   alt={book.title} 
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
                 />
+                {isDisabled && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="text-white text-center">
+                      <Clock className="w-6 h-6 mx-auto mb-1" />
+                      <span className="text-xs">Processing...</span>
+                    </div>
+                  </div>
+                )}
                 <button 
                   onClick={handleWishlistToggle}
                   className={`absolute top-3 right-3 p-2 rounded-full transition-colors shadow-lg ${
@@ -224,6 +402,7 @@ const BookDetailsPage = () => {
                       ? "bg-red-100 text-red-500" 
                       : "bg-white/80 text-gray-500 hover:text-red-500"
                   }`}
+                  disabled={isDisabled}
                 >
                   <Heart className={`w-5 h-5 ${isWishlisted ? "fill-current" : ""}`} />
                 </button>
@@ -233,6 +412,11 @@ const BookDetailsPage = () => {
                   {book.forSale && (
                     <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
                       For Sale
+                    </span>
+                  )}
+                  {book.forBidding && (
+                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">
+                      For Bidding
                     </span>
                   )}
                   {book.forLend && (
@@ -287,7 +471,7 @@ const BookDetailsPage = () => {
                 <h3 className="font-semibold text-gray-900 mb-4">Book Owner</h3>
                 <div className="flex items-center mb-4">
                   <img 
-                    src={book.owner.avatar} 
+                    src={book.owner.avatar || "https://via.placeholder.com/50"} 
                     alt={book.owner.name} 
                     className="h-10 w-10 rounded-full object-cover mr-3" 
                   />
@@ -368,24 +552,26 @@ const BookDetailsPage = () => {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 {book.forSale && (
-                  <>
-                    <Button
-                      variant="primary"
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
-                      onClick={handleBuyClick}
-                      icon={<ShoppingCart className="w-4 h-4" />}
-                    >
-                      Buy Now
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-lg text-sm font-medium"
-                      onClick={handleBidClick}
-                      icon={<Gavel className="w-4 h-4" />}
-                    >
-                      Place Bid
-                    </Button>
-                  </>
+                  <Button
+                    variant="primary"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
+                    onClick={handleBuyClick}
+                    icon={<ShoppingCart className="w-4 h-4" />}
+                    disabled={isDisabled}
+                  >
+                    Buy Now
+                  </Button>
+                )}
+                {(book.forBidding || book.forSale) && (
+                  <Button
+                    variant="primary"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
+                    onClick={handleBidClick}
+                    icon={<Gavel className="w-4 h-4" />}
+                    disabled={isDisabled}
+                  >
+                    Place Bid
+                  </Button>
                 )}
                 {book.forLend && (
                   <Button
@@ -393,6 +579,7 @@ const BookDetailsPage = () => {
                     className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
                     onClick={handleBorrowRequest}
                     icon={<BookOpen className="w-4 h-4" />}
+                    disabled={isDisabled}
                   >
                     Request to Borrow
                   </Button>
@@ -403,6 +590,7 @@ const BookDetailsPage = () => {
                     className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
                     onClick={handleExchangeRequest}
                     icon={<Repeat className="w-4 h-4" />}
+                    disabled={isDisabled}
                   >
                     Request Exchange
                   </Button>
@@ -428,7 +616,7 @@ const BookDetailsPage = () => {
               )}
 
               {/* Recent Bids */}
-              {book.forSale && book.recentBids && book.recentBids.length > 0 && (
+              {(book.forBidding || book.forSale) && book.recentBids && book.recentBids.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Recent Bids</h3>
                   <div className="bg-gray-50 rounded-lg p-4">
@@ -448,6 +636,7 @@ const BookDetailsPage = () => {
                       className="w-full mt-4 border-blue-200 text-blue-600 hover:bg-blue-50"
                       onClick={handleBidClick}
                       icon={<Eye className="w-4 h-4" />}
+                      disabled={isDisabled}
                     >
                       View All Bids & Place Bid
                     </Button>
@@ -496,7 +685,7 @@ const BookDetailsPage = () => {
                       <div key={review.id} className="border-b border-gray-100 pb-6 last:border-b-0">
                         <div className="flex items-start gap-4">
                           <img 
-                            src={review.user.avatar} 
+                            src={review.user.avatar || "https://via.placeholder.com/50"} 
                             alt={review.user.name} 
                             className="w-12 h-12 rounded-full object-cover flex-shrink-0" 
                           />
@@ -519,91 +708,352 @@ const BookDetailsPage = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Contact Modal */}
-      {showContactModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white/95 backdrop-blur-md rounded-xl p-6 w-full max-w-md shadow-2xl border border-gray-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">Contact Owner</h3>
-              <button 
-                onClick={() => setShowContactModal(false)} 
-                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-gray-600">Book: <span className="font-medium text-gray-900">{book.title}</span></p>
-                <p className="text-sm text-gray-600">Owner: <span className="font-medium text-gray-900">{book.owner.name}</span></p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Request Type</label>
-                <select
-                  value={requestType}
-                  onChange={(e) => setRequestType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+        {/* Contact Modal */}
+        {showContactModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white/95 backdrop-blur-md rounded-xl p-6 w-full max-w-md shadow-2xl border border-gray-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Contact Owner</h3>
+                <button 
+                  onClick={() => setShowContactModal(false)} 
+                  className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
                 >
-                  <option value="">Select request type</option>
-                  {book.forLend && <option value="borrow">Borrow the book</option>}
-                  {book.forExchange && <option value="exchange">Exchange the book</option>}
-                  <option value="question">Ask a question</option>
-                </select>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {requestType === "borrow" && book.lendingPeriod && (
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-sm text-gray-600">Book: <span className="font-medium text-gray-900">{book.title}</span></p>
+                  <p className="text-sm text-gray-600">Owner: <span className="font-medium text-gray-900">{book.owner.name}</span></p>
+                </div>
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Borrow Duration</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Request Type</label>
                   <select
-                    value={borrowDuration}
-                    onChange={(e) => setBorrowDuration(e.target.value)}
+                    value={requestType}
+                    onChange={(e) => setRequestType(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                   >
-                    <option value="7">1 week</option>
-                    <option value="14">2 weeks</option>
-                    <option value={book.lendingPeriod}>Owner's preferred duration ({book.lendingPeriod} days)</option>
+                    <option value="">Select request type</option>
+                    {book.forSale && <option value="purchase">Purchase the book</option>}
+                    {book.forBidding && <option value="bid">Place a bid</option>}
+                    {book.forLend && <option value="borrow">Borrow the book</option>}
+                    {book.forExchange && <option value="exchange">Exchange the book</option>}
+                    <option value="question">Ask a question</option>
                   </select>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  rows="4"
-                  placeholder="Write your message to the book owner..."
-                  required
-                />
+                {requestType === "borrow" && book.lendingPeriod && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Borrow Duration</label>
+                    <select
+                      value={borrowDuration}
+                      onChange={(e) => setBorrowDuration(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    >
+                      <option value="7">1 week</option>
+                      <option value="14">2 weeks</option>
+                      <option value={book.lendingPeriod}>Owner's preferred duration ({book.lendingPeriod} days)</option>
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    rows="4"
+                    placeholder="Write your message to the book owner..."
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-gray-200 text-gray-600 hover:bg-gray-100"
+                  onClick={() => setShowContactModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
+                  onClick={handleContactSubmit}
+                  disabled={!requestType || !message}
+                  icon={<ArrowRight className="w-4 h-4" />}
+                >
+                  Send Request
+                </Button>
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="flex space-x-3 mt-6">
-              <Button
-                variant="outline"
-                className="flex-1 border-gray-200 text-gray-600 hover:bg-gray-100"
-                onClick={() => setShowContactModal(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
-                onClick={handleContactSubmit}
-                disabled={!requestType || !message}
-                icon={<Send className="w-4 h-4" />}
-              >
-                Send Request
-              </Button>
+        {/* Borrow Confirmation Modal */}
+        {showBorrowModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 bg-opacity-50">
+            <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3
+                  className="text-xl font-bold"
+                  style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
+                >
+                  Confirm Borrow Request
+                </h3>
+                <button
+                  onClick={() => setShowBorrowModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Are you sure you want to send a borrow request for:
+                </p>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h4 className="font-semibold">{book.title}</h4>
+                  <p className="text-sm text-gray-600">{book.author}</p>
+                  <p className="text-sm text-gray-600">Owner: {book.owner.name}</p>
+                  <p className="text-sm text-gray-600">Borrowing Price: Rs. {book?.price*0.2}</p>
+                  <p className="text-sm text-gray-600">Delivery Price: Rs. 200</p>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBorrowModal(false)}
+                  className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={confirmBorrowRequest}
+                  className="bg-green-500 hover:bg-green-600 text-white"
+                >
+                  Confirm Borrow Request
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Exchange Confirmation Modal */}
+        {showExchangeModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 bg-opacity-50">
+            <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3
+                  className="text-xl font-bold"
+                  style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
+                >
+                  Confirm Exchange Request
+                </h3>
+                <button
+                  onClick={() => setShowExchangeModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Are you sure you want to send an exchange request for:
+                </p>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h4 className="font-semibold">{book.title}</h4>
+                  <p className="text-sm text-gray-600">{book.author}</p>
+                  <p className="text-sm text-gray-600">Owner: {book.owner.name}</p>
+                  <p className="text-sm text-gray-600">Delivery Price: Rs. 200</p>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowExchangeModal(false)}
+                  className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={confirmExchangeRequest}
+                  className="bg-purple-500 hover:bg-purple-600 text-white"
+                >
+                  Confirm Exchange Request
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Modal */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 bg-opacity-50">
+            <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3
+                  className="text-xl font-bold"
+                  style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
+                >
+                  Payment Details
+                </h3>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="mb-6">
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold mb-2">{book.title}</h4>
+                  <div className="space-y-2 text-sm">
+                    {paymentType === "borrow" && (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Book Price:</span>
+                          <span>Rs. {book.price}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Borrow Fee (20%):</span>
+                          <span>Rs. {Math.round(book.price * 0.2)}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Delivery Fee:</span>
+                      <span>Rs. 200</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-semibold">
+                      <span>Total Amount:</span>
+                      <span>
+                        Rs. {paymentType === "borrow" ? Math.round(book.price * 0.2) + 200 : 200}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Card Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="1234 5678 9012 3456"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Expiry Date
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        CVV
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="123"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPaymentModal(false)}
+                  className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={processPayment}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Pay Now
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Exchange Book Selection Modal */}
+        {showExchangeBookModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 bg-opacity-50">
+            <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3
+                  className="text-xl font-bold"
+                  style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
+                >
+                  Exchange Book Offer
+                </h3>
+                <button
+                  onClick={() => setShowExchangeBookModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">
+                  The owner has offered this book for exchange:
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4 flex items-center space-x-3">
+                  <img
+                    src={exchangeBook?.cover || "https://via.placeholder.com/80"}
+                    alt={exchangeBook?.title}
+                    className="w-16 h-20 object-cover rounded"
+                  />
+                  <div>
+                    <h4 className="font-semibold">{exchangeBook?.title}</h4>
+                    <p className="text-sm text-gray-600">{exchangeBook?.author}</p>
+                    <p className="text-sm text-gray-600">Condition: {exchangeBook?.condition}</p>
+                    <p className="text-sm text-gray-600">Delivery Price: Rs. 200</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-3">
+                  Do you want to proceed with this exchange?
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={rejectExchangeBook}
+                  className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+                >
+                  Reject Exchange
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={acceptExchangeBook}
+                  className="bg-green-500 hover:bg-green-600 text-white"
+                >
+                  Accept & Pay Delivery (Rs. 200)
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

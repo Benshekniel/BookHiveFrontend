@@ -8,7 +8,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   const location = useLocation();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-  console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
+  // console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
 
   const pathLabels = {
     '/admin': 'Dashboard',
@@ -66,7 +66,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/user/profile-settings': 'Profile Settings',
   };
 
-const { user } = useAuth();
+  const { user } = useAuth();
 
   if (!user) {
     return <p>Please log in.</p>;
@@ -306,9 +306,10 @@ const { user } = useAuth();
 
 export default Header;
 
+
 // import React, { useState } from 'react';
 // import { Bell, Search, User, Menu } from 'lucide-react';
-// import { useAuth } from '../../App';
+// import { useAuth } from '../AuthContext';
 // import Sidebar from './Sidebar';
 // import { useLocation, Link } from 'react-router-dom';
 
@@ -374,62 +375,77 @@ export default Header;
 //     '/user/profile-settings': 'Profile Settings',
 //   };
 
-
 //   const { user } = useAuth();
 //   if (!user) {
 //     return <p>Please log in.</p>;
 //   }
 
-//   // Sri Lankan dummy data based on route
+//   // Sri Lankan dummy data based on route, prioritizing user data from JWT
 //   const getDummyUserData = () => {
 //     const path = location.pathname.toLowerCase();
-    
+
 //     if (path.startsWith('/admin')) {
 //       return {
-//         name: 'Kasun',
-//         image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg'
+//         name: user.name || 'Kasun',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
 //       };
 //     } else if (path.startsWith('/moderator')) {
 //       return {
-//         name: user.name,
-//         email: user.email,
-//         role:  user.role,
-//         image: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg'
+//         name: user.name || ' nope', // Use JWT name if available
+//         email: user.email || 'nope@gmail.com', // Use JWT email
+//         role: user.role || 'nope', // Use JWT role
+//         image: user.profileImage || 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg',
 //       };
 //     } else if (path.startsWith('/bookstore')) {
 //       return {
-//         name: 'Rohan',
-//         image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg'
+//         name: user.name || 'Rohan',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
 //       };
 //     } else if (path.startsWith('/manager')) {
 //       return {
-//         name: 'Priya',
-//         image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239292.jpeg'
+//         name: user.name || 'Priya',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1239291/pexels-photo-1239292.jpeg',
 //       };
 //     } else if (path.startsWith('/agent')) {
 //       return {
-//         name: 'Chaminda',
-//         image: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg'
+//         name: user.name || 'Chaminda',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg',
 //       };
 //     } else if (path.startsWith('/hubmanager')) {
 //       return {
-//         name: 'Sanduni',
-//         image: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg'
+//         name: user.name || 'Sanduni',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg',
 //       };
 //     } else if (path.startsWith('/organization')) {
 //       return {
-//         name: 'Mahesh',
-//         image: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg'
+//         name: user.name || 'Mahesh',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg',
 //       };
 //     } else if (path.startsWith('/user')) {
 //       return {
-//         name: 'Tharushi',
-//         image: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg'
+//         name: user.name || 'Tharushi',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg',
 //       };
 //     } else {
 //       return {
-//         name: 'Amal',
-//         image: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg'
+//         name: user.name || 'Amal',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg',
 //       };
 //     }
 //   };
@@ -550,9 +566,8 @@ export default Header;
 //                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
 //                       <div className="px-4 py-2 border-b border-gray-100">
 //                         <p className="text-sm font-medium text-gray-900">{displayName}</p>
-//                         <p className="text-xs text-gray-500 capitalize">
-//                           {location.pathname.split('/')[1] || 'User'}
-//                         </p>
+//                         <p className="text-xs text-gray-500">{dummyData.email}</p> {/* Display email */}
+//                         <p className="text-xs text-gray-500 capitalize">{dummyData.role}</p> {/* Display role */}
 //                       </div>
 //                       <Link
 //                         to="profile-settings"
