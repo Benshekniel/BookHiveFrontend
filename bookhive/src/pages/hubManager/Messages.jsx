@@ -21,11 +21,12 @@ const Messages = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [sendingMessage, setSendingMessage] = useState(false);
 
-  // Ref for auto-scrolling to bottom
+  // Refs
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const processedMessageIds = useRef(new Set());
 
-  // Auto scroll to bottom - only for the chat container
+  // Auto scroll to bottom
   const scrollToBottom = () => {
     if (messagesEndRef.current && chatContainerRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -39,175 +40,203 @@ const Messages = () => {
     }
   }, [messages, selectedChat]);
 
-  // Role-based contact mapping
-  const getRoleBasedContacts = (userRole) => {
-    const roleContactMap = {
-      'admin': ['moderator', 'manager', 'organization', 'hubmanager'],
-      'moderator': ['admin', 'user', 'agent', 'bookstore'],
-      'bookstore': ['user', 'moderator', 'manager'],
-      'manager': ['agent', 'hubmanager', 'admin', 'moderator'],
-      'agent': ['manager', 'hubmanager'],
-      'hubmanager': ['agent', 'manager', 'admin'],
-      'organization': ['admin', 'moderator'],
-      'user': ['moderator', 'bookstore']
-    };
-    return roleContactMap[userRole.toLowerCase()] || [];
+  // FIXED: Enhanced socket message handler with duplicate prevention
+  const handleSocketMessage = useCallback((data) => {
+    console.log('=== WEB SOCKET MESSAGE RECEIVED ===');
+    console.log('Full socket data:', JSON.stringify(data, null, 2));
+    console.log('Current user ID:', user.userId);
+    console.log('Selected chat:', selectedChat);
+
+    try {
+      const { type, message, senderId, receiverId } = data;
+
+      if (type === 'new_message') {
+        console.log('Processing new_message...');
+        console.log('Message senderId:', senderId, 'receiverId:', receiverId);
+
+        // Only process messages sent TO this user, not FROM this user
+        if (senderId === user.userId) {
+          console.log('⏭️ Ignoring message sent by current user to prevent duplicates');
+          return;
+        }
+
+        // Ensure we have the required data
+        if (!senderId || !receiverId || !message) {
+          console.error('❌ Missing required message data:', { senderId, receiverId, message });
+          return;
+        }
+
+        // Create unique message ID for duplicate detection
+        const messageId = message.id || message.messageId || `received_${Date.now()}_${Math.random()}`;
+        const messageKey = `${senderId}_${receiverId}_${message.content}_${message.createdAt}`;
+
+        // Check for duplicates
+        if (processedMessageIds.current.has(messageKey)) {
+          console.log('⏭️ Message already processed, skipping duplicate');
+          return;
+        }
+
+        // Add to processed messages
+        processedMessageIds.current.add(messageKey);
+
+        // Clean up old processed message IDs (keep last 100)
+        if (processedMessageIds.current.size > 100) {
+          const idsArray = Array.from(processedMessageIds.current);
+          processedMessageIds.current = new Set(idsArray.slice(-50));
+        }
+
+        console.log('📨 Processing new message from mobile...');
+        console.log('Message content:', message.content);
+
+        // For received messages, the chatPartnerId is the sender
+        const chatPartnerId = senderId;
+        console.log('Storing message under chatPartnerId:', chatPartnerId);
+
+        // Create message object
+        const newMessageObj = {
+          id: messageId,
+          sender: message.senderName || `User ${senderId}`,
+          message: message.content || '',
+          timestamp: formatTimestamp(message.createdAt || message.timestamp || new Date()),
+          isOwn: false,
+          isRead: false,
+          rawTimestamp: message.createdAt || message.timestamp || new Date()
+        };
+
+        console.log('📋 New message object:', newMessageObj);
+
+        // Update messages state
+        setMessages(prev => {
+          console.log('Previous messages for partner', chatPartnerId, ':', prev[chatPartnerId]?.length || 0);
+          const updated = { ...prev };
+
+          if (!updated[chatPartnerId]) {
+            updated[chatPartnerId] = [];
+            console.log('Created new message array for partner:', chatPartnerId);
+          }
+
+          // Double-check for duplicates in current messages
+          const existingMessage = updated[chatPartnerId].find(msg => 
+            msg.id === newMessageObj.id || 
+            (msg.message === newMessageObj.message && 
+             Math.abs(new Date(msg.rawTimestamp) - new Date(newMessageObj.rawTimestamp)) < 5000)
+          );
+
+          if (!existingMessage) {
+            updated[chatPartnerId] = [...updated[chatPartnerId], newMessageObj];
+            console.log('✅ Message added successfully. New array length:', updated[chatPartnerId].length);
+          } else {
+            console.log('⏭️ Message already exists in state, skipping');
+            return prev; // Return unchanged state
+          }
+
+          return updated;
+        });
+
+        // Update conversation list
+        setConversations(prev => {
+          console.log('📝 Updating conversations...');
+          const updated = [...prev];
+
+          // Find existing conversation
+          const existingIndex = updated.findIndex(conv => conv.id === chatPartnerId);
+
+          const messageContent = message.content || '';
+          const messageTime = message.createdAt || message.timestamp || new Date();
+
+          if (existingIndex !== -1) {
+            // Update existing conversation
+            const currentUnread = updated[existingIndex].unread || 0;
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              lastMessage: messageContent,
+              timestamp: formatTimestamp(messageTime),
+              unread: selectedChat === chatPartnerId ? 0 : currentUnread + 1,
+              lastMessageTime: messageTime
+            };
+            console.log('✅ Updated existing conversation:', updated[existingIndex]);
+          } else {
+            // Create new conversation if it doesn't exist
+            const newConv = {
+              id: chatPartnerId,
+              name: message.senderName || `User ${chatPartnerId}`,
+              role: 'User',
+              avatar: (message.senderName || `User ${chatPartnerId}`).charAt(0).toUpperCase(),
+              lastMessage: messageContent,
+              timestamp: formatTimestamp(messageTime),
+              unread: selectedChat === chatPartnerId ? 0 : 1,
+              status: 'offline',
+              lastMessageTime: messageTime
+            };
+            updated.push(newConv);
+            console.log('✅ Created new conversation:', newConv);
+          }
+
+          // Sort conversations by last message time
+          updated.sort((a, b) => {
+            if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+            if (!a.lastMessageTime) return 1;
+            if (!b.lastMessageTime) return -1;
+            return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+          });
+
+          return updated;
+        });
+
+        // If current chat is open, mark immediately as read
+        if (selectedChat === chatPartnerId) {
+          console.log('📖 Current chat is open, marking as read immediately');
+          setTimeout(() => markConversationAsRead(chatPartnerId), 100);
+        } else {
+          // Show notification if not in current chat
+          showNotification(
+            message.senderName || 'User',
+            message.content || 'New message'
+          );
+        }
+
+        // Refresh unread count
+        setTimeout(() => fetchUnreadCount(), 100);
+      }
+
+    } catch (error) {
+      console.error('❌ Error processing socket message:', error);
+    }
+
+    console.log('=== END WEB SOCKET MESSAGE PROCESSING ===');
+  }, [selectedChat, user.userId]);
+
+  // Format timestamp
+  const formatTimestamp = (dateString) => {
+    if (!dateString) return 'Unknown';
+
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMinutes = Math.floor((now - date) / (1000 * 60));
+
+      if (diffMinutes < 1) return 'Just now';
+      if (diffMinutes < 60) return `${diffMinutes} min ago`;
+      if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)} hours ago`;
+      return `${Math.floor(diffMinutes / 1440)} days ago`;
+    } catch (error) {
+      return 'Unknown';
+    }
   };
 
-  const canBroadcast = (userRole) => {
-    return ['admin', 'manager', 'hubmanager', 'moderator'].includes(userRole.toLowerCase());
-  };
-
-  // FIXED: Enhanced socket message handler
-// FIXED: Enhanced socket message handler - ignore own sent messages
-const handleSocketMessage = useCallback((data) => {
-  console.log('=== SOCKET MESSAGE RECEIVED ===');
-  console.log('Full socket data:', JSON.stringify(data, null, 2));
-  console.log('Current user ID:', user.userId);
-  console.log('Selected chat:', selectedChat);
-
-  const { type, message, senderId, receiverId } = data;
-
-  if (type === 'new_message') {
-    console.log('Processing new_message...');
-    console.log('Message senderId:', senderId, 'receiverId:', receiverId);
-    
-    // FIXED: Only process messages that are sent TO this user, not FROM this user
-    if (senderId === user.userId) {
-      console.log('Ignoring message sent by current user to prevent duplicates');
-      return;
-    }
-    
-    console.log('Message content:', message);
-
-    // For received messages, the chatPartnerId is the sender
-    const chatPartnerId = senderId;
-
-    console.log('Storing message under chatPartnerId:', chatPartnerId);
-
-    setMessages(prev => {
-      console.log('Previous messages state for partner', chatPartnerId, ':', prev[chatPartnerId]);
-      const updated = { ...prev };
-
-      if (!updated[chatPartnerId]) {
-        updated[chatPartnerId] = [];
-        console.log('Created new message array for partner:', chatPartnerId);
-      }
-
-      // Create the message object with proper fallbacks
-      const newMessage = {
-        id: message.id || message.messageId || `received_${Date.now()}_${Math.random()}`,
-        sender: message.senderName || message.sender || 'User',
-        message: message.content || message.message || message.text || '',
-        timestamp: formatTimestamp(message.createdAt || message.timestamp || new Date()),
-        isOwn: false,
-        isRead: false,
-        rawTimestamp: message.createdAt || message.timestamp || new Date()
-      };
-
-      console.log('New message object:', newMessage);
-
-      // Check if message already exists
-      const existingMessage = updated[chatPartnerId].find(msg => msg.id === newMessage.id);
-
-      if (!existingMessage) {
-        updated[chatPartnerId] = [...updated[chatPartnerId], newMessage];
-        console.log('✅ Message added successfully. New array length:', updated[chatPartnerId].length);
-      } else {
-        console.log('❌ Message already exists, skipping');
-      }
-
-      return updated;
-    });
-
-    // Update conversation list properly
-    setConversations(prev => {
-      console.log('Updating conversations...');
-      const updated = [...prev];
-
-      // Find existing conversation
-      const existingIndex = updated.findIndex(conv => conv.id === chatPartnerId);
-
-      if (existingIndex !== -1) {
-        // Update existing conversation
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          lastMessage: message.content || message.message || message.text || '',
-          timestamp: formatTimestamp(message.createdAt || message.timestamp || new Date()),
-          unread: selectedChat === chatPartnerId ? 0 : updated[existingIndex].unread + 1,
-          lastMessageTime: message.createdAt || message.timestamp || new Date()
-        };
-        console.log('Updated existing conversation:', updated[existingIndex]);
-      } else {
-        // Create new conversation if it doesn't exist
-        const newConv = {
-          id: chatPartnerId,
-          name: message.senderName || message.sender || `User ${chatPartnerId}`,
-          role: 'User',
-          avatar: (message.senderName || message.sender || `User ${chatPartnerId}`).charAt(0).toUpperCase(),
-          lastMessage: message.content || message.message || message.text || '',
-          timestamp: formatTimestamp(message.createdAt || message.timestamp || new Date()),
-          unread: selectedChat === chatPartnerId ? 0 : 1,
-          status: 'offline',
-          lastMessageTime: message.createdAt || message.timestamp || new Date()
-        };
-        updated.push(newConv);
-        console.log('Created new conversation:', newConv);
-      }
-
-      // Sort conversations by last message time
-      updated.sort((a, b) => {
-        if (!a.lastMessageTime && !b.lastMessageTime) return 0;
-        if (!a.lastMessageTime) return 1;
-        if (!b.lastMessageTime) return -1;
-        return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
-      });
-
-      return updated;
-    });
-
-    // If current chat is open, mark immediately as read
-    if (selectedChat === chatPartnerId) {
-      console.log('Current chat is open, marking as read immediately');
-      markConversationAsRead(chatPartnerId);
-    } else {
-      // Show notification if not in current chat
-      showNotification(
-        message.senderName || message.sender || 'User',
-        message.content || message.message || message.text || 'New message'
-      );
-    }
-
-    // Refresh unread count
-    fetchUnreadCount();
-  }
-
-  console.log('=== END SOCKET MESSAGE PROCESSING ===');
-}, [selectedChat, user.userId]);
-
-  // FIXED: Unread count update handler
+  // Other callback handlers
   const handleUnreadCountUpdate = useCallback((count) => {
-    console.log('Unread count updated:', count);
+    console.log('📊 Unread count updated:', count);
     setUnreadCount(count);
   }, []);
 
   const handleConversationUpdate = useCallback((data) => {
-    console.log('Conversation update received:', data);
-    setConversations(prev => prev.map(conv => {
-      if (conv.id === data.partnerId) {
-        return {
-          ...conv,
-          lastMessage: data.lastMessage,
-          timestamp: formatTimestamp(data.timestamp),
-          unread: data.unreadCount
-        };
-      }
-      return conv;
-    }));
+    console.log('💬 Conversation update received:', data);
+    // Handle conversation updates if needed
   }, []);
 
   const handleConnectionChange = useCallback((connected) => {
-    console.log('Connection status changed:', connected);
+    console.log('🔌 Connection status changed:', connected);
     setIsConnected(connected);
     if (connected) {
       setError(null);
@@ -219,7 +248,7 @@ const handleSocketMessage = useCallback((data) => {
   // Initialize socket connection
   useEffect(() => {
     if (user && user.userId) {
-      console.log('Connecting to Socket.IO...', user.userId);
+      console.log('🚀 Initializing socket connection for user:', user.userId);
       socketService.connect(user.userId);
 
       // Set up event listeners
@@ -241,53 +270,33 @@ const handleSocketMessage = useCallback((data) => {
     };
   }, [user, handleSocketMessage, handleUnreadCountUpdate, handleConversationUpdate, handleConnectionChange]);
 
-  // Initial load
+  // Initial data load
   useEffect(() => {
     if (user && user.userId) {
       loadAllData();
     }
   }, [user]);
 
-  // Load conversations when contacts change
-  useEffect(() => {
-    if (availableContacts.length > 0) {
-      fetchConversations();
-    }
-  }, [availableContacts]);
-
-  // Fetch initial unread count
-  useEffect(() => {
-    if (user && user.userId) {
-      fetchUnreadCount();
-    }
-  }, [user]);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const count = await messageService.getUnreadMessageCount(user.userId);
-      console.log('Fetched unread count:', count);
-      setUnreadCount(count);
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-    }
+  // Role-based contact mapping
+  const getRoleBasedContacts = (userRole) => {
+    const roleContactMap = {
+      'admin': ['moderator', 'manager', 'organization', 'hubmanager'],
+      'moderator': ['admin', 'user', 'agent', 'bookstore'],
+      'bookstore': ['user', 'moderator', 'manager'],
+      'manager': ['agent', 'hubmanager', 'admin', 'moderator'],
+      'agent': ['manager', 'hubmanager'],
+      'hubmanager': ['agent', 'manager', 'admin'],
+      'organization': ['admin', 'moderator'],
+      'user': ['moderator', 'bookstore']
+    };
+    return roleContactMap[userRole.toLowerCase()] || [];
   };
 
-  const showNotification = (sender, message) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(`New message from ${sender}`, {
-        body: message,
-        icon: '/favicon.ico'
-      });
-    }
+  const canBroadcast = (userRole) => {
+    return ['admin', 'manager', 'hubmanager', 'moderator'].includes(userRole.toLowerCase());
   };
 
-  // Request notification permission
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
+  // Data loading functions
   const loadAllData = async () => {
     try {
       setLoading(true);
@@ -302,7 +311,7 @@ const handleSocketMessage = useCallback((data) => {
 
   const fetchAvailableContacts = async () => {
     try {
-      console.log('Fetching contacts for role:', user.role);
+      console.log('📋 Fetching contacts for role:', user.role);
 
       const allowedRoles = getRoleBasedContacts(user.role.toLowerCase());
       console.log('Allowed contact roles:', allowedRoles);
@@ -321,12 +330,19 @@ const handleSocketMessage = useCallback((data) => {
     }
   };
 
+  // Load conversations when contacts change
+  useEffect(() => {
+    if (availableContacts.length > 0) {
+      fetchConversations();
+    }
+  }, [availableContacts]);
+
   const fetchConversations = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching conversations for user:', user.userId);
+      console.log('📥 Fetching conversations for user:', user.userId);
 
       const userMessages = await messageService.getUserMessages(user.userId);
       console.log('User messages:', userMessages);
@@ -428,25 +444,41 @@ const handleSocketMessage = useCallback((data) => {
     console.log('All messages loaded:', allMessages);
   };
 
-  const formatTimestamp = (dateString) => {
-    if (!dateString) return 'Unknown';
+  // Fetch initial unread count
+  useEffect(() => {
+    if (user && user.userId) {
+      fetchUnreadCount();
+    }
+  }, [user]);
 
+  const fetchUnreadCount = async () => {
     try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffMinutes = Math.floor((now - date) / (1000 * 60));
-
-      if (diffMinutes < 1) return 'Just now';
-      if (diffMinutes < 60) return `${diffMinutes} min ago`;
-      if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)} hours ago`;
-      return `${Math.floor(diffMinutes / 1440)} days ago`;
+      const count = await messageService.getUnreadMessageCount(user.userId);
+      console.log('Fetched unread count:', count);
+      setUnreadCount(count);
     } catch (error) {
-      return 'Unknown';
+      console.error('Error fetching unread count:', error);
     }
   };
 
-  // Fixed send message function
-  // Fixed send message function - simplified without temporary states
+  // Notification
+  const showNotification = (sender, message) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`New message from ${sender}`, {
+        body: message,
+        icon: '/favicon.ico'
+      });
+    }
+  };
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Send message
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedChat || sendingMessage) return;
 
@@ -454,7 +486,7 @@ const handleSocketMessage = useCallback((data) => {
     setSendingMessage(true);
     setNewMessage('');
 
-    // Add message immediately as sent (no temporary state)
+    // Add message immediately as sent
     const immediateMessage = {
       id: `sent_${Date.now()}_${Math.random()}`,
       sender: 'You',
@@ -500,7 +532,6 @@ const handleSocketMessage = useCallback((data) => {
         receiverId: selectedChat,
         content: messageContent
       });
-      // Message is already displayed, no need to wait for socket confirmation
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Failed to send message. Please try again.');
@@ -509,63 +540,11 @@ const handleSocketMessage = useCallback((data) => {
       setSendingMessage(false);
     }
   };
-  const handleBroadcastMessage = async () => {
-    if (!broadcastMessage.trim()) return;
 
-    try {
-      const broadcastPromises = availableContacts.map(contact =>
-        messageService.sendMessage({
-          senderId: user.userId,
-          receiverId: contact.user_id,
-          content: `[Broadcast] ${broadcastMessage}`
-        })
-      );
-
-      await Promise.all(broadcastPromises);
-
-      setBroadcastMessage('');
-      setShowBroadcast(false);
-      setError('Message broadcasted successfully!');
-      setTimeout(() => setError(null), 3000);
-
-    } catch (error) {
-      console.error('Error broadcasting message:', error);
-      setError('Failed to broadcast message. Please try again.');
-      setTimeout(() => setError(null), 5000);
-    }
-  };
-
-  const refreshConversations = async () => {
-    await loadAllData();
-  };
-
-  const filteredConversations = conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getRoleColor = (role) => {
-    const roleColors = {
-      'admin': 'text-red-600',
-      'moderator': 'text-blue-600',
-      'bookstore': 'text-green-600',
-      'manager': 'text-purple-600',
-      'agent': 'text-orange-600',
-      'hubmanager': 'text-indigo-600',
-      'organization': 'text-pink-600',
-      'user': 'text-gray-600'
-    };
-    return roleColors[role.toLowerCase()] || 'text-gray-600';
-  };
-
-  const getStatusColor = (status) => {
-    return status === 'online' ? 'bg-green-400' : 'bg-gray-400';
-  };
-
-  // FIXED: mark conversation as read function
+  // Mark conversation as read
   const markConversationAsRead = async (conversationId) => {
     try {
-      console.log(`Marking conversation ${conversationId} as read for user ${user.userId}`);
+      console.log(`📖 Marking conversation ${conversationId} as read for user ${user.userId}`);
 
       await messageService.markConversationAsRead(user.userId, conversationId);
 
@@ -602,6 +581,62 @@ const handleSocketMessage = useCallback((data) => {
     if (conversation && conversation.unread > 0) {
       await markConversationAsRead(chatId);
     }
+  };
+
+  // Broadcast message
+  const handleBroadcastMessage = async () => {
+    if (!broadcastMessage.trim()) return;
+
+    try {
+      const broadcastPromises = availableContacts.map(contact =>
+        messageService.sendMessage({
+          senderId: user.userId,
+          receiverId: contact.user_id,
+          content: `[Broadcast] ${broadcastMessage}`
+        })
+      );
+
+      await Promise.all(broadcastPromises);
+
+      setBroadcastMessage('');
+      setShowBroadcast(false);
+      setError('Message broadcasted successfully!');
+      setTimeout(() => setError(null), 3000);
+
+    } catch (error) {
+      console.error('Error broadcasting message:', error);
+      setError('Failed to broadcast message. Please try again.');
+      setTimeout(() => setError(null), 5000);
+    }
+  };
+
+  // Refresh conversations
+  const refreshConversations = async () => {
+    await loadAllData();
+  };
+
+  // Utility functions
+  const filteredConversations = conversations.filter(conv =>
+    conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conv.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getRoleColor = (role) => {
+    const roleColors = {
+      'admin': 'text-red-600',
+      'moderator': 'text-blue-600',
+      'bookstore': 'text-green-600',
+      'manager': 'text-purple-600',
+      'agent': 'text-orange-600',
+      'hubmanager': 'text-indigo-600',
+      'organization': 'text-pink-600',
+      'user': 'text-gray-600'
+    };
+    return roleColors[role.toLowerCase()] || 'text-gray-600';
+  };
+
+  const getStatusColor = (status) => {
+    return status === 'online' ? 'bg-green-400' : 'bg-gray-400';
   };
 
   // Redirect to login if not authenticated
@@ -641,9 +676,9 @@ const handleSocketMessage = useCallback((data) => {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleBroadcastMessage}
-                disabled={!broadcastMessage.trim()}
+              <button 
+                onClick={handleBroadcastMessage} 
+                disabled={!broadcastMessage.trim()} 
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
               >
                 Broadcast
@@ -787,11 +822,10 @@ const handleSocketMessage = useCallback((data) => {
                 </div>
               </div>
 
-              {/* Messages Container - Fixed to prevent outer page scroll */}
+              {/* Messages Container */}
               <div
                 ref={chatContainerRef}
                 className="flex-1 p-4 space-y-4 overflow-y-auto"
-
               >
                 {(messages[selectedChat] || []).length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
