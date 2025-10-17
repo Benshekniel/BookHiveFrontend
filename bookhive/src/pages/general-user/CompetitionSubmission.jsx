@@ -7,7 +7,7 @@ import { useAuth } from '../../components/AuthContext';
 // Reusable Editor Component
 export const SubmissionEditor = ({ initialContent, onChange, wordCount, disabled }) => {
   const editorRef = useRef(null);
-  const [editorKey] = useState(() => `editor-${Date.now()}`);
+  const isInitializedRef = useRef(false);
 
   const editorConfig = useMemo(
     () => ({
@@ -28,22 +28,33 @@ export const SubmissionEditor = ({ initialContent, onChange, wordCount, disabled
         editor.on('init', () => {
           editor.getBody().setAttribute('data-gramm', 'false');
           editor.getBody().setAttribute('data-gramm_editor', 'false');
+          isInitializedRef.current = true;
         });
       },
     }),
     []
   );
 
+  // Handle editor change without causing re-renders
+  const handleEditorChange = useCallback((content) => {
+    // Only call onChange after initialization to prevent issues
+    if (isInitializedRef.current && onChange) {
+      onChange(content);
+    }
+  }, [onChange]);
+
   return (
     <div>
       <Editor
-        key={editorKey}
         apiKey="bt1w2ivk1v3fqe0n5lkisczo8gbyjwgw0tp7ur75kmuxobvb"
         onInit={(evt, editor) => {
           editorRef.current = editor;
+          // Set initial content programmatically instead of using initialValue prop
+          if (initialContent) {
+            editor.setContent(initialContent);
+          }
         }}
-        initialValue={initialContent}
-        onEditorChange={onChange}
+        onEditorChange={handleEditorChange}
         disabled={disabled}
         init={editorConfig}
       />
@@ -179,10 +190,33 @@ const CompetitionSubmission = ({
           submissionData
         );
 
-        if (response.data?.message === 'success') {
-          setDraftSubmissionId(response.data.submissionId);
+        console.log("Raw response:", response.data);
+
+        // Parse response - backend returns {message: "{\"message\": \"success\", ...}"}
+        let result = response.data;
+
+        // First level: check if response.data.message is a string that needs parsing
+        if (result.message && typeof result.message === 'string') {
+          try {
+            const parsed = JSON.parse(result.message);
+            result = parsed; // Use the parsed inner object
+            console.log("Parsed inner message:", result);
+          } catch (e) {
+            // If parsing fails, check if it's already the success message
+            if (result.message === 'success') {
+              // Backend changed format, use as is
+            } else {
+              console.error("Failed to parse message:", e);
+            }
+          }
+        }
+
+        // Check for success
+        if (result?.message === 'success') {
+          const submissionId = result.submissionId || draftSubmissionId;
+          setDraftSubmissionId(submissionId);
           const newSubmission = {
-            id: response.data.submissionId || draftSubmissionId || Date.now().toString(),
+            id: submissionId || Date.now().toString(),
             title: submissionForm.title,
             competitionId: selectedCompetition.id,
             status: "Draft",
@@ -200,10 +234,11 @@ const CompetitionSubmission = ({
             setActiveTab("yourSubmissions");
           }, 1500);
         } else {
-          setSubmitError("Failed to submit entry");
+          setSubmitError(`Failed to submit entry: ${result?.error || 'Unknown error'}`);
         }
       } catch (error) {
-        setSubmitError(`Error submitting entry: ${error.message}`);
+        console.error("Error in handleSubmitEntry:", error);
+        setSubmitError(`Error submitting entry: ${error.response?.data?.message || error.message}`);
       } finally {
         setIsSubmitting(false);
       }
@@ -274,12 +309,15 @@ const CompetitionSubmission = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Your Entry
                 </label>
-                <SubmissionEditor
-                  initialContent={submissionForm.content}
-                  onChange={handleContentChange}
-                  wordCount={submissionForm.wordCount}
-                  disabled={saveSuccess || isSubmitting}
-                />
+                {draftLoaded && (
+                  <SubmissionEditor
+                    key={`editor-${draftSubmissionId || 'new'}`}
+                    initialContent={submissionForm.content}
+                    onChange={handleContentChange}
+                    wordCount={submissionForm.wordCount}
+                    disabled={saveSuccess || isSubmitting}
+                  />
+                )}
               </div>
             </div>
           )}

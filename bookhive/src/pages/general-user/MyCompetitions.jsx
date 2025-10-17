@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Trophy, Calendar, Star, FileText, X, Crown, Edit, Trash2, Eye, Award, TrendingUp } from "lucide-react";
+import { Trophy, Calendar, Star, FileText, X, Crown, Edit, Trash2, Eye, Award, TrendingUp, CheckCircle } from "lucide-react";
 import axios from "axios";
 import PropTypes from "prop-types";
 import { SubmissionEditor } from "./CompetitionSubmission";
@@ -90,6 +90,7 @@ const MyCompetitions = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editError, setEditError] = useState(null);
+  const [editSuccess, setEditSuccess] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -204,6 +205,7 @@ const MyCompetitions = () => {
     if (editingSubmission) {
       setIsEditing(true);
       setEditError(null);
+      setEditSuccess(false);
       try {
         const submissionData = {
           submissionId: editingSubmission.id,
@@ -218,20 +220,48 @@ const MyCompetitions = () => {
           submissionData,
           { headers: { 'Content-Type': 'application/json' } }
         );
-        const result = response.data;
-        if (result.message === 'success') {
+
+        console.log("Raw response:", response.data);
+
+        // Parse response - backend returns {message: "{\"message\": \"success\", ...}"}
+        let result = response.data;
+
+        // First level: check if response.data.message is a string that needs parsing
+        if (result.message && typeof result.message === 'string') {
+          try {
+            const parsed = JSON.parse(result.message);
+            result = parsed; // Use the parsed inner object
+            console.log("Parsed inner message:", result);
+          } catch (e) {
+            // If parsing fails, check if it's already the success message
+            if (result.message === 'success') {
+              // Backend changed format, use as is
+            } else {
+              console.error("Failed to parse message:", e);
+            }
+          }
+        }
+
+        // Check for success
+        if (result?.message === 'success') {
+          const submissionId = result.submissionId || editingSubmission.id;
           setUserSubmissions(prev => prev.map(sub =>
             sub.id === editingSubmission.id
-              ? { ...sub, title: editForm.title, content: editForm.content, wordCount: editForm.wordCount }
+              ? { ...sub, id: submissionId, title: editForm.title, content: editForm.content, wordCount: editForm.wordCount }
               : sub
           ));
-          setShowEditModal(false);
-          setEditingSubmission(null);
-          setEditForm({ title: "", content: "", wordCount: 0 });
+          setEditSuccess(true);
+          setTimeout(() => {
+            setShowEditModal(false);
+            setEditingSubmission(null);
+            setEditForm({ title: "", content: "", wordCount: 0 });
+            setEditSuccess(false);
+          }, 1500);
         } else {
-          setEditError('Failed to update submission: ' + (result.message || "Unknown error"));
+          setEditError('Failed to update submission: ' + (result?.error || 'Unknown error'));
         }
       } catch (error) {
+        console.error("Error in handleEditSubmission:", error);
         setEditError('Error updating submission: ' + (error.response?.data?.message || error.message));
       } finally {
         setIsEditing(false);
@@ -557,6 +587,12 @@ const MyCompetitions = () => {
                   {editError}
                 </div>
               )}
+              {editSuccess && (
+                <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm flex items-center">
+                  <CheckCircle size={18} className="mr-2 text-green-600" />
+                  Draft updated successfully!
+                </div>
+              )}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Entry Title</label>
@@ -566,16 +602,17 @@ const MyCompetitions = () => {
                     onChange={(e) => handleEditChange("title", e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your submission title..."
-                    disabled={isEditing}
+                    disabled={isEditing || editSuccess}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Your Entry</label>
                   <SubmissionEditor
+                    key={`editor-edit-${editingSubmission?.id || 'new'}`}
                     initialContent={editForm.content}
                     onChange={(content) => handleEditChange("content", content)}
                     wordCount={editForm.wordCount}
-                    disabled={isEditing}
+                    disabled={isEditing || editSuccess}
                   />
                 </div>
               </div>
@@ -587,14 +624,16 @@ const MyCompetitions = () => {
                     setEditingSubmission(null);
                     setEditForm({ title: "", content: "", wordCount: 0 });
                     setEditError(null);
+                    setEditSuccess(false);
                   }}
+                  disabled={isEditing || editSuccess}
                 >
                   Cancel
                 </NewButton>
                 <NewButton
                   variant="primary"
                   onClick={handleEditSubmission}
-                  disabled={!editForm.title || !editForm.content || isEditing}
+                  disabled={!editForm.title || !editForm.content || isEditing || editSuccess}
                   icon={<Edit size={16} />}
                 >
                   {isEditing ? (
