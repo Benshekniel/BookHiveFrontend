@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Gift, Truck, CheckCircle, Clock, User, MapPin, Package, AlertCircle, RefreshCw, Eye, MessageCircle } from 'lucide-react';
-import { donationService } from '../../services/organizationService';
+import { useAuth } from '../../components/AuthContext';
 
-const ORG_ID = 1; // TODO: Replace with real orgId from context or props
+const API_BASE_URL = 'http://localhost:9090/api';
 
 const DonationsReceived = () => {
+  const { user } = useAuth();
+
+  // Check if user is authenticated
+  if (!user) {
+    return <p>Please log in.</p>;
+  }
+
+  const orgId = user.userId; // Use user.userId as orgId
+
   const [filter, setFilter] = useState('all');
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +25,7 @@ const DonationsReceived = () => {
   const [confirmationData, setConfirmationData] = useState({
     receivedDate: '',
     condition: '',
-    notes: ''
+    notes: '',
   });
 
   // Stats state
@@ -24,45 +33,133 @@ const DonationsReceived = () => {
     delivered: 0,
     inTransit: 0,
     approved: 0,
-    totalBooks: 0
+    totalBooks: 0,
   });
+
+  // Direct API call function
+  const apiCall = async (endpoint, options = {}) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    if (config.body && typeof config.body === 'object') {
+      config.body = JSON.stringify(config.body);
+    }
+
+    try {
+      console.log(`API Request: ${config.method || 'GET'} ${url}`);
+
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log(`API Response: ${endpoint} - Success`);
+        return data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // Get donations by organization
+  const getDonationsByOrganization = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-donations/organization/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch donations:', error);
+      throw error;
+    }
+  };
+
+  // Mark donation as received
+  const markDonationAsReceived = async (donationId, confirmationData) => {
+    try {
+      const data = await apiCall(`/organization-donations/${donationId}/mark-received`, {
+        method: 'POST',
+        body: confirmationData,
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to mark donation as received:', error);
+      throw error;
+    }
+  };
+
+  // Get donation details by ID
+  const getDonationById = async (donationId) => {
+    try {
+      const data = await apiCall(`/organization-donations/${donationId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch donation details:', error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     loadDonations();
-  }, []);
+  }, [orgId]); // Added orgId to dependency array
 
   const loadDonations = async () => {
+    if (!orgId) {
+      setError('Organization ID is required');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const data = await donationService.getDonationsByOrganization(ORG_ID);
+      const data = await getDonationsByOrganization(orgId); // Use orgId
       const donationList = Array.isArray(data) ? data : [];
       setDonations(donationList);
-      
+
       // Calculate stats
-      const newStats = donationList.reduce((acc, donation) => {
-        switch (donation.status?.toLowerCase()) {
-          case 'delivered':
-          case 'received':
-            acc.delivered += 1;
-            break;
-          case 'in_transit':
-          case 'shipped':
-            acc.inTransit += 1;
-            break;
-          case 'approved':
-            acc.approved += 1;
-            break;
+      const newStats = donationList.reduce(
+        (acc, donation) => {
+          switch (donation.status?.toLowerCase()) {
+            case 'delivered':
+            case 'received':
+              acc.delivered += 1;
+              break;
+            case 'in_transit':
+            case 'shipped':
+              acc.inTransit += 1;
+              break;
+            case 'approved':
+              acc.approved += 1;
+              break;
+          }
+          acc.totalBooks += donation.quantity || 0;
+          return acc;
+        },
+        {
+          delivered: 0,
+          inTransit: 0,
+          approved: 0,
+          totalBooks: 0,
         }
-        acc.totalBooks += donation.quantity || 0;
-        return acc;
-      }, {
-        delivered: 0,
-        inTransit: 0,
-        approved: 0,
-        totalBooks: 0
-      });
-      
+      );
+
       setStats(newStats);
     } catch (err) {
       console.error('Error loading donations:', err);
@@ -72,10 +169,10 @@ const DonationsReceived = () => {
     }
   };
 
-  const filteredDonations = donations.filter(donation => {
+  const filteredDonations = donations.filter((donation) => {
     if (filter === 'all') return true;
     const status = donation.status?.toLowerCase();
-    
+
     switch (filter) {
       case 'delivered':
         return status === 'delivered' || status === 'received';
@@ -146,7 +243,7 @@ const DonationsReceived = () => {
       return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch {
       return dateString;
@@ -155,12 +252,12 @@ const DonationsReceived = () => {
 
   const formatStatus = (status) => {
     if (!status) return 'Unknown';
-    return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const formatCondition = (condition) => {
     if (!condition) return 'Not specified';
-    return condition.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return condition.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const handleMarkAsReceived = (donation) => {
@@ -168,26 +265,26 @@ const DonationsReceived = () => {
     setConfirmationData({
       receivedDate: new Date().toISOString().split('T')[0],
       condition: donation.condition || 'good',
-      notes: ''
+      notes: '',
     });
     setShowConfirmModal(true);
   };
 
   const confirmMarkAsReceived = async () => {
     if (!selectedDonation) return;
-    
+
     const donationId = selectedDonation.id;
-    setActionLoading(prev => ({ ...prev, [donationId]: true }));
+    setActionLoading((prev) => ({ ...prev, [donationId]: true }));
     setError(null);
-    
+
     try {
-      await donationService.markAsReceived(donationId, {
-        organizationId: ORG_ID,
+      await markDonationAsReceived(donationId, {
+        organizationId: orgId, // Use orgId
         receivedDate: confirmationData.receivedDate,
         condition: confirmationData.condition,
-        notes: confirmationData.notes.trim()
+        notes: confirmationData.notes.trim(),
       });
-      
+
       setSuccess('Donation marked as received successfully!');
       await loadDonations();
       setShowConfirmModal(false);
@@ -197,13 +294,46 @@ const DonationsReceived = () => {
       console.error('Error marking donation as received:', err);
       setError('Failed to mark donation as received. Please try again.');
     } finally {
-      setActionLoading(prev => ({ ...prev, [donationId]: false }));
+      setActionLoading((prev) => ({ ...prev, [donationId]: false }));
     }
   };
 
   const handleRefresh = async () => {
     await loadDonations();
   };
+
+  const handleViewDetails = async (donationId) => {
+    try {
+      const donationDetails = await getDonationById(donationId);
+      console.log('Donation details:', donationDetails);
+      // You can implement a modal or navigation to show details
+      // For now, just logging to console
+    } catch (err) {
+      setError('Failed to load donation details');
+      console.error('View details error:', err);
+    }
+  };
+
+  const handleGiveFeedback = (donation) => {
+    // You can implement feedback functionality here
+    console.log('Give feedback for donation:', donation.id);
+    // This could open a modal or navigate to a feedback page
+  };
+
+  // Auto-hide success and error messages after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   if (loading) {
     return (
@@ -267,7 +397,7 @@ const DonationsReceived = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-accent/10 rounded-lg">
@@ -279,7 +409,7 @@ const DonationsReceived = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-secondary/10 rounded-lg">
@@ -291,7 +421,7 @@ const DonationsReceived = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-gray-100 rounded-lg">
@@ -319,10 +449,10 @@ const DonationsReceived = () => {
               <option value="delivered">Delivered ({stats.delivered})</option>
               <option value="in_transit">In Transit ({stats.inTransit})</option>
               <option value="approved">Approved ({stats.approved})</option>
-              <option value="pending">Pending ({donations.filter(d => d.status?.toLowerCase() === 'pending').length})</option>
+              <option value="pending">Pending ({donations.filter((d) => d.status?.toLowerCase() === 'pending').length})</option>
             </select>
           </div>
-          
+
           <div className="text-sm text-gray-500">
             Showing {filteredDonations.length} of {donations.length} donations
           </div>
@@ -334,7 +464,7 @@ const DonationsReceived = () => {
         {filteredDonations.map((donation) => {
           const StatusIcon = getStatusIcon(donation.status);
           const isActionLoading = actionLoading[donation.id];
-          
+
           return (
             <div key={donation.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
@@ -353,7 +483,7 @@ const DonationsReceived = () => {
                           {formatStatus(donation.status)}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -371,7 +501,7 @@ const DonationsReceived = () => {
                             <span>Quantity: {donation.quantity || 0} books</span>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           {donation.condition && (
                             <div className="text-sm">
@@ -409,7 +539,7 @@ const DonationsReceived = () => {
                           )}
                         </div>
                       </div>
-                      
+
                       {donation.notes && (
                         <div className="bg-gray-50 rounded-lg p-3 mb-4">
                           <p className="text-sm text-gray-700">{donation.notes}</p>
@@ -418,7 +548,7 @@ const DonationsReceived = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col space-y-2 ml-4">
                   {(donation.status?.toLowerCase() === 'in_transit' || donation.status?.toLowerCase() === 'shipped') && (
                     <button
@@ -430,12 +560,18 @@ const DonationsReceived = () => {
                     </button>
                   )}
                   {(donation.status?.toLowerCase() === 'delivered' || donation.status?.toLowerCase() === 'received') && (
-                    <button className="bg-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors whitespace-nowrap">
+                    <button
+                      onClick={() => handleGiveFeedback(donation)}
+                      className="bg-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors whitespace-nowrap"
+                    >
                       <MessageCircle className="inline h-4 w-4 mr-1" />
                       Give Feedback
                     </button>
                   )}
-                  <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap">
+                  <button
+                    onClick={() => handleViewDetails(donation.id)}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
+                  >
                     <Eye className="inline h-4 w-4 mr-1" />
                     View Details
                   </button>
@@ -451,10 +587,7 @@ const DonationsReceived = () => {
           <Gift className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No donations found</h3>
           <p className="text-gray-500">
-            {filter === 'all' 
-              ? "You haven't received any donations yet." 
-              : `No ${filter.replace('_', ' ')} donations found.`
-            }
+            {filter === 'all' ? "You haven't received any donations yet." : `No ${filter.replace('_', ' ')} donations found.`}
           </p>
         </div>
       )}
@@ -463,37 +596,31 @@ const DonationsReceived = () => {
       {showConfirmModal && selectedDonation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-heading font-semibold text-textPrimary mb-4">
-              Confirm Receipt of Donation
-            </h3>
-            
+            <h3 className="text-lg font-heading font-semibold text-textPrimary mb-4">Confirm Receipt of Donation</h3>
+
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <h4 className="font-medium text-textPrimary">{selectedDonation.bookTitle || 'Book Donation'}</h4>
               <p className="text-sm text-gray-600">From: {selectedDonation.donorName || 'Anonymous'}</p>
               <p className="text-sm text-gray-600">Quantity: {selectedDonation.quantity || 0} books</p>
             </div>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Date Received *
-                </label>
+                <label className="block text-sm font-medium text-textPrimary mb-2">Date Received *</label>
                 <input
                   type="date"
                   value={confirmationData.receivedDate}
-                  onChange={(e) => setConfirmationData(prev => ({ ...prev, receivedDate: e.target.value }))}
+                  onChange={(e) => setConfirmationData((prev) => ({ ...prev, receivedDate: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   required
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Condition *
-                </label>
+                <label className="block text-sm font-medium text-textPrimary mb-2">Condition *</label>
                 <select
                   value={confirmationData.condition}
-                  onChange={(e) => setConfirmationData(prev => ({ ...prev, condition: e.target.value }))}
+                  onChange={(e) => setConfirmationData((prev) => ({ ...prev, condition: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   required
                 >
@@ -503,15 +630,13 @@ const DonationsReceived = () => {
                   <option value="fair">Fair</option>
                 </select>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Additional Notes (Optional)
-                </label>
+                <label className="block text-sm font-medium text-textPrimary mb-2">Additional Notes (Optional)</label>
                 <textarea
                   rows="3"
                   value={confirmationData.notes}
-                  onChange={(e) => setConfirmationData(prev => ({ ...prev, notes: e.target.value }))}
+                  onChange={(e) => setConfirmationData((prev) => ({ ...prev, notes: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   placeholder="Any additional comments about the condition or donation..."
                   maxLength={500}
@@ -519,7 +644,7 @@ const DonationsReceived = () => {
                 <p className="text-xs text-gray-500 mt-1">{confirmationData.notes.length}/500 characters</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3 mt-6">
               <button
                 onClick={confirmMarkAsReceived}

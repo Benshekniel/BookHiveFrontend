@@ -123,8 +123,7 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <div>
-              <Button
+            <div> <Button
                 type="submit"
                 variant="primary"
                 fullWidth

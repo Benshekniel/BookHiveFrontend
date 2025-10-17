@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, User, Gift, Calendar, MessageSquare, Plus, Filter, AlertCircle, CheckCircle } from 'lucide-react';
-import { feedbackService } from '../../services/organizationService';
-// Import organization context (uncomment and replace with your actual context)
-// import { OrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../components/AuthContext';
 
-const ORG_ID = 1; // TODO: Replace with real orgId from context or props
+const API_BASE_URL = 'http://localhost:9090/api';
 
 const Feedback = () => {
-  // Replace with actual context usage when available
-  // const { organizationId } = useContext(OrganizationContext);
-  const organizationId = localStorage.getItem('orgId') || 1; // Fallback to local storage or default
-  
+  const { user } = useAuth();
+
+  // Check if user is authenticated
+  if (!user) {
+    return <p>Please log in.</p>;
+  }
+
+  const orgId = user.userId; // Use user.userId as orgId
+
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [filter, setFilter] = useState('all');
   const [rating, setRating] = useState(0);
@@ -24,18 +27,103 @@ const Feedback = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Direct API call function
+  const apiCall = async (endpoint, options = {}) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    if (config.body && typeof config.body === 'object') {
+      config.body = JSON.stringify(config.body);
+    }
+
+    try {
+      console.log(`API Request: ${config.method || 'GET'} ${url}`);
+
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log(`API Response: ${endpoint} - Success`);
+        return data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // Create feedback
+  const createFeedback = async (feedbackData) => {
+    try {
+      const data = await apiCall('/organization-feedback', {
+        method: 'POST',
+        body: feedbackData,
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to create feedback:', error);
+      throw error;
+    }
+  };
+
+  // Get feedback by organization
+  const getFeedbackByOrganization = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-feedback/organization/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch feedback:', error);
+      throw error;
+    }
+  };
+
+  // Get pending donations for feedback
+  const getPendingDonations = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-donations/pending-feedback/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch pending donations:', error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     loadFeedbackData();
-  }, []);
+  }, [orgId]);
 
   const loadFeedbackData = async () => {
+    if (!orgId) {
+      setError('Organization ID is required');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const [feedbackData, donationsData] = await Promise.all([
-        feedbackService.getByOrganization(ORG_ID),
-        feedbackService.getPendingDonations(ORG_ID)
+        getFeedbackByOrganization(orgId),
+        getPendingDonations(orgId),
       ]);
       setFeedbacks(Array.isArray(feedbackData) ? feedbackData : []);
       setPendingDonations(Array.isArray(donationsData) ? donationsData : []);
@@ -49,12 +137,12 @@ const Feedback = () => {
 
   const handleSubmitFeedback = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedDonation) {
       setError('Please select a donation.');
       return;
     }
-    
+
     if (rating === 0) {
       setError('Please provide a rating.');
       return;
@@ -62,26 +150,23 @@ const Feedback = () => {
 
     setSubmitting(true);
     setError(null);
-    
+
     try {
-      await feedbackService.create({
-        organizationId: organizationId,
+      await createFeedback({
+        organizationId: orgId,
         donationId: selectedDonation,
         rating,
         comment: comment.trim(),
       });
-      
+
       setSuccess('Feedback submitted successfully!');
       await loadFeedbackData();
-      
+
       // Reset form
       setShowFeedbackForm(false);
       setRating(0);
       setComment('');
       setSelectedDonation('');
-      
-      // Auto-dismiss success message after 5 seconds
-      setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
       console.error('Error submitting feedback:', err);
       setError('Failed to submit feedback. Please try again.');
@@ -89,7 +174,7 @@ const Feedback = () => {
       setSubmitting(false);
     }
   };
-  
+
   const resetForm = () => {
     setShowFeedbackForm(false);
     setRating(0);
@@ -98,7 +183,7 @@ const Feedback = () => {
     setError(null);
   };
 
-  const filteredFeedbacks = feedbacks.filter(feedback => {
+  const filteredFeedbacks = feedbacks.filter((feedback) => {
     if (filter === 'all') return true;
     if (filter === 'excellent') return feedback.rating === 5;
     if (filter === 'good') return feedback.rating === 4;
@@ -132,12 +217,18 @@ const Feedback = () => {
 
   const getRatingText = (rating) => {
     switch (rating) {
-      case 5: return 'Excellent';
-      case 4: return 'Good';
-      case 3: return 'Average';
-      case 2: return 'Below Average';
-      case 1: return 'Poor';
-      default: return '';
+      case 5:
+        return 'Excellent';
+      case 4:
+        return 'Good';
+      case 3:
+        return 'Average';
+      case 2:
+        return 'Below Average';
+      case 1:
+        return 'Poor';
+      default:
+        return '';
     }
   };
 
@@ -147,12 +238,27 @@ const Feedback = () => {
       return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch {
       return dateString;
     }
   };
+
+  // Auto-hide success and error messages after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   if (loading) {
     return (
@@ -171,11 +277,12 @@ const Feedback = () => {
           <h1 className="text-3xl font-heading font-bold text-textPrimary">Feedback & Reviews</h1>
           <p className="text-gray-600 mt-2">Rate your donors and share your experience</p>
         </div>
-        
+
         <button
           onClick={() => setShowFeedbackForm(!showFeedbackForm)}
           disabled={pendingDonations.length === 0}
           className="flex items-center space-x-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={pendingDonations.length === 0 ? 'No pending donations available for feedback' : 'Write feedback for completed donations'}
         >
           <Plus className="h-5 w-5" />
           <span>Write Feedback</span>
@@ -211,36 +318,30 @@ const Feedback = () => {
             <div className="text-3xl font-heading font-bold text-textPrimary mb-2">
               {averageRating.toFixed(1)}
             </div>
-            <div className="flex justify-center mb-2">
-              {renderStars(Math.round(averageRating))}
-            </div>
+            <div className="flex justify-center mb-2">{renderStars(Math.round(averageRating))}</div>
             <p className="text-sm text-gray-600">Average Rating</p>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="text-center">
-            <div className="text-3xl font-heading font-bold text-textPrimary mb-2">
-              {feedbacks.length}
-            </div>
+            <div className="text-3xl font-heading font-bold text-textPrimary mb-2">{feedbacks.length}</div>
             <p className="text-sm text-gray-600">Total Reviews</p>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="text-center">
             <div className="text-3xl font-heading font-bold text-success mb-2">
-              {feedbacks.filter(f => f.rating >= 4).length}
+              {feedbacks.filter((f) => f.rating >= 4).length}
             </div>
             <p className="text-sm text-gray-600">Positive Reviews</p>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="text-center">
-            <div className="text-3xl font-heading font-bold text-accent mb-2">
-              {pendingDonations.length}
-            </div>
+            <div className="text-3xl font-heading font-bold text-accent mb-2">{pendingDonations.length}</div>
             <p className="text-sm text-gray-600">Pending Feedback</p>
           </div>
         </div>
@@ -249,16 +350,12 @@ const Feedback = () => {
       {/* Feedback Form */}
       {showFeedbackForm && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">
-            Write New Feedback
-          </h2>
-          
+          <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">Write New Feedback</h2>
+
           <form onSubmit={handleSubmitFeedback} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Select Donation *
-                </label>
+                <label className="block text-sm font-medium text-textPrimary mb-2">Select Donation *</label>
                 <select
                   value={selectedDonation}
                   onChange={(e) => setSelectedDonation(e.target.value)}
@@ -273,25 +370,23 @@ const Feedback = () => {
                     </option>
                   ))}
                 </select>
+                {pendingDonations.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">No completed donations available for feedback</p>
+                )}
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Rating *
-                </label>
+                <label className="block text-sm font-medium text-textPrimary mb-2">Rating *</label>
                 <div className="flex items-center space-x-1">
                   {renderStars(rating, true, setRating, setHoveredRating)}
-                  <span className="ml-2 text-sm text-gray-600">
-                    {rating > 0 && getRatingText(rating)}
-                  </span>
+                  <span className="ml-2 text-sm text-gray-600">{rating > 0 && getRatingText(rating)}</span>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Click on stars to rate (1-5 stars)</p>
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Your Review *
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Your Review *</label>
               <textarea
                 rows="4"
                 value={comment}
@@ -304,12 +399,12 @@ const Feedback = () => {
               ></textarea>
               <p className="text-xs text-gray-500 mt-1">{comment.length}/500 characters</p>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <button
                 type="submit"
                 className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={submitting || rating === 0}
+                disabled={submitting || rating === 0 || !comment.trim()}
               >
                 {submitting ? 'Submitting...' : 'Submit Feedback'}
               </button>
@@ -329,13 +424,11 @@ const Feedback = () => {
       {/* Pending Feedback */}
       {pendingDonations.length > 0 && !showFeedbackForm && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">
-            Pending Feedback
-          </h2>
+          <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">Pending Feedback</h2>
           <p className="text-gray-600 mb-4">
             You have {pendingDonations.length} completed donation{pendingDonations.length !== 1 ? 's' : ''} waiting for your feedback.
           </p>
-          
+
           <div className="space-y-3">
             {pendingDonations.slice(0, 3).map((donation) => (
               <div key={donation.id} className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg">
@@ -348,8 +441,8 @@ const Feedback = () => {
                       {donation.bookTitle || donation.title || 'Book Donation'}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Donated by {donation.donorName || 'Anonymous'} • 
-                      Delivered {formatDate(donation.deliveryDate || donation.date || donation.donationDate)}
+                      Donated by {donation.donorName || 'Anonymous'} • Delivered{' '}
+                      {formatDate(donation.deliveryDate || donation.date || donation.donationDate)}
                     </p>
                   </div>
                 </div>
@@ -366,9 +459,13 @@ const Feedback = () => {
             ))}
             {pendingDonations.length > 3 && (
               <div className="text-center">
-                <p className="text-sm text-gray-500">
-                  and {pendingDonations.length - 3} more...
-                </p>
+                <p className="text-sm text-gray-500">and {pendingDonations.length - 3} more...</p>
+                <button
+                  onClick={() => setShowFeedbackForm(true)}
+                  className="mt-2 text-primary hover:text-primary/80 text-sm font-medium"
+                >
+                  View all pending feedback
+                </button>
               </div>
             )}
           </div>
@@ -385,10 +482,10 @@ const Feedback = () => {
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
           >
             <option value="all">All Reviews ({feedbacks.length})</option>
-            <option value="excellent">Excellent (5 stars) ({feedbacks.filter(f => f.rating === 5).length})</option>
-            <option value="good">Good (4 stars) ({feedbacks.filter(f => f.rating === 4).length})</option>
-            <option value="average">Average (3 stars) ({feedbacks.filter(f => f.rating === 3).length})</option>
-            <option value="poor">Poor (1-2 stars) ({feedbacks.filter(f => f.rating <= 2).length})</option>
+            <option value="excellent">Excellent (5 stars) ({feedbacks.filter((f) => f.rating === 5).length})</option>
+            <option value="good">Good (4 stars) ({feedbacks.filter((f) => f.rating === 4).length})</option>
+            <option value="average">Average (3 stars) ({feedbacks.filter((f) => f.rating === 3).length})</option>
+            <option value="poor">Poor (1-2 stars) ({feedbacks.filter((f) => f.rating <= 2).length})</option>
           </select>
         </div>
       </div>
@@ -401,31 +498,23 @@ const Feedback = () => {
               <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-medium">
                 {feedback.donorAvatar || feedback.donorName?.charAt(0) || 'D'}
               </div>
-              
+
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <h3 className="font-medium text-textPrimary">
-                      {feedback.donorName || 'Anonymous Donor'}
-                    </h3>
+                    <h3 className="font-medium text-textPrimary">{feedback.donorName || 'Anonymous Donor'}</h3>
                     <p className="text-sm text-gray-600">
                       {feedback.bookTitle || feedback.title || feedback.donationTitle || 'Book Donation'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center space-x-1 mb-1">
-                      {renderStars(feedback.rating || 0)}
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      {formatDate(feedback.date || feedback.createdAt)}
-                    </p>
+                    <div className="flex items-center space-x-1 mb-1">{renderStars(feedback.rating || 0)}</div>
+                    <p className="text-xs text-gray-500">{formatDate(feedback.date || feedback.createdAt)}</p>
                   </div>
                 </div>
-                
-                <p className="text-gray-700 leading-relaxed mb-4">
-                  {feedback.comment || 'No comment provided'}
-                </p>
-                
+
+                <p className="text-gray-700 leading-relaxed mb-4">{feedback.comment || 'No comment provided'}</p>
+
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
                   <div className="flex items-center space-x-1">
                     <Gift className="h-4 w-4" />
@@ -447,10 +536,7 @@ const Feedback = () => {
           <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No reviews found</h3>
           <p className="text-gray-500">
-            {filter === 'all' 
-              ? "You haven't written any reviews yet." 
-              : `No ${filter} reviews found.`
-            }
+            {filter === 'all' ? "You haven't written any reviews yet." : `No ${filter} reviews found.`}
           </p>
           {pendingDonations.length > 0 && filter === 'all' && (
             <button

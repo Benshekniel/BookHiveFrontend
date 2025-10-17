@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { organizationService } from '../../services/organizationService';
 import { 
   User, Building, Mail, Phone, MapPin, FileText, Camera, Save, Edit, 
   AlertCircle, CheckCircle, RefreshCw, Eye, EyeOff, Shield, Lock 
 } from 'lucide-react';
+import { useAuth } from '../../components/AuthContext';
 
-const ORG_ID = 1; // TODO: Replace with real orgId from context or props
+const API_BASE_URL = 'http://localhost:9090/api';
 
 const ProfileSettings = () => {
+  const { user } = useAuth();
+
+  // Check if user is authenticated
+  if (!user) {
+    return <p>Please log in.</p>;
+  }
+
+  const orgId = user.userId; // Use user.userId as orgId
+
   const [isEditing, setIsEditing] = useState(false);
   const [originalData, setOriginalData] = useState({});
   const [formData, setFormData] = useState({
@@ -25,7 +34,7 @@ const ProfileSettings = () => {
     organizationType: 'school',
     publicProfile: true,
     contactPermissions: true,
-    activityVisibility: true
+    activityVisibility: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,15 +44,134 @@ const ProfileSettings = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
+  // Direct API call function
+  const apiCall = async (endpoint, options = {}) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    // Don't stringify FormData
+    if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
+      config.body = JSON.stringify(config.body);
+    }
+
+    try {
+      console.log(`API Request: ${config.method || 'GET'} ${url}`);
+
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log(`API Response: ${endpoint} - Success`);
+        return data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // Get organization profile
+  const getOrganizationProfile = async (orgId) => {
+    try {
+      const data = await apiCall(`/organizations/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch organization profile:', error);
+      throw error;
+    }
+  };
+
+  // Update organization profile
+  const updateOrganizationProfile = async (orgId, profileData) => {
+    try {
+      const data = await apiCall(`/organizations/${orgId}`, {
+        method: 'PUT',
+        body: profileData,
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to update organization profile:', error);
+      throw error;
+    }
+  };
+
+  // Upload organization image
+  const uploadOrganizationImage = async (orgId, imageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const data = await apiCall(`/organizations/${orgId}/upload-image`, {
+        method: 'POST',
+        headers: {}, // Let browser set Content-Type for FormData
+        body: formData,
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to upload organization image:', error);
+      throw error;
+    }
+  };
+
+  // Change organization password
+  const changeOrganizationPassword = async (orgId, passwordData) => {
+    try {
+      const data = await apiCall(`/organizations/${orgId}/change-password`, {
+        method: 'PUT',
+        body: passwordData,
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      throw error;
+    }
+  };
+
+  // Toggle two-factor authentication
+  const toggleTwoFactorAuthentication = async (orgId, enable = true) => {
+    try {
+      const data = await apiCall(`/organizations/${orgId}/two-factor-auth`, {
+        method: 'POST',
+        body: { enable },
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to toggle two-factor authentication:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [orgId]);
 
   const loadProfile = async () => {
+    if (!orgId) {
+      setError('Organization ID is required');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const data = await organizationService.getProfile(ORG_ID);
+      const data = await getOrganizationProfile(orgId);
       const profileData = {
         organizationName: data.organizationName || '',
         registrationNumber: data.registrationNumber || '',
@@ -59,7 +187,7 @@ const ProfileSettings = () => {
         organizationType: data.organizationType || 'school',
         publicProfile: data.publicProfile !== false,
         contactPermissions: data.contactPermissions !== false,
-        activityVisibility: data.activityVisibility !== false
+        activityVisibility: data.activityVisibility !== false,
       };
       setFormData(profileData);
       setOriginalData(profileData);
@@ -117,16 +245,16 @@ const ProfileSettings = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
 
     // Clear validation error for this field
     if (validationErrors[name]) {
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        [name]: undefined
+        [name]: undefined,
       }));
     }
   };
@@ -134,11 +262,12 @@ const ProfileSettings = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
         setError('Image size must be less than 5MB');
         return;
       }
-      
+
       if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file');
         return;
@@ -153,7 +282,12 @@ const ProfileSettings = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!orgId) {
+      setError('Organization ID is required');
+      return;
+    }
+
     if (!validateForm()) {
       setError('Please fix the validation errors before submitting');
       return;
@@ -164,18 +298,23 @@ const ProfileSettings = () => {
     setSuccess(null);
 
     try {
-      const submitData = { ...formData };
-      
+      let updatedProfileData = { ...formData };
+
       // Handle image upload if there's a new image
       if (profileImage) {
-        // In a real app, you'd upload the image to a file storage service
-        // For now, we'll just include it in the form data
-        submitData.profileImage = imagePreview;
+        try {
+          const imageResult = await uploadOrganizationImage(orgId, profileImage);
+          updatedProfileData.profileImage = imageResult.imageUrl || imageResult.url;
+        } catch (imageError) {
+          console.error('Image upload failed:', imageError);
+          setError('Failed to upload image, but profile will be saved without it.');
+        }
       }
 
-      await organizationService.updateProfile(ORG_ID, submitData);
+      await updateOrganizationProfile(orgId, updatedProfileData);
       setOriginalData(formData);
       setIsEditing(false);
+      setProfileImage(null);
       setSuccess('Profile updated successfully!');
     } catch (err) {
       console.error('Error saving profile:', err);
@@ -194,10 +333,37 @@ const ProfileSettings = () => {
     setError(null);
   };
 
+  const handleChangePassword = async () => {
+    if (!orgId) {
+      setError('Organization ID is required');
+      return;
+    }
+    // This would typically open a modal or navigate to a password change form
+    console.log('Change password clicked');
+    // Example implementation:
+    // You could show a modal with current password, new password, and confirm password fields
+    // Then call changeOrganizationPassword(orgId, { currentPassword, newPassword })
+  };
+
+  const handleToggle2FA = async () => {
+    if (!orgId) {
+      setError('Organization ID is required');
+      return;
+    }
+
+    try {
+      await toggleTwoFactorAuthentication(orgId, true);
+      setSuccess('Two-factor authentication enabled successfully!');
+    } catch (err) {
+      console.error('Error enabling 2FA:', err);
+      setError('Failed to enable two-factor authentication.');
+    }
+  };
+
   const getInitials = (name) => {
     return name
       .split(' ')
-      .map(word => word.charAt(0))
+      .map((word) => word.charAt(0))
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -209,12 +375,27 @@ const ProfileSettings = () => {
       return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch {
       return dateString;
     }
   };
+
+  // Auto-hide success and error messages after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   if (loading) {
     return (
@@ -233,7 +414,7 @@ const ProfileSettings = () => {
           <h1 className="text-3xl font-heading font-bold text-textPrimary">Profile Settings</h1>
           <p className="text-gray-600 mt-2">Manage your organization's profile and contact information</p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <button
             onClick={loadProfile}
@@ -243,7 +424,7 @@ const ProfileSettings = () => {
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
-          
+
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
@@ -284,11 +465,7 @@ const ProfileSettings = () => {
           <div className="flex items-center space-x-6">
             <div className="relative">
               {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="Organization"
-                  className="w-24 h-24 rounded-full object-cover"
-                />
+                <img src={imagePreview} alt="Organization" className="w-24 h-24 rounded-full object-cover" />
               ) : (
                 <div className="w-24 h-24 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-heading font-bold">
                   {getInitials(formData.organizationName || 'Organization')}
@@ -297,16 +474,11 @@ const ProfileSettings = () => {
               {isEditing && (
                 <label className="absolute bottom-0 right-0 bg-secondary text-primary p-2 rounded-full hover:bg-secondary/90 transition-colors cursor-pointer">
                   <Camera className="h-4 w-4" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                 </label>
               )}
             </div>
-            
+
             <div className="flex-1">
               <h2 className="text-2xl font-heading font-bold text-textPrimary">
                 {formData.organizationName || 'Organization Name'}
@@ -323,15 +495,11 @@ const ProfileSettings = () => {
 
         {/* Organization Information */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-xl font-heading font-semibold text-textPrimary mb-4">
-            Organization Information
-          </h3>
-          
+          <h3 className="text-xl font-heading font-semibold text-textPrimary mb-4">Organization Information</h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Organization Name *
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Organization Name *</label>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
@@ -350,11 +518,9 @@ const ProfileSettings = () => {
                 <p className="text-red-500 text-sm mt-1">{validationErrors.organizationName}</p>
               )}
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Registration Number
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Registration Number</label>
               <div className="relative">
                 <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
@@ -368,11 +534,9 @@ const ProfileSettings = () => {
                 />
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Organization Type
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Organization Type</label>
               <select
                 name="organizationType"
                 value={formData.organizationType}
@@ -389,11 +553,9 @@ const ProfileSettings = () => {
                 <option value="other">Other</option>
               </select>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Established Year
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Established Year</label>
               <input
                 type="number"
                 name="established"
@@ -407,15 +569,11 @@ const ProfileSettings = () => {
                 }`}
                 placeholder="e.g., 1985"
               />
-              {validationErrors.established && (
-                <p className="text-red-500 text-sm mt-1">{validationErrors.established}</p>
-              )}
+              {validationErrors.established && <p className="text-red-500 text-sm mt-1">{validationErrors.established}</p>}
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Number of Students
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Number of Students</label>
               <input
                 type="number"
                 name="studentCount"
@@ -428,15 +586,11 @@ const ProfileSettings = () => {
                 }`}
                 placeholder="e.g., 500"
               />
-              {validationErrors.studentCount && (
-                <p className="text-red-500 text-sm mt-1">{validationErrors.studentCount}</p>
-              )}
+              {validationErrors.studentCount && <p className="text-red-500 text-sm mt-1">{validationErrors.studentCount}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Website
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Website</label>
               <input
                 type="url"
                 name="website"
@@ -448,16 +602,12 @@ const ProfileSettings = () => {
                 }`}
                 placeholder="https://www.example.com"
               />
-              {validationErrors.website && (
-                <p className="text-red-500 text-sm mt-1">{validationErrors.website}</p>
-              )}
+              {validationErrors.website && <p className="text-red-500 text-sm mt-1">{validationErrors.website}</p>}
             </div>
           </div>
-          
+
           <div className="mt-6">
-            <label className="block text-sm font-medium text-textPrimary mb-2">
-              Organization Description
-            </label>
+            <label className="block text-sm font-medium text-textPrimary mb-2">Organization Description</label>
             <textarea
               name="description"
               value={formData.description}
@@ -474,15 +624,11 @@ const ProfileSettings = () => {
 
         {/* Contact Information */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-xl font-heading font-semibold text-textPrimary mb-4">
-            Contact Information
-          </h3>
-          
+          <h3 className="text-xl font-heading font-semibold text-textPrimary mb-4">Contact Information</h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Email Address *
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Email Address *</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
@@ -497,15 +643,11 @@ const ProfileSettings = () => {
                   placeholder="organization@example.com"
                 />
               </div>
-              {validationErrors.email && (
-                <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
-              )}
+              {validationErrors.email && <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>}
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Phone Number *
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Phone Number *</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
@@ -520,15 +662,11 @@ const ProfileSettings = () => {
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
-              {validationErrors.phone && (
-                <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
-              )}
+              {validationErrors.phone && <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>}
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Contact Person *
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Contact Person *</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
@@ -549,9 +687,7 @@ const ProfileSettings = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-textPrimary mb-2">
-                Contact Title
-              </label>
+              <label className="block text-sm font-medium text-textPrimary mb-2">Contact Title</label>
               <input
                 type="text"
                 name="contactTitle"
@@ -563,11 +699,9 @@ const ProfileSettings = () => {
               />
             </div>
           </div>
-          
+
           <div className="mt-6">
-            <label className="block text-sm font-medium text-textPrimary mb-2">
-              Address *
-            </label>
+            <label className="block text-sm font-medium text-textPrimary mb-2">Address *</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-3 text-gray-400 h-4 w-4" />
               <textarea
@@ -582,18 +716,14 @@ const ProfileSettings = () => {
                 placeholder="Enter complete address including city, state, and postal code"
               />
             </div>
-            {validationErrors.address && (
-              <p className="text-red-500 text-sm mt-1">{validationErrors.address}</p>
-            )}
+            {validationErrors.address && <p className="text-red-500 text-sm mt-1">{validationErrors.address}</p>}
           </div>
         </div>
 
         {/* Privacy Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-xl font-heading font-semibold text-textPrimary mb-4">
-            Privacy Settings
-          </h3>
-          
+          <h3 className="text-xl font-heading font-semibold text-textPrimary mb-4">Privacy Settings</h3>
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -601,49 +731,49 @@ const ProfileSettings = () => {
                 <p className="text-sm text-gray-600">Make your organization profile visible to donors</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   name="publicProfile"
                   checked={formData.publicProfile}
                   onChange={handleInputChange}
-                  className="sr-only peer" 
-                  disabled={!isEditing} 
+                  className="sr-only peer"
+                  disabled={!isEditing}
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50"></div>
               </label>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-textPrimary">Contact Permissions</h4>
                 <p className="text-sm text-gray-600">Allow donors to contact you directly</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   name="contactPermissions"
                   checked={formData.contactPermissions}
                   onChange={handleInputChange}
-                  className="sr-only peer" 
-                  disabled={!isEditing} 
+                  className="sr-only peer"
+                  disabled={!isEditing}
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50"></div>
               </label>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-textPrimary">Activity Visibility</h4>
                 <p className="text-sm text-gray-600">Show your book requests and received donations</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   name="activityVisibility"
                   checked={formData.activityVisibility}
                   onChange={handleInputChange}
-                  className="sr-only peer" 
-                  disabled={!isEditing} 
+                  className="sr-only peer"
+                  disabled={!isEditing}
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50"></div>
               </label>
@@ -657,7 +787,7 @@ const ProfileSettings = () => {
             <Shield className="h-5 w-5" />
             <span>Account Security</span>
           </h3>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
@@ -669,12 +799,13 @@ const ProfileSettings = () => {
               </div>
               <button
                 type="button"
+                onClick={handleChangePassword}
                 className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors"
               >
                 Change Password
               </button>
             </div>
-            
+
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <Shield className="h-5 w-5 text-gray-600" />
@@ -685,6 +816,7 @@ const ProfileSettings = () => {
               </div>
               <button
                 type="button"
+                onClick={handleToggle2FA}
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Enable 2FA
@@ -696,9 +828,7 @@ const ProfileSettings = () => {
         {/* Action Buttons */}
         {isEditing && (
           <div className="flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="text-sm text-gray-600">
-              * Required fields must be filled out
-            </div>
+            <div className="text-sm text-gray-600">* Required fields must be filled out</div>
             <div className="flex items-center space-x-4">
               <button
                 type="button"

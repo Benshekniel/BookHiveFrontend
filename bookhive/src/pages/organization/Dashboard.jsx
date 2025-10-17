@@ -1,59 +1,147 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock, AlertCircle, RefreshCw } from 'lucide-react';
-import { dashboardService } from '../../services/organizationService';
+import { useAuth } from '../../components/AuthContext';
 
-const Dashboard = ({ organizationId }) => {
+const API_BASE_URL = 'http://localhost:9090/api';
+
+const Dashboard = () => {
+  const { user } = useAuth();
+
+  // Check if user is authenticated
+  if (!user) {
+    return <p>Please log in.</p>;
+  }
+
+  const orgId = user.userId; // Use user.userId as orgId
+
   const [stats, setStats] = useState([
     { icon: BookOpen, label: 'Pending Requests', value: '-', color: 'text-accent' },
     { icon: Gift, label: 'Books Received', value: '-', color: 'text-success' },
     { icon: Calendar, label: 'Upcoming Events', value: '-', color: 'text-secondary' },
-    { icon: TrendingUp, label: 'Total Donations', value: '-', color: 'text-primary' }
+    { icon: TrendingUp, label: 'Total Donations', value: '-', color: 'text-primary' },
   ]);
+
   const [recentRequests, setRecentRequests] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Direct API call function
+  const apiCall = async (endpoint, options = {}) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      console.log(`API Request: ${config.method || 'GET'} ${url}`);
+
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log(`API Response: ${endpoint} - Success`);
+        return data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // Get dashboard stats
+  const getDashboardStats = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-dashboard/stats/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
+      throw error;
+    }
+  };
+
+  // Get recent requests
+  const getRecentRequests = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-dashboard/recent-requests/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch recent requests:', error);
+      throw error;
+    }
+  };
+
+  // Get upcoming events
+  const getUpcomingEvents = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-dashboard/upcoming-events/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch upcoming events:', error);
+      throw error;
+    }
+  };
+
   const loadDashboardData = async () => {
     try {
       setError(null);
+
+      // Make all API calls in parallel
       const [statsData, requestsData, eventsData] = await Promise.all([
-        dashboardService.getStats(organizationId),
-        dashboardService.getRecentRequests(organizationId),
-        dashboardService.getUpcomingEvents(organizationId)
+        getDashboardStats(orgId),
+        getRecentRequests(orgId),
+        getUpcomingEvents(orgId),
       ]);
 
       // Update stats with real data
       setStats([
-        { 
-          icon: BookOpen, 
-          label: 'Pending Requests', 
-          value: statsData.pendingRequests ?? 0, 
+        {
+          icon: BookOpen,
+          label: 'Pending Requests',
+          value: statsData.pendingRequests ?? 0,
           color: 'text-accent',
-          change: statsData.pendingRequestsChange ?? null
+          change: statsData.pendingRequestsChange ?? null,
         },
-        { 
-          icon: Gift, 
-          label: 'Books Received', 
-          value: statsData.booksReceived ?? 0, 
+        {
+          icon: Gift,
+          label: 'Books Received',
+          value: statsData.booksReceived ?? 0,
           color: 'text-success',
-          change: statsData.booksReceivedChange ?? null
+          change: statsData.booksReceivedChange ?? null,
         },
-        { 
-          icon: Calendar, 
-          label: 'Upcoming Events', 
-          value: statsData.upcomingEvents ?? 0, 
+        {
+          icon: Calendar,
+          label: 'Upcoming Events',
+          value: statsData.upcomingEvents ?? 0,
           color: 'text-secondary',
-          change: statsData.upcomingEventsChange ?? null
+          change: statsData.upcomingEventsChange ?? null,
         },
-        { 
-          icon: TrendingUp, 
-          label: 'Total Donations', 
-          value: statsData.totalDonations ?? 0, 
+        {
+          icon: TrendingUp,
+          label: 'Total Donations',
+          value: statsData.totalDonations ?? 0,
           color: 'text-primary',
-          change: statsData.totalDonationsChange ?? null
-        }
+          change: statsData.totalDonationsChange ?? null,
+        },
       ]);
 
       setRecentRequests(Array.isArray(requestsData) ? requestsData : []);
@@ -66,15 +154,26 @@ const Dashboard = ({ organizationId }) => {
 
   useEffect(() => {
     const initializeDashboard = async () => {
+      if (!orgId) {
+        setError('Organization ID is required');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       await loadDashboardData();
       setLoading(false);
     };
 
     initializeDashboard();
-  }, [organizationId]);
+  }, [orgId]);
 
   const handleRefresh = async () => {
+    if (!orgId) {
+      setError('Organization ID is required');
+      return;
+    }
+
     setRefreshing(true);
     await loadDashboardData();
     setRefreshing(false);
@@ -82,11 +181,16 @@ const Dashboard = ({ organizationId }) => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'approved': return 'bg-success/10 text-success';
-      case 'pending': return 'bg-secondary/10 text-primary';
-      case 'delivered': return 'bg-accent/10 text-accent';
-      case 'rejected': return 'bg-error/10 text-error';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'approved':
+        return 'bg-success/10 text-success';
+      case 'pending':
+        return 'bg-secondary/10 text-primary';
+      case 'delivered':
+        return 'bg-accent/10 text-accent';
+      case 'rejected':
+        return 'bg-error/10 text-error';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -96,7 +200,7 @@ const Dashboard = ({ organizationId }) => {
       return new Date(dateString).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
     } catch {
       return dateString;
@@ -109,10 +213,29 @@ const Dashboard = ({ organizationId }) => {
       return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
       });
     } catch {
       return timeString;
+    }
+  };
+
+  const handleQuickAction = async (action) => {
+    // These would typically navigate to other pages or open modals
+    console.log(`Quick action: ${action}`);
+    // You can implement navigation logic here
+    switch (action) {
+      case 'request-books':
+        // Navigate to book request page
+        break;
+      case 'create-event':
+        // Navigate to event creation page
+        break;
+      case 'view-donors':
+        // Navigate to donors page
+        break;
+      default:
+        break;
     }
   };
 
@@ -171,7 +294,7 @@ const Dashboard = ({ organizationId }) => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">{stat.label}</p>
                   <p className="text-2xl font-heading font-bold text-textPrimary">{stat.value}</p>
-                  {stat.change && (
+                  {stat.change !== null && (
                     <p className={`text-xs ${stat.change >= 0 ? 'text-success' : 'text-error'}`}>
                       {stat.change >= 0 ? '+' : ''}{stat.change}% from last month
                     </p>
@@ -188,7 +311,12 @@ const Dashboard = ({ organizationId }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-heading font-semibold text-textPrimary">Recent Book Requests</h2>
-            <button className="text-accent hover:text-accent/80 text-sm font-medium">View All</button>
+            <button
+              className="text-accent hover:text-accent/80 text-sm font-medium"
+              onClick={() => handleQuickAction('view-all-requests')}
+            >
+              View All
+            </button>
           </div>
           <div className="space-y-4">
             {recentRequests.length === 0 ? (
@@ -220,7 +348,12 @@ const Dashboard = ({ organizationId }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-heading font-semibold text-textPrimary">Upcoming Events</h2>
-            <button className="text-accent hover:text-accent/80 text-sm font-medium">View All</button>
+            <button
+              className="text-accent hover:text-accent/80 text-sm font-medium"
+              onClick={() => handleQuickAction('view-all-events')}
+            >
+              View All
+            </button>
           </div>
           <div className="space-y-4">
             {upcomingEvents.length === 0 ? (
@@ -258,15 +391,24 @@ const Dashboard = ({ organizationId }) => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center justify-center space-x-2 p-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+          <button
+            className="flex items-center justify-center space-x-2 p-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            onClick={() => handleQuickAction('request-books')}
+          >
             <BookOpen className="h-5 w-5" />
             <span>Request Books</span>
           </button>
-          <button className="flex items-center justify-center space-x-2 p-4 bg-secondary text-primary rounded-lg hover:bg-secondary/90 transition-colors">
+          <button
+            className="flex items-center justify-center space-x-2 p-4 bg-secondary text-primary rounded-lg hover:bg-secondary/90 transition-colors"
+            onClick={() => handleQuickAction('create-event')}
+          >
             <Calendar className="h-5 w-5" />
             <span>Create Event</span>
           </button>
-          <button className="flex items-center justify-center space-x-2 p-4 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
+          <button
+            className="flex items-center justify-center space-x-2 p-4 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+            onClick={() => handleQuickAction('view-donors')}
+          >
             <Users className="h-5 w-5" />
             <span>View Donors</span>
           </button>
