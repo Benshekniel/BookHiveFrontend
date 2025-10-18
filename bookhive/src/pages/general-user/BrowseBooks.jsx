@@ -1191,7 +1191,7 @@ const BooksPage = () => {
                                       >
                                         View Details
                                       </Link>
-                                      {book.forLend && (
+                                      {/* {book.forLend && (
                                         <Button
                                           variant="secondary"
                                           size="sm"
@@ -1203,9 +1203,9 @@ const BooksPage = () => {
                                         >
                                           Borrow
                                         </Button>
-                                      )}
+                                      )} */}
                                     </div>
-                                    {(book.forSale ||
+                                    {/* {(book.forSale ||
                                       book.forExchange ||
                                       book.forBidding) && (
                                       <div className="flex space-x-1">
@@ -1250,7 +1250,7 @@ const BooksPage = () => {
                                           </Button>
                                         )}
                                       </div>
-                                    )}
+                                    )} */}
                                   </div>
                                 </div>
                               </div>
