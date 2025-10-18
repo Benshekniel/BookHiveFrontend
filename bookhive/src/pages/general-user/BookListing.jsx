@@ -152,6 +152,9 @@ const BookListingManagementPage = () => {
     imageFile: null,
   });
 
+  // Store original book image filename when editing (to preserve it if no new image is uploaded)
+  const [originalBookImage, setOriginalBookImage] = useState(null);
+
   const handleAddBook = () => {
     // Check if user is logged in
     if (!user?.email) {
@@ -187,6 +190,7 @@ const BookListingManagementPage = () => {
       imageFile: null,
     });
     setEditBook(null); // Make sure we're in add mode
+    setOriginalBookImage(null); // Clear any stored image filename
     setShowAddModal(true);
   };
 
@@ -196,6 +200,9 @@ const BookListingManagementPage = () => {
       toast.error("Please log in to edit a book.");
       return;
     }
+
+    // Store the original book image filename to preserve it if no new image is uploaded
+    setOriginalBookImage(book.bookImage || null);
 
     // Populate form with existing book data
     setNewBook({
@@ -407,6 +414,10 @@ const BookListingManagementPage = () => {
 
     if (editBook) {
       bookData.bookId = editBook.bookId;
+      // Preserve original book image filename if no new image is uploaded
+      if (!newBook.imageFile && originalBookImage) {
+        bookData.bookImage = originalBookImage;
+      }
     }
 
     // Show loading toast
@@ -452,7 +463,8 @@ const BookListingManagementPage = () => {
         setShowAddModal(false);
         setShowEditModal(false);
         setEditBook(null);
-        
+        setOriginalBookImage(null); // Clear stored image filename
+
         // Reset form state
         setNewBook({
           userEmail: user?.email || '',
@@ -869,7 +881,7 @@ const BookListingManagementPage = () => {
             <div className="bg-white/95 backdrop-blur-md rounded-xl p-4 md:p-6 w-full max-w-2xl mx-2 shadow-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg md:text-xl font-semibold">{editBook ? "Edit Book Listing" : "Add New Book"}</h3>
-                <button onClick={() => { setShowAddModal(false); setShowEditModal(false); setEditBook(null); }} className="text-gray-500 hover:text-gray-700">
+                <button onClick={() => { setShowAddModal(false); setShowEditModal(false); setEditBook(null); setOriginalBookImage(null); }} className="text-gray-500 hover:text-gray-700">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1200,7 +1212,7 @@ const BookListingManagementPage = () => {
                   <p className="text-xs text-gray-500 mt-1">Help others discover your book with relevant hashtags</p>
                 </div>
                 <div className="flex gap-4 pt-6 border-t border-gray-200">
-                  <button type="button" onClick={() => { setShowAddModal(false); setShowEditModal(false); setEditBook(null); }} className="flex-1 border border-gray-300 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-50 transition-colors font-medium">Cancel</button>
+                  <button type="button" onClick={() => { setShowAddModal(false); setShowEditModal(false); setEditBook(null); setOriginalBookImage(null); }} className="flex-1 border border-gray-300 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-50 transition-colors font-medium">Cancel</button>
                   <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl transition-colors font-medium">{editBook ? "Update Book Listing" : "Add Book to Library"}</button>
                 </div>
               </form>

@@ -181,86 +181,11 @@ const Competitions = () => {
     return paused ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
   };
 
-  const handleCreateCompetition = async (newCompetition) => {
-    try {
-      const formData = new FormData();
-      formData.append("title", newCompetition.title);
-      formData.append("theme", newCompetition.theme || "Writing");
-      formData.append("startDateTime", newCompetition.startDateTime);
-      formData.append("endDateTime", newCompetition.endDateTime);
-      formData.append("votingStartDateTime", newCompetition.votingStartDateTime || "");
-      formData.append("votingEndDateTime", newCompetition.votingEndDateTime || "");
-      formData.append("activeStatus", newCompetition.activeStatus.toString());
-      formData.append("createdBy", newCompetition.createdBy);
-      formData.append("entryTrustScore", newCompetition.entryTrustScore || "");
-      formData.append("prizeTrustScore", newCompetition.prizetrustscore || "");
-      formData.append("maxParticipants", newCompetition.maxParticipants || "");
-      formData.append("description", newCompetition.description);
-      if (newCompetition.bannerImage) {
-        formData.append("bannerImage", newCompetition.bannerImage);
-      }
-      formData.append("rules", JSON.stringify(newCompetition.rules || []));
-      formData.append("judgingCriteria", JSON.stringify(newCompetition.judgingCriteria || []));
-      formData.append("participantEmails", JSON.stringify(newCompetition.participantEmails || []));
-
-      const response = await axios.post(`${baseUrl}/api/moderator/createCompetition`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const createdCompetition = response.data;
-      const formattedCompetition = {
-        id: createdCompetition.competitionid,
-        title: createdCompetition.title || "Untitled",
-        type: createdCompetition.theme || "Writing",
-        startDate: formatDateForDisplay(createdCompetition.startdatetime),
-        endDate: formatDateForDisplay(createdCompetition.enddatetime),
-        votingEndDate: formatDateForDisplay(createdCompetition.votingenddatetime),
-        participants: createdCompetition.currentparticipants || 0,
-        submissions: 0,
-        dateStatus: createdCompetition.startdatetime && createdCompetition.enddatetime
-          ? new Date(createdCompetition.startdatetime) > new Date()
-            ? "upcoming"
-            : new Date(createdCompetition.enddatetime) < new Date()
-            ? "finished"
-            : "ongoing"
-          : "finished",
-        activeStatus: createdCompetition.activestatus || false,
-        pauseStatus: createdCompetition.pausestatus !== null ? createdCompetition.pausestatus : true, // Set null to paused
-        activatedAt: createdCompetition.activatedat || null,
-        votingStatus: createdCompetition.votingstartdatetime && createdCompetition.votingenddatetime
-          ? new Date(createdCompetition.votingstartdatetime) > new Date()
-            ? "upcoming"
-            : new Date(createdCompetition.votingenddatetime) < new Date()
-            ? "finished"
-            : "ongoing"
-          : "pending",
-        description: createdCompetition.description || "No description",
-        bannerImage: createdCompetition.bannerimage,
-        createdBy: createdCompetition.createdby,
-        entryTrustScore: createdCompetition.entrytrustscore,
-        prizeTrustScore: createdCompetition.prizetrustscore,
-        maxParticipants: createdCompetition.maxparticipants,
-        rules: createdCompetition.rules ? JSON.parse(createdCompetition.rules) : [],
-        judgingCriteria: createdCompetition.judgingcriteria ? JSON.parse(createdCompetition.judgingcriteria) : [],
-        participantEmails: createdCompetition.participantemails ? JSON.parse(createdCompetition.participantemails) : [],
-        startDateTime: createdCompetition.startdatetime || "",
-        endDateTime: createdCompetition.enddatetime || "",
-        votingStartDateTime: createdCompetition.votingstartdatetime || "",
-        votingEndDateTime: createdCompetition.votingenddatetime || "",
-      };
-
-      setCompetitions((prev) => [...prev, formattedCompetition]);
-      setImageStatus((prev) => ({
-        ...prev,
-        [formattedCompetition.id]: createdCompetition.bannerimage
-          ? { status: "loading", url: null, error: null }
-          : { status: "missing", url: null, error: null },
-      }));
-      setShowCreateEvent(false);
-    } catch (error) {
-      console.error("Error creating competition:", error);
-      setError("Failed to create competition: " + (error.response?.data?.message || error.message));
-    }
+  // This function is no longer needed - competitionCreate.jsx handles the API call
+  // We just need a placeholder since it's still referenced in the JSX
+  const handleCreateCompetition = () => {
+    // CompetitionCreate component handles everything now
+    // It will reload the page after successful creation
   };
 
   const handleEditCompetition = (updatedCompetition) => {
@@ -566,10 +491,12 @@ const Competitions = () => {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Pending Reviews</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">23</p>
+                <p className="text-gray-600 text-sm font-medium">Upcoming Competitions</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {competitions.filter((c) => c.dateStatus === "upcoming").length}
+                </p>
               </div>
-              <Eye className="w-8 h-8 text-green-500" />
+              <Calendar className="w-8 h-8 text-green-500" />
             </div>
           </div>
         </div>

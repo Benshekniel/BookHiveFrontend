@@ -1,41 +1,145 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Users, AlertTriangle, Shield, Save, RotateCcw } from 'lucide-react';
+import { regulationApi } from '../../../services/moderatorService';
+import { toast } from 'react-toastify';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('trustscore');
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(null);
 
+  // State to store current regulation amounts
+  const [regulationAmounts, setRegulationAmounts] = useState({
+    REVIEW: 0,
+    PURCHASE: 0,
+    COMPJOIN: 0,
+    NEGATIVE: 0,
+    POSITIVE: 0
+  });
+
+  // State to store input values (for editing)
+  const [inputValues, setInputValues] = useState({
+    REVIEW: 0,
+    PURCHASE: 0,
+    COMPJOIN: 0,
+    NEGATIVE: 0,
+    POSITIVE: 0
+  });
+
+  // Trust score settings configuration
   const trustScoreSettings = [
     {
-      id: 'successful_exchange',
-      name: 'Successful Exchange',
-      currentValue: '+5',
-      description: 'Points awarded for completing a book exchange successfully'
+      id: 'REVIEW',
+      rule: 'REVIEW',
+      name: 'Book Review',
+      description: 'Points awarded when a user writes a book review'
     },
     {
-      id: 'late_return',
-      name: 'Late Return',
-      currentValue: '-3',
-      description: 'Points deducted for returning a book late'
+      id: 'PURCHASE',
+      rule: 'PURCHASE',
+      name: 'Successful Purchase',
+      description: 'Points awarded for completing a successful book purchase'
     },
     {
-      id: 'positive_review',
+      id: 'COMPJOIN',
+      rule: 'COMPJOIN',
+      name: 'Competition Joining',
+      description: 'Points awarded when a user joins a competition'
+    },
+    {
+      id: 'POSITIVE',
+      rule: 'POSITIVE',
       name: 'Positive Review',
-      currentValue: '+2',
-      description: 'Points awarded for receiving positive feedback'
+      description: 'Points awarded for receiving positive feedback from other users'
     },
     {
-      id: 'negative_review',
+      id: 'NEGATIVE',
+      rule: 'NEGATIVE',
       name: 'Negative Review',
-      currentValue: '-2',
-      description: 'Points deducted for receiving negative feedback'
-    },
-    {
-      id: 'community_participation',
-      name: 'Community Participation',
-      currentValue: '+1',
-      description: 'Points for active participation in book circles'
+      description: 'Points deducted for receiving negative feedback from other users'
     }
   ];
+
+  // Fetch all regulation amounts on component mount
+  useEffect(() => {
+    fetchAllRegulations();
+  }, []);
+
+  const fetchAllRegulations = async () => {
+    try {
+      setLoading(true);
+      const amounts = await regulationApi.getAllAmounts(false);
+      setRegulationAmounts(amounts);
+      setInputValues(amounts); // Initialize input values with current amounts
+    } catch (error) {
+      console.error('Failed to fetch regulation amounts:', error);
+      toast.error('Failed to load trust score settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle input change
+  const handleInputChange = (rule, value) => {
+    setInputValues(prev => ({
+      ...prev,
+      [rule]: value
+    }));
+  };
+
+  // Update specific regulation rule
+  const handleUpdateRegulation = async (rule) => {
+    const amount = parseInt(inputValues[rule]);
+
+    if (isNaN(amount)) {
+      toast.error('Please enter a valid number');
+      return;
+    }
+
+    try {
+      setUpdating(rule);
+
+      // Call the appropriate update function based on the rule
+      switch (rule) {
+        case 'REVIEW':
+          await regulationApi.updateReview(amount);
+          break;
+        case 'PURCHASE':
+          await regulationApi.updatePurchase(amount);
+          break;
+        case 'COMPJOIN':
+          await regulationApi.updateCompJoin(amount);
+          break;
+        case 'NEGATIVE':
+          await regulationApi.updateNegative(amount);
+          break;
+        case 'POSITIVE':
+          await regulationApi.updatePositive(amount);
+          break;
+        default:
+          throw new Error('Unknown rule type');
+      }
+
+      // Update the local state with the new value
+      setRegulationAmounts(prev => ({
+        ...prev,
+        [rule]: amount
+      }));
+
+      toast.success(`Updated ${rule} amount successfully!`);
+    } catch (error) {
+      console.error(`Failed to update ${rule}:`, error);
+      toast.error(`Failed to update ${rule} amount`);
+
+      // Revert input value on error
+      setInputValues(prev => ({
+        ...prev,
+        [rule]: regulationAmounts[rule]
+      }));
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   const penaltySettings = [
     {
@@ -165,30 +269,58 @@ const Settings = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">TrustScore Configuration</h3>
                 <p className="text-gray-600">Adjust point values for different user actions and behaviors</p>
               </div>
-              
-              {trustScoreSettings.map((setting) => (
-                <div key={setting.id} className="p-6 rounded-lg bg-gray-50 border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900">{setting.name}</h4>
-                      <p className="text-gray-600 mt-1">{setting.description}</p>
-                    </div>
-                    <div className="flex items-center space-x-4 ml-6">
-                      <div className="text-right">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Value</label>
-                        <input
-                          type="text"
-                          defaultValue={setting.currentValue}
-                          className="w-20 px-3 py-2 border border-gray-300 rounded-md text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                        Update
-                      </button>
-                    </div>
-                  </div>
+
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 </div>
-              ))}
+              ) : (
+                <>
+                  {trustScoreSettings.map((setting) => (
+                    <div key={setting.id} className="p-6 rounded-lg bg-gray-50 border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="text-lg font-semibold text-gray-900">{setting.name}</h4>
+                          <p className="text-gray-600 mt-1">{setting.description}</p>
+                          <div className="mt-2">
+                            <span className="text-sm text-gray-500">
+                              Current Database Value:
+                              <span className="ml-1 font-semibold text-blue-600">
+                                {regulationAmounts[setting.rule] !== undefined ? regulationAmounts[setting.rule] : 'Loading...'}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4 ml-6">
+                          <div className="text-right">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">New Value</label>
+                            <input
+                              type="number"
+                              value={inputValues[setting.rule] || 0}
+                              onChange={(e) => handleInputChange(setting.rule, e.target.value)}
+                              className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              disabled={updating === setting.rule}
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleUpdateRegulation(setting.rule)}
+                            disabled={updating === setting.rule || inputValues[setting.rule] === regulationAmounts[setting.rule]}
+                            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                              updating === setting.rule
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : inputValues[setting.rule] === regulationAmounts[setting.rule]
+                                ? 'bg-gray-300 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            } text-white`}
+                          >
+                            {updating === setting.rule ? 'Updating...' : 'Update'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           )}
 
@@ -236,7 +368,7 @@ const Settings = () => {
           )}
         </div>
       </div>
-      <div className="flex space-x-2 justify-end">
+      {/* <div className="flex space-x-2 justify-end">
         <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
           <RotateCcw className="w-4 h-4" />
           <span>Reset to Default</span>
@@ -245,7 +377,7 @@ const Settings = () => {
           <Save className="w-4 h-4" />
           <span>Save Changes</span>
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };
