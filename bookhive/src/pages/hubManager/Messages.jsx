@@ -1,5 +1,6 @@
 // components/Messages/Messages.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MessageCircle, Send, Search, RefreshCw, Radio, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../../components/AuthContext';
 import messageService from '../../services/messageService';
@@ -7,6 +8,7 @@ import socketService from '../../services/socketService';
 
 const Messages = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [selectedChat, setSelectedChat] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +27,51 @@ const Messages = () => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const processedMessageIds = useRef(new Set());
+
+  // Handle navigation from agents page
+  useEffect(() => {
+    if (location.state?.selectedAgent) {
+      const { selectedAgent } = location.state;
+      console.log('Agent selected from navigation:', selectedAgent);
+      
+      // Set the selected chat to the agent
+      setSelectedChat(selectedAgent.id);
+      
+      // Create or update conversation for this agent
+      setConversations(prev => {
+        const existingIndex = prev.findIndex(conv => conv.id === selectedAgent.id);
+        
+        if (existingIndex !== -1) {
+          // Agent already exists in conversations
+          return prev;
+        } else {
+          // Add new agent to conversations
+          const newConversation = {
+            id: selectedAgent.id,
+            name: selectedAgent.name,
+            role: selectedAgent.role || 'agent',
+            avatar: selectedAgent.name.charAt(0).toUpperCase(),
+            lastMessage: 'No messages yet',
+            timestamp: 'Never',
+            unread: 0,
+            status: 'offline',
+            lastMessageTime: null
+          };
+          
+          return [newConversation, ...prev];
+        }
+      });
+
+      // Initialize empty messages array if not exists
+      setMessages(prev => ({
+        ...prev,
+        [selectedAgent.id]: prev[selectedAgent.id] || []
+      }));
+
+      // Clear the navigation state to prevent re-execution
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -160,7 +207,7 @@ const Messages = () => {
             const newConv = {
               id: chatPartnerId,
               name: message.senderName || `User ${chatPartnerId}`,
-              role: 'User',
+              role: 'user', // Default role
               avatar: (message.senderName || `User ${chatPartnerId}`).charAt(0).toUpperCase(),
               lastMessage: messageContent,
               timestamp: formatTimestamp(messageTime),
@@ -280,7 +327,7 @@ const Messages = () => {
   // Role-based contact mapping
   const getRoleBasedContacts = (userRole) => {
     const roleContactMap = {
-      'admin': ['moderator', 'manager', 'organization', 'hubmanager'],
+      'admin': ['moderator', 'manager', 'organization', 'hubmanager', 'agent'],
       'moderator': ['admin', 'user', 'agent', 'bookstore'],
       'bookstore': ['user', 'moderator', 'manager'],
       'manager': ['agent', 'hubmanager', 'admin', 'moderator'],
@@ -356,8 +403,8 @@ const Messages = () => {
         if (!conversationMap.has(partnerId)) {
           conversationMap.set(partnerId, {
             id: partnerId,
-            name: partnerName,
-            role: 'User',
+            name: partnerName || `User ${partnerId}`,
+            role: 'user', // Default role
             avatar: partnerName ? partnerName.charAt(0).toUpperCase() : 'U',
             lastMessage: message.content,
             timestamp: formatTimestamp(message.createdAt),
@@ -384,7 +431,7 @@ const Messages = () => {
           conversationMap.set(contact.user_id, {
             id: contact.user_id,
             name: contact.name,
-            role: contact.role,
+            role: contact.role || 'user', // Ensure role has a default
             avatar: contact.name.charAt(0).toUpperCase(),
             lastMessage: 'No messages yet',
             timestamp: 'Never',
@@ -394,7 +441,7 @@ const Messages = () => {
           });
         } else {
           const conversation = conversationMap.get(contact.user_id);
-          conversation.role = contact.role;
+          conversation.role = contact.role || 'user'; // Ensure role has a default
         }
       });
 
@@ -618,10 +665,16 @@ const Messages = () => {
   // Utility functions
   const filteredConversations = conversations.filter(conv =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.role.toLowerCase().includes(searchTerm.toLowerCase())
+    (conv.role && conv.role.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // FIXED: Safe getRoleColor function with null/undefined handling
   const getRoleColor = (role) => {
+    // Handle null, undefined, or empty values
+    if (!role || typeof role !== 'string') {
+      return 'text-gray-600'; // Default color
+    }
+    
     const roleColors = {
       'admin': 'text-red-600',
       'moderator': 'text-blue-600',
@@ -637,6 +690,11 @@ const Messages = () => {
 
   const getStatusColor = (status) => {
     return status === 'online' ? 'bg-green-400' : 'bg-gray-400';
+  };
+
+  // Safe role display function
+  const displayRole = (role) => {
+    return role || 'user';
   };
 
   // Redirect to login if not authenticated
@@ -783,7 +841,7 @@ const Messages = () => {
                       </div>
 
                       <p className={`text-xs mt-1 font-medium ${getRoleColor(conversation.role)}`}>
-                        {conversation.role}
+                        {displayRole(conversation.role)}
                       </p>
                     </div>
                   </div>
@@ -816,7 +874,7 @@ const Messages = () => {
                       {conversations.find(c => c.id === selectedChat)?.name}
                     </h3>
                     <p className={`text-sm font-medium ${getRoleColor(conversations.find(c => c.id === selectedChat)?.role)}`}>
-                      {conversations.find(c => c.id === selectedChat)?.role}
+                      {displayRole(conversations.find(c => c.id === selectedChat)?.role)}
                     </p>
                   </div>
                 </div>

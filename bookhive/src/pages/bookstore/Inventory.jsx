@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {  Package, DollarSign, Heart } from 'lucide-react';
+import { Package, DollarSign, Heart } from 'lucide-react';
 
 import NewInventoryItem from '../../components/bookStore/Forms/NewInventoryItem.tsx';
 
@@ -17,13 +17,6 @@ const InventoryPage = () => {
     { id: 'donations', label: 'Donations', icon: Heart }
   ];
 
-  // const lendingStats = [
-  //   { label: 'AVAILABLE', value: '89', bgColor: 'bg-blue-50', textColor: 'text-blue-600', icon: BookOpen },
-  //   { label: 'ON LOAN', value: '34', bgColor: 'bg-amber-50', textColor: 'text-amber-600', icon: Users },
-  //   { label: 'OVERDUE', value: '3', bgColor: 'bg-red-50', textColor: 'text-red-600', icon: AlertCircle },
-  //   { label: 'AVG DURATION', value: '14 days', bgColor: 'bg-green-50', textColor: 'text-green-600', icon: Calendar }
-  // ];
-
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -37,7 +30,6 @@ const InventoryPage = () => {
               <div>
                 <h1 className="text-3xl font-bold text-slate-800">Inventory Management</h1>
                 <p className="text-slate-600 mt-1">Manage your books across regular and donations inventory.</p>
-                {/* <p className="text-slate-600 font-bold mt-1">Inventory sets are distinct as Regular for selling and as for Donation.</p> */}
               </div>
             </div>
             <div className="flex space-x-3">
@@ -68,9 +60,8 @@ const InventoryPage = () => {
         </div>
 
         {/* Stats Cards */}
-        {/* {activeTab === 'regular' && <RegularStats />} */}
-        {/* {activeTab === 'donations' && <DonationStats />} */}
-
+        {activeTab === 'regular' && <RegularStats />}
+        {activeTab === 'donations' && <DonationStats />}
 
         {/* Tab Content */}
         {activeTab === 'regular' && <RegularInventory />}
