@@ -22,6 +22,7 @@ import {
 import { hubApi, agentApi, deliveryApi, transactionApi } from '../../services/deliveryService';
 
 const Hubs = () => {
+  const [totalHubs, setTotalHubs] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedHub, setSelectedHub] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
@@ -40,10 +41,10 @@ const Hubs = () => {
     activeHubs: 0
   });
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [hubsPerPage] = useState(12);
-
+  const [hubsPerPage] = useState(6); // 
+  const [loadingMore, setLoadingMore] = useState(false); 
+  const [hasMoreHubs, setHasMoreHubs] = useState(true);
   // Dropdown states
   const [openDropdown, setOpenDropdown] = useState(null);
 
@@ -94,10 +95,10 @@ const Hubs = () => {
   const fetchAvailableAgents = async () => {
     try {
       setLoadingAgents(true);
-      
+
       // Fetch available agents
       const agents = await agentApi.getAvailableAgents();
-      
+
       // Filter agents who are not assigned to any hub or are available for reassignment
       const unassignedAgents = Array.isArray(agents)
         ? agents.filter(agent => !agent.hubId || agent.availabilityStatus === 'AVAILABLE')
@@ -223,41 +224,23 @@ const Hubs = () => {
   };
 
   const addHubMapLegend = (map) => {
-    // const legend = document.createElement('div');
-    // legend.style.backgroundColor = 'white';
-    // legend.style.border = '2px solid #ccc';
-    // legend.style.borderRadius = '6px';
-    // legend.style.boxShadow = '0 2px 8px rgba(0,0,0,.15)';
-    // legend.style.cursor = 'default';
-    // legend.style.marginBottom = '22px';
-    // legend.style.marginRight = '10px';
-    // legend.style.padding = '12px';
-    // legend.style.fontFamily = 'Arial, sans-serif';
-    // legend.style.fontSize = '13px';
-    // legend.style.lineHeight = '1.4';
-
-    // legend.innerHTML = `
-    //   <div style="font-weight: bold; margin-bottom: 8px; text-align: center; color: #333;">Hub Locations</div>
-    //   <div style="display: flex; align-items: center; justify-content: center;">
-    //     <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" 
-    //          style="width: 16px; height: 16px; margin-right: 8px; flex-shrink: 0;"> 
-    //     <span style="color: #555;">All Hub Locations</span>
-    //   </div>
-    // `;
-
-    // map.controls[window.google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
+    // Legend implementation (currently commented out)
   };
 
+  //  Updated fetchHubsData function - Load only 6 hubs initially
   const fetchHubsData = async (useCache = true) => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching hubs data...');
+      console.log('Fetching initial 6 hubs...');
 
-      // Fetch hubs and stats in parallel
+      //  Always load only 6 hubs initially
+      const initialLimit = 6;
+
+      // Fetch hubs with limit and stats in parallel
       const [hubsResponse, hubStatsResponse] = await Promise.all([
-        hubApi.getAllHubs(useCache).catch(err => {
+        hubApi.getAllHubs(useCache, initialLimit).catch(err => {
           console.error('Failed to fetch hubs:', err);
           return [];
         }),
@@ -267,26 +250,29 @@ const Hubs = () => {
         })
       ]);
 
-      console.log(`Fetched ${hubsResponse.length} hubs`);
+      console.log(`Fetched ${hubsResponse.length} hubs initially`);
 
-      // Fetch transactions for accurate revenue calculation
+      // Rest of your existing processing logic...
       const allTransactions = await transactionApi.getAllTransactions(useCache).catch(err => {
         console.error('Failed to fetch transactions:', err);
         return [];
       });
 
-      console.log(`Fetched ${allTransactions.length} transactions for revenue calculation`);
-
-      // Process hubs with real data
       const processedHubs = await Promise.all(
         hubsResponse.map(hub => processHubWithRealDataAndDashboardRevenue(hub, allTransactions))
       );
 
-      // Calculate stats from real data
       const calculatedStats = calculateStatsFromHubsWithDashboardRevenue(hubStatsResponse, processedHubs, allTransactions);
 
       setHubs(processedHubs);
+      setTotalHubs(processedHubs.length);
       setStats(calculatedStats);
+      
+      //  Set hasMoreHubs based on response length
+      setHasMoreHubs(hubsResponse.length === initialLimit);
+      
+      //  Reset current page to 1
+      setCurrentPage(1);
 
       console.log('Hubs data loaded successfully');
 
@@ -295,6 +281,47 @@ const Hubs = () => {
       setError('Failed to load hubs data: ' + err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  //  Updated loadMoreHubs function
+  const loadMoreHubs = async () => {
+    if (loadingMore || !hasMoreHubs) return;
+    
+    try {
+      setLoadingMore(true);
+
+      // Calculate next limit
+      const nextLimit = (currentPage + 1) * hubsPerPage;
+      console.log(`Loading more hubs, new limit: ${nextLimit}`);
+
+      // Fetch next batch of hubs
+      const hubsResponse = await hubApi.getAllHubs(true, nextLimit);
+
+      if (hubsResponse.length <= hubs.length) {
+        // No more hubs available
+        setHasMoreHubs(false);
+        return;
+      }
+
+      const allTransactions = await transactionApi.getAllTransactions(true);
+      const processedHubs = await Promise.all(
+        hubsResponse.map(hub => processHubWithRealDataAndDashboardRevenue(hub, allTransactions))
+      );
+
+      setHubs(processedHubs);
+      setCurrentPage(prev => prev + 1);
+      setTotalHubs(processedHubs.length);
+      
+      // Check if we have more hubs
+      setHasMoreHubs(hubsResponse.length === nextLimit);
+
+      console.log(`Loaded ${processedHubs.length} total hubs`);
+
+    } catch (err) {
+      console.error('Error loading more hubs:', err);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -307,7 +334,7 @@ const Hubs = () => {
       ]);
 
       const totalAgents = agents.length;
-      const availableAgents = agents.filter(agent => 
+      const availableAgents = agents.filter(agent =>
         agent.availabilityStatus === 'AVAILABLE'
       ).length;
 
@@ -320,9 +347,9 @@ const Hubs = () => {
 
       // Calculate revenue using fixed function
       const monthlyRevenue = calculateHubRevenueFixed(
-        hub.hubId, 
-        hub.name, 
-        deliveries, 
+        hub.hubId,
+        hub.name,
+        deliveries,
         allTransactions
       );
 
@@ -382,7 +409,7 @@ const Hubs = () => {
   const calculateHubRevenueFixed = (hubId, hubName, hubDeliveries, allTransactions) => {
     try {
       console.log(`Calculating revenue for hub ${hubName}...`);
-      
+
       // Use Object instead of Map to avoid naming conflicts with Google Maps
       const transactionMap = {};
       allTransactions.forEach(transaction => {
@@ -407,8 +434,8 @@ const Hubs = () => {
       // Method 2: Direct hub transaction matching
       allTransactions.forEach(transaction => {
         if ((transaction.hubId === hubId || transaction.hubName === hubName) &&
-            (transaction.paymentStatus === 'COMPLETED' || transaction.paymentStatus === 'PAID')) {
-          
+          (transaction.paymentStatus === 'COMPLETED' || transaction.paymentStatus === 'PAID')) {
+
           const amount = parseFloat(transaction.paymentAmount || 0);
           if (!isNaN(amount)) {
             // Only add if not already counted through delivery
@@ -469,10 +496,10 @@ const Hubs = () => {
     // Try to match city name
     const city = hub.city || '';
     const hubName = hub.name || '';
-    
+
     for (const [cityName, coords] of Object.entries(cityCoordinates)) {
-      if (city.toLowerCase().includes(cityName.toLowerCase()) || 
-          hubName.toLowerCase().includes(cityName.toLowerCase())) {
+      if (city.toLowerCase().includes(cityName.toLowerCase()) ||
+        hubName.toLowerCase().includes(cityName.toLowerCase())) {
         console.log(`Using generated coordinates for ${hub.name}: ${cityName}`);
         return coords;
       }
@@ -537,16 +564,16 @@ const Hubs = () => {
   const updateHub = async (hubId, updateData) => {
     try {
       await hubApi.updateHub(hubId, updateData);
-      
+
       // Update local state
-      setHubs(prevHubs => 
-        prevHubs.map(hub => 
-          hub.id === hubId 
+      setHubs(prevHubs =>
+        prevHubs.map(hub =>
+          hub.id === hubId
             ? { ...hub, ...updateData, lastUpdated: new Date().toISOString() }
             : hub
         )
       );
-      
+
       alert('Hub updated successfully!');
     } catch (err) {
       console.error('Error updating hub:', err);
@@ -557,16 +584,16 @@ const Hubs = () => {
   const assignManager = async (hubId, managerData) => {
     try {
       await hubApi.assignManager(hubId, managerData.userId);
-      
+
       // Update local state
-      setHubs(prevHubs => 
-        prevHubs.map(hub => 
-          hub.id === hubId 
+      setHubs(prevHubs =>
+        prevHubs.map(hub =>
+          hub.id === hubId
             ? { ...hub, hubManager: managerData.name, hubManagerId: managerData.userId, status: 'Operational' }
             : hub
         )
       );
-      
+
       alert('Hub manager assigned successfully!');
     } catch (err) {
       console.error('Error assigning hub manager:', err);
@@ -585,11 +612,11 @@ const Hubs = () => {
         hubId: hubId,
         availabilityStatus: 'AVAILABLE'
       });
-      
+
       // Refresh data to show updated agent count
       await fetchHubsData(false);
       await fetchAvailableAgents();
-      
+
       alert('Agent assigned to hub successfully!');
     } catch (err) {
       console.error('Error assigning agent to hub:', err);
@@ -635,30 +662,14 @@ const Hubs = () => {
     }
   };
 
-  // Filtered and paginated hubs
-  const { paginatedHubs, totalPages } = useMemo(() => {
-    const filtered = hubs.filter(hub =>
+  //  Updated filtered hubs - No pagination, just search filtering
+  const filteredHubs = useMemo(() => {
+    return hubs.filter(hub =>
       hub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       hub.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
       hub.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const startIndex = (currentPage - 1) * hubsPerPage;
-    const endIndex = startIndex + hubsPerPage;
-    const paginated = filtered.slice(startIndex, endIndex);
-
-    return {
-      paginatedHubs: paginated,
-      totalPages: Math.ceil(filtered.length / hubsPerPage)
-    };
-  }, [hubs, searchTerm, currentPage, hubsPerPage]);
-
-  // Pagination handlers
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
+  }, [hubs, searchTerm]);
 
   // Dropdown component
   const Dropdown = ({ hubId, isOpen, onToggle, onAssignManager, onAssignAgent }) => (
@@ -669,7 +680,7 @@ const Hubs = () => {
       >
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      
+
       {isOpen && (
         <div className="absolute right-0 top-9 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
           <div className="py-1">
@@ -691,7 +702,7 @@ const Hubs = () => {
     </div>
   );
 
-  // Modal components
+  // Modal components (keeping your existing ones...)
   const ManageModal = ({ hub, onClose }) => {
     const [formData, setFormData] = useState({
       name: hub?.name || '',
@@ -706,7 +717,7 @@ const Hubs = () => {
     const handleSubmit = async (e) => {
       e.preventDefault();
       setSaving(true);
-      
+
       try {
         await updateHub(hub.id, {
           name: formData.name,
@@ -725,7 +736,7 @@ const Hubs = () => {
     };
 
     if (!hub) return null;
-    
+
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/30">
         <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl border border-gray-200">
@@ -838,7 +849,7 @@ const Hubs = () => {
       }
 
       setSaving(true);
-      
+
       try {
         await assignManager(hub.id, {
           userId: parseInt(formData.userId),
@@ -855,7 +866,7 @@ const Hubs = () => {
     };
 
     if (!hub) return null;
-    
+
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/30">
         <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl border border-gray-200">
@@ -903,7 +914,7 @@ const Hubs = () => {
 
             <div className="bg-blue-50 p-3 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Enter the User ID of the person you want to assign as hub manager. 
+                <strong>Note:</strong> Enter the User ID of the person you want to assign as hub manager.
                 The name and email fields are optional and will be used for display purposes.
               </p>
             </div>
@@ -944,12 +955,12 @@ const Hubs = () => {
       }
 
       setSaving(true);
-      
+
       try {
-        const agent = availableAgents.find(a => 
+        const agent = availableAgents.find(a =>
           a.agentId?.toString() === selectedAgent || a.userId?.toString() === selectedAgent
         );
-        
+
         if (!agent) {
           throw new Error('Selected agent not found');
         }
@@ -970,7 +981,7 @@ const Hubs = () => {
     };
 
     if (!hub) return null;
-    
+
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/30">
         <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl border border-gray-200">
@@ -1006,18 +1017,17 @@ const Hubs = () => {
                     <option key={agent.agentId || agent.userId} value={agent.agentId || agent.userId}>
                       {agent.name || `${agent.firstName || ''} ${agent.lastName || ''}`.trim() || `Agent ${agent.agentId || agent.userId}`}
                       {agent.email && ` (${agent.email})`}
-                      {/* {agent.availabilityStatus && ` - ${agent.availabilityStatus}`} */}
                     </option>
                   ))}
                 </select>
               )}
             </div>
-            
+
             {selectedAgent && (
               <div className="bg-green-50 p-3 rounded-lg">
                 <h4 className="text-sm font-medium text-green-900 mb-2">Selected Agent Details:</h4>
                 {(() => {
-                  const agent = availableAgents.find(a => 
+                  const agent = availableAgents.find(a =>
                     a.agentId?.toString() === selectedAgent || a.userId?.toString() === selectedAgent
                   );
                   return agent ? (
@@ -1074,7 +1084,7 @@ const Hubs = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600 text-lg">{error}</p>
-          <button 
+          <button
             onClick={refreshData}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
@@ -1087,24 +1097,6 @@ const Hubs = () => {
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
-      {/* Header with Refresh Button */}
-      {/* <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Hub Management</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Showing {paginatedHubs.length} of {hubs.length} hubs
-          </p>
-        </div>
-        <button 
-          onClick={refreshData}
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
-      </div> */}
-
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -1184,7 +1176,7 @@ const Hubs = () => {
         </div>
       </div>
 
-      {/* Search and Pagination Controls */}
+      {/*  Updated Search Controls */}
       <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0 lg:space-x-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -1197,51 +1189,25 @@ const Hubs = () => {
           />
         </div>
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            
-            <span className="px-4 py-2 text-sm text-gray-600">
-              Page {currentPage} of {totalPages}
-            </span>
-            
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        )}
+        {/*  Results counter */}
+        <div className="text-sm text-gray-600">
+          Showing {filteredHubs.length} of {totalHubs} hubs
+        </div>
       </div>
 
-      {/* Hubs Grid */}
+      {/*  Hubs Grid - Now shows filtered hubs without pagination */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {paginatedHubs.map((hub) => (
+        {filteredHubs.map((hub) => (
           <div key={hub.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             {/* Hub Header */}
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 font-heading">{hub.name}</h3>
                 <p className="text-sm text-gray-600 flex items-center space-x-1">
-                  {/* <MapPin size={14} /> */}
                   <span>{hub.location}, {hub.city}</span>
                 </p>
-                
               </div>
               <div className="flex items-center space-x-2">
-                {/* {getStatusIcon(hub.status)}
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hub.status)}`}>
-                  {hub.status}
-                </span> */}
                 <Dropdown
                   hubId={hub.id}
                   isOpen={openDropdown === hub.id}
@@ -1257,7 +1223,7 @@ const Hubs = () => {
                     setOpenDropdown(null);
                   }}
                 />
-              </div> 
+              </div>
             </div>
 
             {/* Hub Stats */}
@@ -1321,8 +1287,31 @@ const Hubs = () => {
         ))}
       </div>
 
+      {/*  Load More Button */}
+      {hasMoreHubs && !searchTerm && (
+        <div className="flex justify-center">
+          <button
+            onClick={loadMoreHubs}
+            disabled={loadingMore}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+          >
+            {loadingMore ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Loading...</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown size={20} />
+                <span>Load More Hubs</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* No Results State */}
-      {paginatedHubs.length === 0 && !loading && (
+      {filteredHubs.length === 0 && !loading && (
         <div className="text-center py-12">
           <MapPin className="mx-auto mb-4 text-gray-400" size={48} />
           <p className="text-gray-500">

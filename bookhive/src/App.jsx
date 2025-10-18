@@ -94,7 +94,7 @@ const App = () => {
   return (
 <AuthProvider>
       <TrustScoreProvider>
-        <AppContent />
+      <AppContent />
       <Toaster toastOptions={{
         className: '',
         style: {

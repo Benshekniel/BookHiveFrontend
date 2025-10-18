@@ -1,17 +1,16 @@
 import axios from "axios";
-import { Eye, Calendar, CheckCircle, Clock, Award, Search, ChevronDown, HandHelping, Trash2, Star, Users, Edit, MoreHorizontal, Share2 } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import { formatDateTime, getConditionBadge, getBookStatusBadge } from "../CommonStuff/CommonFunc.tsx";
 
-import { useAuth } from "../../AuthContext.jsx";
+// import { useAuth } from "../../AuthContext.jsx";
 
 import LoadingSpinner from "../CommonStuff/LoadingSpinner.jsx";
 
 import EditBook from "../Forms/EditBook.tsx";
 import DeleteBook from "../Buttons/DeleteBook.tsx";
-
 
 const LendOnlyList = () => {
 	const queryClient = useQueryClient();

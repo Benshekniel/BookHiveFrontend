@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from '../../components/AuthContext';
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
@@ -18,6 +19,7 @@ import {
   X
 } from "lucide-react";
 import Button from "../../components/shared/Button";
+import LazyImage from "../../components/LazyImage";
 
 const PAYMENT_METHODS = {
   CASH_ON_DELIVERY: "cash_on_delivery",
@@ -26,7 +28,70 @@ const PAYMENT_METHODS = {
   DIGITAL_WALLET: "digital_wallet",
 };
 
+// UserAvatar component for consistent user image handling
+const UserAvatar = ({ user, size = "md", className = "" }) => {
+  const baseUrl = 'http://localhost:9090';
+  
+  // Size configurations
+  const sizes = {
+    xs: "w-4 h-4",
+    sm: "w-6 h-6",
+    md: "w-10 h-10", 
+    lg: "w-12 h-12"
+  };
+  
+  // Generate colored avatar based on user name for visual distinction
+  const getDefaultUserAvatar = (userName) => {
+    const colors = [
+      ['%237C3AED', '%234C1D95'], // Purple
+      ['%2306B6D4', '%230891B2'], // Cyan
+      ['%2310B981', '%23059669'], // Emerald
+      ['%23F59E0B', '%23D97706'], // Amber
+      ['%23EF4444', '%23DC2626'], // Red
+      ['%238B5CF6', '%237C3AED'], // Violet
+    ];
+    
+    // Simple hash function to get consistent color for user
+    const hash = (userName || 'User').split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    const colorIndex = Math.abs(hash) % colors.length;
+    const [color1, color2] = colors[colorIndex];
+    
+    return `data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cradialGradient id='bg' cx='50%25' cy='30%25'%3e%3cstop offset='0%25' stop-color='${color1}'/%3e%3cstop offset='100%25' stop-color='${color2}'/%3e%3c/radialGradient%3e%3c/defs%3e%3ccircle cx='50' cy='50' r='50' fill='url(%23bg)'/%3e%3ccircle cx='50' cy='37' r='18' fill='%23FFFFFF' opacity='0.9'/%3e%3cpath d='M50 60c-15 0-28 10-30 22 0 3 2 5 5 5h50c3 0 5-2 5-5-2-12-15-22-30-22z' fill='%23FFFFFF' opacity='0.9'/%3e%3c/svg%3e`;
+  };
+
+  // If user has a profile image from backend, try to load it
+  const getUserImageSrc = () => {
+    if (user?.profileImage) {
+      // Try backend endpoint for user profile images
+      return `${baseUrl}/getFileAsBase64?fileName=${user.profileImage}&folderName=userProfiles`;
+    }
+    if (user?.avatar && user.avatar !== "https://via.placeholder.com/50" && user.avatar !== null && user.avatar !== 'https://via.placeholder.com/20') {
+      // Use provided avatar URL if it's not a placeholder
+      return user.avatar;
+    }
+    // Use default vector avatar (will be used most of the time)
+    return getDefaultUserAvatar(user?.name);
+  };
+
+  return (
+    <img
+      src={getUserImageSrc()}
+      alt={user?.name || "User"}
+      className={`${sizes[size]} rounded-full object-cover ${className}`}
+      onError={(e) => {
+        // Fallback to default avatar if loading fails
+        e.target.src = getDefaultUserAvatar(user?.name);
+      }}
+    />
+  );
+};
+
 const PaymentPage = () => {
+  const { user } = useAuth();
   const { state } = useLocation();
   const navigate = useNavigate();
   const book = state?.book;
@@ -35,10 +100,10 @@ const PaymentPage = () => {
   // Form state
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.CASH_ON_DELIVERY);
   const [deliveryDetails, setDeliveryDetails] = useState({
-    fullName: "John Doe",
-    address: "123 Main St, Colombo 03",
-    phone: "+94 712 345 678",
-    email: "john.doe@example.com",
+    fullName: "",
+    address: "",
+    phone: "",
+    email: "",
     specialInstructions: ""
   });
   const [paymentDetails, setPaymentDetails] = useState({
@@ -53,6 +118,69 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [estimatedDelivery, setEstimatedDelivery] = useState(null);
+  const [loadingUserData, setLoadingUserData] = useState(true);
+
+  // Fetch user details from backend
+  const fetchUserDetails = useCallback(async () => {
+    try {
+      setLoadingUserData(true);
+      console.log('Fetching user details for email:', user.email);
+      
+      // URL encode the email to handle special characters
+      const encodedEmail = encodeURIComponent(user.email);
+      const url = `http://localhost:9090/api/getLoginedUser?email=${encodedEmail}`;
+      console.log('Fetching from URL:', url);
+      
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch user details: ${response.status} - ${errorText}`);
+      }
+      
+      const userData = await response.json();
+      console.log('User data received:', userData);
+      
+      // Update delivery details with user data
+      const newDeliveryDetails = {
+        fullName: userData.fname && userData.lname ? `${userData.fname} ${userData.lname}` : (userData.name || ""),
+        address: userData.address || "",
+        phone: userData.phone ? 
+          (userData.phone.toString().startsWith('+') ? userData.phone.toString() : `+94 ${userData.phone}`) : "",
+        email: userData.email || user.email || "",
+        specialInstructions: ""
+      };
+      
+      console.log('Setting delivery details:', newDeliveryDetails);
+      setDeliveryDetails(newDeliveryDetails);
+      
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      // Set defaults with user email from auth context
+      setDeliveryDetails({
+        fullName: "",
+        address: "",
+        phone: "",
+        email: user.email,
+        specialInstructions: ""
+      });
+    } finally {
+      setLoadingUserData(false);
+    }
+  }, [user.email]);
+
+  // Fetch user details on component mount
+  useEffect(() => {
+    console.log('useEffect triggered with user:', user);
+    if (user?.email) {
+      console.log('User email exists, calling fetchUserDetails');
+      fetchUserDetails();
+    } else {
+      console.log('No user email available');
+      setLoadingUserData(false);
+    }
+  }, [user, fetchUserDetails]);
 
   // Calculate estimated delivery
   useEffect(() => {
@@ -60,6 +188,11 @@ const PaymentPage = () => {
     deliveryDate.setDate(deliveryDate.getDate() + (paymentMethod === PAYMENT_METHODS.CASH_ON_DELIVERY ? 2 : 1));
     setEstimatedDelivery(deliveryDate);
   }, [paymentMethod]);
+
+  // Early return after all hooks
+  if (!user) {
+    return <p>Please log in.</p>;
+  }
 
   // Validation functions
   const validateDeliveryDetails = () => {
@@ -279,10 +412,27 @@ const PaymentPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Delivery Information */}
             <div className="bg-white/90 backdrop-blur-md rounded-xl p-4 md:p-6 shadow-lg border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Truck className="w-5 h-5 mr-2" />
-                Delivery Information
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <Truck className="w-5 h-5 mr-2" />
+                  Delivery Information
+                </h2>
+                {loadingUserData && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full mr-2"></div>
+                    Loading your details...
+                  </div>
+                )}
+                {!loadingUserData && deliveryDetails.fullName && (
+                  <div className="flex items-center text-sm text-green-600">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Auto-filled from your profile
+                  </div>
+                )}
+              </div>
+              
+             
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -625,9 +775,12 @@ const PaymentPage = () => {
               
               {/* Book Details */}
               <div className="flex items-start space-x-4 mb-4 pb-4 border-b border-gray-200">
-                <img
-                  src={book.cover || 'https://via.placeholder.com/80x100'}
+                <LazyImage
+                  fileName={book.bookImage}
+                  folderName="userBooks"
                   alt={book.title}
+                  baseUrl="http://localhost:9090"
+                  placeholder="data:image/svg+xml,%3csvg width='150' height='200' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='150' height='200' fill='%236B7280'/%3e%3ctext x='75' y='100' text-anchor='middle' fill='%23FFFFFF' font-size='14'%3eNo Image%3c/text%3e%3c/svg%3e"
                   className="w-16 h-20 object-cover rounded-lg shadow-sm"
                 />
                 <div className="flex-1">
@@ -637,10 +790,10 @@ const PaymentPage = () => {
                     Condition: {book.condition}
                   </p>
                   <div className="flex items-center mt-2">
-                    <img
-                      src={book.owner?.avatar || 'https://via.placeholder.com/20'}
-                      alt={book.owner?.name}
-                      className="w-4 h-4 rounded-full mr-1"
+                    <UserAvatar 
+                      user={book.owner}
+                      size="xs"
+                      className="mr-1"
                     />
                     <span className="text-xs text-gray-600">{book.owner?.name}</span>
                     <span className="ml-1 bg-blue-100 text-blue-800 px-1 rounded text-xs flex items-center">
