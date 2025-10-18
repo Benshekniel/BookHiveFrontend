@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../components/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = 'http://localhost:9090/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Check if user is authenticated
   if (!user) {
@@ -220,21 +222,33 @@ const Dashboard = () => {
     }
   };
 
-  const handleQuickAction = async (action) => {
-    // These would typically navigate to other pages or open modals
+  // Fixed Quick Action Handler with Navigation
+  const handleQuickAction = (action) => {
     console.log(`Quick action: ${action}`);
-    // You can implement navigation logic here
+    
     switch (action) {
       case 'request-books':
         // Navigate to book request page
+        navigate('/organization/request');
         break;
       case 'create-event':
         // Navigate to event creation page
+        navigate('/organization/events');
         break;
       case 'view-donors':
-        // Navigate to donors page
+        // Navigate to donors/donations page
+        navigate('/organization/received');
+        break;
+      case 'view-all-requests':
+        // Navigate to all book requests
+        navigate('/organization/request');
+        break;
+      case 'view-all-events':
+        // Navigate to all events
+        navigate('/organization/events');
         break;
       default:
+        console.warn(`Unknown action: ${action}`);
         break;
     }
   };
@@ -392,25 +406,25 @@ const Dashboard = () => {
         <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            className="flex items-center justify-center space-x-2 p-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="flex items-center justify-center space-x-2 p-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow-md"
             onClick={() => handleQuickAction('request-books')}
           >
             <BookOpen className="h-5 w-5" />
             <span>Request Books</span>
           </button>
           <button
-            className="flex items-center justify-center space-x-2 p-4 bg-secondary text-primary rounded-lg hover:bg-secondary/90 transition-colors"
+            className="flex items-center justify-center space-x-2 p-4 bg-secondary text-primary rounded-lg hover:bg-secondary/90 transition-colors shadow-sm hover:shadow-md"
             onClick={() => handleQuickAction('create-event')}
           >
             <Calendar className="h-5 w-5" />
             <span>Create Event</span>
           </button>
           <button
-            className="flex items-center justify-center space-x-2 p-4 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+            className="flex items-center justify-center space-x-2 p-4 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors shadow-sm hover:shadow-md"
             onClick={() => handleQuickAction('view-donors')}
           >
             <Users className="h-5 w-5" />
-            <span>View Donors</span>
+            <span>View Donations</span>
           </button>
         </div>
       </div>
