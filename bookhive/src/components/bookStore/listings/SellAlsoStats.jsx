@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Package, DollarSign, Handshake, ActivitySquare, PackageCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { useAuth } from '../../AuthContext';
+// import { useAuth } from '../../AuthContext';
 
 import LoadingSpinner from '../CommonStuff/LoadingSpinner';
 
@@ -16,7 +16,7 @@ const SellAlsoStats = () => {
       const response = await axios.get(`http://localhost:9090/api/bs-books/stats/sellAlso/${user.userId}`);
       return response.data;
     }
-    catch {
+    catch (err) {
       console.error("Axios Error: ", err);
     }
   }
@@ -60,7 +60,11 @@ const SellAlsoStats = () => {
 			<div className='bg-red-50 border-red-200 border-2 border-opacity-20 rounded-xl p-6 my-5'>
 				<LoadingSpinner />
 			</div>
-		) : (
+      ) : error ? (
+        <div className="text-center py-6 text-red-500">
+          Server unreachable. Please try again later.
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {salesStatEnhanced.map((stat, index) => {
           const IconComponent = stat.icon;
