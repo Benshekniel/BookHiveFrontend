@@ -23,6 +23,7 @@ export const sidebarMenuConfig = {
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
     // { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
     { label: 'Support', icon: Headset, path: '/moderator/support' },
+    { label: 'Messages', icon: MessageSquare, path: '/moderator/message' },
     // { label: 'Testing', icon: FlaskConical, path: '/moderator/test' },
     { label: 'Settings', icon: Settings, path: '/moderator/settings' },
 

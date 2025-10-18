@@ -971,6 +971,106 @@ export const moderatorApi = {
   }
 };
 
+// Regulation API Service - Trust Score Management
+export const regulationApi = {
+  // Get amount for a specific rule
+  getAmountForRule: async (rule, useCache = true) => {
+    const cacheKey = `regulation_amount_${rule}`;
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+    try {
+      const amount = await apiClient.get(`/regulation/amount/${rule}`);
+      setCache(cacheKey, amount);
+      return amount;
+    } catch (error) {
+      console.error(`Failed to fetch amount for rule ${rule}:`, error);
+      throw error;
+    }
+  },
+
+  // Update REVIEW rule amount
+  updateReview: async (amount) => {
+    try {
+      const response = await apiClient.put(`/regulation/update/review/${amount}`);
+      clearCache('regulation');
+      return response;
+    } catch (error) {
+      console.error(`Failed to update REVIEW amount:`, error);
+      throw error;
+    }
+  },
+
+  // Update PURCHASE rule amount
+  updatePurchase: async (amount) => {
+    try {
+      const response = await apiClient.put(`/regulation/update/purchase/${amount}`);
+      clearCache('regulation');
+      return response;
+    } catch (error) {
+      console.error(`Failed to update PURCHASE amount:`, error);
+      throw error;
+    }
+  },
+
+  // Update COMPJOIN rule amount
+  updateCompJoin: async (amount) => {
+    try {
+      const response = await apiClient.put(`/regulation/update/compjoin/${amount}`);
+      clearCache('regulation');
+      return response;
+    } catch (error) {
+      console.error(`Failed to update COMPJOIN amount:`, error);
+      throw error;
+    }
+  },
+
+  // Update NEGATIVE rule amount
+  updateNegative: async (amount) => {
+    try {
+      const response = await apiClient.put(`/regulation/update/negative/${amount}`);
+      clearCache('regulation');
+      return response;
+    } catch (error) {
+      console.error(`Failed to update NEGATIVE amount:`, error);
+      throw error;
+    }
+  },
+
+  // Update POSITIVE rule amount
+  updatePositive: async (amount) => {
+    try {
+      const response = await apiClient.put(`/regulation/update/positive/${amount}`);
+      clearCache('regulation');
+      return response;
+    } catch (error) {
+      console.error(`Failed to update POSITIVE amount:`, error);
+      throw error;
+    }
+  },
+
+  // Get all regulation amounts at once
+  getAllAmounts: async (useCache = true) => {
+    try {
+      const rules = ['REVIEW', 'PURCHASE', 'COMPJOIN', 'NEGATIVE', 'POSITIVE'];
+      const amounts = await Promise.all(
+        rules.map(rule => regulationApi.getAmountForRule(rule, useCache))
+      );
+
+      return {
+        REVIEW: amounts[0],
+        PURCHASE: amounts[1],
+        COMPJOIN: amounts[2],
+        NEGATIVE: amounts[3],
+        POSITIVE: amounts[4]
+      };
+    } catch (error) {
+      console.error('Failed to fetch all regulation amounts:', error);
+      throw error;
+    }
+  }
+};
+
 // Donation API - Separate export for convenience
 export const donationApi = {
   getPendingDonations: moderatorApi.getPendingDonations,
@@ -987,7 +1087,8 @@ export const moderatorService = {
   deliveries: deliveryApi,
   moderator: moderatorApi,
   donations: donationApi,
-  
+  regulations: regulationApi,
+
   // Utility functions
   clearAllCache: () => clearCache(),
   clearCacheByPattern: (pattern) => clearCache(pattern),
