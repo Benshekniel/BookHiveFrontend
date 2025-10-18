@@ -21,6 +21,7 @@ export const sidebarMenuConfig = {
     { label: 'Competitions', icon: Trophy, path: '/moderator/competitions' },
     { label: 'Users', icon: UsersRound, path: '/moderator/users' },
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
+    { label: 'Messages', icon: MessageSquare, path: '/moderator/messages' },
     // { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
     { label: 'Support', icon: Headset, path: '/moderator/support' },
     // { label: 'Testing', icon: FlaskConical, path: '/moderator/test' },
