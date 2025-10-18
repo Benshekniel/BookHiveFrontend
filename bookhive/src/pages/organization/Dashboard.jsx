@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock, AlertCircle, RefreshCw, Bell, X } from 'lucide-react';
 import { useAuth } from '../../components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,13 +8,14 @@ const API_BASE_URL = 'http://localhost:9090/api';
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const notificationRef = useRef(null);
 
   // Check if user is authenticated
   if (!user) {
     return <p>Please log in.</p>;
   }
 
-  const orgId = user.userId; // Use user.userId as orgId
+  const orgId = user.userId;
 
   const [stats, setStats] = useState([
     { icon: BookOpen, label: 'Pending Requests', value: '-', color: 'text-accent' },
@@ -28,6 +29,11 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Notification states
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Direct API call function
   const apiCall = async (endpoint, options = {}) => {
@@ -103,6 +109,53 @@ const Dashboard = () => {
     }
   };
 
+  // Get notifications
+  const getNotifications = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-dashboard/notifications/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      // Return mock notifications if API fails
+      return [];
+    }
+  };
+
+  // Generate notifications from recent data
+  const generateNotifications = (requests, events) => {
+    const notifs = [];
+    
+    // Add notifications for recent requests
+    requests.slice(0, 3).forEach((request) => {
+      notifs.push({
+        id: `request-${request.id}`,
+        type: 'request',
+        title: 'Book Request Update',
+        message: `Your request for "${request.title || 'books'}" is ${request.status || 'pending'}`,
+        timestamp: request.dateRequested || request.date,
+        read: false,
+        action: () => navigate('/organization/request'),
+      });
+    });
+
+    // Add notifications for upcoming events
+    events.slice(0, 2).forEach((event) => {
+      notifs.push({
+        id: `event-${event.id}`,
+        type: 'event',
+        title: 'Upcoming Event',
+        message: `${event.title || event.name} is scheduled for ${formatDate(event.date || event.eventDate)}`,
+        timestamp: event.date || event.eventDate,
+        read: false,
+        action: () => navigate('/organization/events'),
+      });
+    });
+
+    return notifs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  };
+
   const loadDashboardData = async () => {
     try {
       setError(null);
@@ -146,8 +199,26 @@ const Dashboard = () => {
         },
       ]);
 
-      setRecentRequests(Array.isArray(requestsData) ? requestsData : []);
-      setUpcomingEvents(Array.isArray(eventsData) ? eventsData : []);
+      const requests = Array.isArray(requestsData) ? requestsData : [];
+      const events = Array.isArray(eventsData) ? eventsData : [];
+
+      setRecentRequests(requests);
+      setUpcomingEvents(events);
+
+      // Load notifications
+      try {
+        const notifData = await getNotifications(orgId);
+        const generatedNotifs = Array.isArray(notifData) && notifData.length > 0 
+          ? notifData 
+          : generateNotifications(requests, events);
+        
+        setNotifications(generatedNotifs);
+        setUnreadCount(generatedNotifs.filter(n => !n.read).length);
+      } catch {
+        const generatedNotifs = generateNotifications(requests, events);
+        setNotifications(generatedNotifs);
+        setUnreadCount(generatedNotifs.filter(n => !n.read).length);
+      }
     } catch (err) {
       console.error('Dashboard data loading error:', err);
       setError('Failed to load dashboard data. Please try again.');
@@ -170,6 +241,18 @@ const Dashboard = () => {
     initializeDashboard();
   }, [orgId]);
 
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleRefresh = async () => {
     if (!orgId) {
       setError('Organization ID is required');
@@ -179,6 +262,43 @@ const Dashboard = () => {
     setRefreshing(true);
     await loadDashboardData();
     setRefreshing(false);
+  };
+
+  // Toggle notification panel
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  // Mark notification as read
+  const markAsRead = (notificationId) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  // Mark all as read
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+    setUnreadCount(0);
+  };
+
+  // Handle notification click
+  const handleNotificationClick = (notification) => {
+    markAsRead(notification.id);
+    if (notification.action) {
+      notification.action();
+    }
+    setShowNotifications(false);
+  };
+
+  // Clear all notifications
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    setUnreadCount(0);
+    setShowNotifications(false);
   };
 
   const getStatusColor = (status) => {
@@ -222,29 +342,38 @@ const Dashboard = () => {
     }
   };
 
-  // Fixed Quick Action Handler with Navigation
+  const getTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Recently';
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return formatDate(timestamp);
+  };
+
   const handleQuickAction = (action) => {
     console.log(`Quick action: ${action}`);
     
     switch (action) {
       case 'request-books':
-        // Navigate to book request page
         navigate('/organization/request');
         break;
       case 'create-event':
-        // Navigate to event creation page
         navigate('/organization/events');
         break;
       case 'view-donors':
-        // Navigate to donors/donations page
         navigate('/organization/received');
         break;
       case 'view-all-requests':
-        // Navigate to all book requests
         navigate('/organization/request');
         break;
       case 'view-all-events':
-        // Navigate to all events
         navigate('/organization/events');
         break;
       default:
@@ -270,14 +399,122 @@ const Dashboard = () => {
           <h1 className="text-3xl font-heading font-bold text-textPrimary">Dashboard</h1>
           <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your organization.</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
+        
+        <div className="flex items-center space-x-3">
+          {/* Notification Bell */}
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={toggleNotifications}
+              className="relative p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              aria-label="Notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[500px] overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                  <h3 className="font-semibold text-textPrimary">Notifications</h3>
+                  <div className="flex items-center space-x-2">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-primary hover:text-primary/80 font-medium"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowNotifications(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Notification List */}
+                <div className="overflow-y-auto flex-1">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">No notifications yet</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                            !notification.read ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className={`p-2 rounded-lg ${
+                              notification.type === 'request' ? 'bg-accent/10' : 'bg-secondary/10'
+                            }`}>
+                              {notification.type === 'request' ? (
+                                <BookOpen className="h-4 w-4 text-accent" />
+                              ) : (
+                                <Calendar className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <p className="font-medium text-sm text-textPrimary">
+                                  {notification.title}
+                                </p>
+                                {!notification.read && (
+                                  <span className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {getTimeAgo(notification.timestamp)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                {notifications.length > 0 && (
+                  <div className="p-3 border-t border-gray-200 bg-gray-50">
+                    <button
+                      onClick={clearAllNotifications}
+                      className="w-full text-center text-sm text-red-600 hover:text-red-700 font-medium"
+                    >
+                      Clear all notifications
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Error Message */}
