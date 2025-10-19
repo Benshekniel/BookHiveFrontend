@@ -93,14 +93,10 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
       };
     } else if (path.startsWith('/bookstore')) {
       return {
-        // name:  'Rohan',
-        // email: '',
-        // role: '',
-        // image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
         name: user.name || 'Rohan',
         email: user.email,
         role: user.role,
-        image: user.profileImage || 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
+        image: user.profileImage || 'https://www.southernliving.com/thmb/DiILPN4-PmulZZ1zFbP7xANxbr8=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/15-WilliamChrisantandSonsOldFloridaBookShop-photobyWilliamChrisant-7077d9a8033a4ac692689380e2dad7bc.jpg',
       };
     } else if (path.startsWith('/manager')) {
       return {
