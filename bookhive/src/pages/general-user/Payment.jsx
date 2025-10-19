@@ -128,7 +128,7 @@ const PaymentPage = () => {
       
       // URL encode the email to handle special characters
       const encodedEmail = encodeURIComponent(user.email);
-      const url = `http://localhost:9090/api/getLoginedUser?email=${encodedEmail}`;
+      const url = `http://localhost:9090/api/getLoginUser?email=${encodedEmail}`;
       console.log('Fetching from URL:', url);
       
       const response = await fetch(url);
@@ -185,7 +185,7 @@ const PaymentPage = () => {
   // Calculate estimated delivery
   useEffect(() => {
     const deliveryDate = new Date();
-    deliveryDate.setDate(deliveryDate.getDate() + (paymentMethod === PAYMENT_METHODS.CASH_ON_DELIVERY ? 2 : 1));
+    deliveryDate.setDate(deliveryDate.getDate() + (paymentMethod === PAYMENT_METHODS.CASH_ON_DELIVERY ? 2 : 2));
     setEstimatedDelivery(deliveryDate);
   }, [paymentMethod]);
 
@@ -327,7 +327,7 @@ const PaymentPage = () => {
   const calculateTotal = () => {
     const bookPrice = book?.price || 0;
     const deliveryFee = paymentMethod === PAYMENT_METHODS.CASH_ON_DELIVERY ? 200 : 0;
-    const processingFee = paymentMethod !== PAYMENT_METHODS.CASH_ON_DELIVERY ? 50 : 0;
+    const processingFee = paymentMethod !== PAYMENT_METHODS.CASH_ON_DELIVERY ? 200 : 0;
     return bookPrice + deliveryFee + processingFee;
   };
 
@@ -814,7 +814,7 @@ const PaymentPage = () => {
                   {estimatedDelivery?.toDateString()}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {paymentMethod === PAYMENT_METHODS.CASH_ON_DELIVERY ? '2-3 business days' : '1-2 business days'}
+                  {paymentMethod === PAYMENT_METHODS.CASH_ON_DELIVERY ? '2-3 business days' : '2-3 business days'}
                 </p>
               </div>
 
@@ -833,7 +833,7 @@ const PaymentPage = () => {
                 {paymentMethod !== PAYMENT_METHODS.CASH_ON_DELIVERY && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Delivery Fee</span>
-                    <span className="text-gray-900">Rs. 50</span>
+                    <span className="text-gray-900">Rs. 200</span>
                   </div>
                 )}
                 <div className="border-t border-gray-200 pt-2">
