@@ -288,7 +288,7 @@ const SignupPage = () => {
     { value: 'user', label: 'User (Buyer, Borrower, Lender, Seller)' },
     { value: 'bookstore', label: 'Book Store' },
     { value: 'organization', label: 'Organization' },
-    { value: 'delivery-agent', label: 'Delivery Agent' },
+    // { value: 'delivery-agent', label: 'Delivery Agent' },
   ];
 
   return (
