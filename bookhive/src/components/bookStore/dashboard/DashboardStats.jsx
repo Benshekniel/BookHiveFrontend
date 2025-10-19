@@ -1,18 +1,18 @@
 import axios from 'axios';
-import { Package, DollarSign, Handshake, ActivitySquare, PackageCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { DollarSign, Package,Book,Handshake} from 'lucide-react';
 
-import { useAuth } from '../../AuthContext';
 import LoadingSpinner from '../CommonStuff/LoadingSpinner';
 
-const SellAlsoStats = () => {
-  const { user } = useAuth();
+const DashboardStats = () => {
+  // const { user } = useAuth();
+  const user = { userId: 603 };
 
-  const fetchSellAlsoStats = async () => {
+  const fetchDashboardStats = async () => {
     if (!user?.userId) return [];
     try {
-      const response = await axios.get(`http://localhost:9090/api/bs-books/stats/sellAlso/${user.userId}`);
+      const response = await axios.get(`http://localhost:9090/api/bookstore/stats/${user.userId}`);
       return response.data;
     }
     catch (err) {
@@ -20,42 +20,39 @@ const SellAlsoStats = () => {
     }
   }
 
-  const { data: sellAlsoStats, isPending, error } = useQuery({
-    queryKey: ["sellAlsoStats", user?.userId],
-    queryFn: fetchSellAlsoStats,
+  const { data: dashboardStats, isPending, error } = useQuery({
+    queryKey: ["dashboardStats", user?.userId],
+    queryFn: fetchDashboardStats,
     staleTime: 10 * 60 * 1000,
     enabled: !!user?.userId,
   });
 
-  const salesStatEnhanced = useMemo(() => {
-    if (!sellAlsoStats) return []; // return empty until data is ready
+  const dashboardStatEnhanced = useMemo(() => {
+    if (!dashboardStats) return []; // return empty until data is ready
+
     return [
       {
-        label: 'TOTAL SALE BOOKS', value: sellAlsoStats.totalBooks, icon: Package,
+        label: 'TOTAL INVENTORY ITEMS', value: dashboardStats.totalInventoryItems, icon: Package,
         bgColor: 'bg-blue-50', border: 'border-blue-200', textColor: 'text-blue-600'
       },
       {
-        label: 'ACTIVE LISTINGS', value: sellAlsoStats.activeListings, icon: ActivitySquare,
+        label: 'TOTAL INDIVIDUAL BOOKS', value: dashboardStats.totalBooksItems, icon: Book,
         bgColor: 'bg-green-50', border: 'border-green-200', textColor: 'text-green-600'
       },
       {
-        label: 'IN INVENTORY', value: sellAlsoStats.inInventory, icon: PackageCheck,
-        bgColor: 'bg-amber-50', border: 'border-amber-200', textColor: 'text-amber-600'
+        label: 'TOTAL TRANSACTIONS COUNT', value: dashboardStats.totalTransactions, icon: Handshake,
+        bgColor: 'bg-pink-50', border: 'border-pink-200', textColor: 'text-pink-600'
       },
       {
-        label: 'BOOKS SOLD', value: sellAlsoStats.soldCount, icon: Handshake,
-        bgColor: 'bg-purple-50', border: 'border-purple-200', textColor: 'text-purple-600'
-      },
-      {
-        label: 'AVERAGE SELLING PRICE', value: `Rs.${(sellAlsoStats.avgSellPrice).toFixed(2)}`, icon: DollarSign,
+        label: 'TOTAL TRANSACTIONS\' VALUE', value: dashboardStats.totalTransactionsValue, icon: DollarSign,
         bgColor: 'bg-purple-50', border: 'border-purple-200', textColor: 'text-purple-600'
       }
     ];
-  }, [sellAlsoStats]);
+  }, [dashboardStats]);
 
   return (
     <>
-		{ isPending ? (
+    { isPending ? (
 			<div className='bg-red-50 border-red-200 border-2 border-opacity-20 rounded-xl p-6 my-5'>
 				<LoadingSpinner />
 			</div>
@@ -64,8 +61,8 @@ const SellAlsoStats = () => {
           Server unreachable. Please try again later.
         </div>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        {salesStatEnhanced.map((stat, index) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {dashboardStatEnhanced.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
             <div key={index}
@@ -73,7 +70,7 @@ const SellAlsoStats = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600 mb-1">{stat.label}</p>
-                  <p className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</p>
+                  <p className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</p>
                 </div>
                 <div className={`p-3 rounded-lg group-hover:scale-110 transition-transform duration-200 ${stat.bgColor.replace('50', '100')}`}>
                   <IconComponent className={`w-6 h-6 ${stat.textColor}`} />
@@ -83,7 +80,7 @@ const SellAlsoStats = () => {
           );
         })}
       </div>
-    )}
-    </>);
-};
-export default SellAlsoStats;
+		)}
+    </>)
+}
+export default DashboardStats;
