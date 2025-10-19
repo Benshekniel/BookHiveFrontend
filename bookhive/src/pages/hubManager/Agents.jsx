@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, MoreVertical, CheckCircle, XCircle, Edit, Trash2, Eye, MessageSquare } from 'lucide-react';
-import { agentApi } from '../../services/HubmanagerService';
+import { agentApi } from '../../services/deliveryService';
 
 const Agents = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -98,7 +100,8 @@ const Agents = () => {
             rating: getRating(),
             deliveries: getDeliveries(),
             trustScore: agent.trustScore || 0,
-            hubName: agent.hubName || 'Unknown Hub'
+            hubName: agent.hubName || 'Unknown Hub',
+            userId: agent.userId || agent.user_id || agent.id // Add userId for messaging
           };
 
           console.log('Transformed agent:', transformedAgent); // Debug log
@@ -135,6 +138,24 @@ const Agents = () => {
       console.error('Error updating agent status:', err);
       alert('Failed to update agent status');
     }
+  };
+
+  // Handle message agent - navigate to hubmanager messages with agent selected
+  const handleMessageAgent = (agent) => {
+    console.log('Opening chat with agent:', agent);
+    
+    // Navigate to hubmanager messages page with agent info as state
+    navigate('/hubmanager/messages', {
+      state: {
+        selectedAgent: {
+          id: agent.userId || agent.id,
+          name: agent.name,
+          role: 'agent',
+          email: agent.email,
+          phone: agent.phone
+        }
+      }
+    });
   };
 
   // Fixed filtering logic with proper null checks
@@ -291,8 +312,8 @@ const Agents = () => {
                   <div className="flex items-center gap-2">
                     <button
                       className="p-1.5 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                      title="Message"
-                      onClick={() => console.log('Message agent:', rider.id)}
+                      title="Message Agent"
+                      onClick={() => handleMessageAgent(rider)}
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
                     </button>

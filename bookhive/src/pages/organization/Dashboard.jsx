@@ -1,44 +1,305 @@
-import React from 'react';
-import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { useAuth } from '../../components/AuthContext';
+
+const API_BASE_URL = 'http://localhost:9090/api';
 
 const Dashboard = () => {
-  const stats = [
-    { icon: BookOpen, label: 'Pending Requests', value: '12', color: 'text-accent' },
-    { icon: Gift, label: 'Books Received', value: '48', color: 'text-success' },
-    { icon: Calendar, label: 'Upcoming Events', value: '3', color: 'text-secondary' },
-    { icon: TrendingUp, label: 'Total Donations', value: '156', color: 'text-primary' }
-  ];
+  const { user } = useAuth();
 
-  const recentRequests = [
-    { id: 1, title: 'Mathematics Grade 10', status: 'Approved', quantity: 25, date: '2024-01-15' },
-    { id: 2, title: 'English Literature', status: 'Pending', quantity: 15, date: '2024-01-14' },
-    { id: 3, title: 'Science Textbooks', status: 'In Delivery', quantity: 30, date: '2024-01-12' }
-  ];
+  // Check if user is authenticated
+  if (!user) {
+    return <p>Please log in.</p>;
+  }
 
-  const upcomingEvents = [
-    { id: 1, title: 'Book Drive Campaign', date: '2024-01-20', location: 'Community Center' },
-    { id: 2, title: 'Reading Competition', date: '2024-01-25', location: 'Local Library' },
-    { id: 3, title: 'Literacy Workshop', date: '2024-02-01', location: 'School Auditorium' }
-  ];
+  const orgId = user.userId; // Use user.userId as orgId
+
+  const [stats, setStats] = useState([
+    { icon: BookOpen, label: 'Pending Requests', value: '-', color: 'text-accent' },
+    { icon: Gift, label: 'Books Received', value: '-', color: 'text-success' },
+    { icon: Calendar, label: 'Upcoming Events', value: '-', color: 'text-secondary' },
+    { icon: TrendingUp, label: 'Total Donations', value: '-', color: 'text-primary' },
+  ]);
+
+  const [recentRequests, setRecentRequests] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Direct API call function
+  const apiCall = async (endpoint, options = {}) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      console.log(`API Request: ${config.method || 'GET'} ${url}`);
+
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log(`API Response: ${endpoint} - Success`);
+        return data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // Get dashboard stats
+  const getDashboardStats = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-dashboard/stats/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
+      throw error;
+    }
+  };
+
+  // Get recent requests
+  const getRecentRequests = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-dashboard/recent-requests/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch recent requests:', error);
+      throw error;
+    }
+  };
+
+  // Get upcoming events
+  const getUpcomingEvents = async (orgId) => {
+    try {
+      const data = await apiCall(`/organization-dashboard/upcoming-events/${orgId}`, {
+        method: 'GET',
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch upcoming events:', error);
+      throw error;
+    }
+  };
+
+  const loadDashboardData = async () => {
+    try {
+      setError(null);
+
+      // Make all API calls in parallel
+      const [statsData, requestsData, eventsData] = await Promise.all([
+        getDashboardStats(orgId),
+        getRecentRequests(orgId),
+        getUpcomingEvents(orgId),
+      ]);
+
+      // Update stats with real data
+      setStats([
+        {
+          icon: BookOpen,
+          label: 'Pending Requests',
+          value: statsData.pendingRequests ?? 0,
+          color: 'text-accent',
+          change: statsData.pendingRequestsChange ?? null,
+        },
+        {
+          icon: Gift,
+          label: 'Books Received',
+          value: statsData.booksReceived ?? 0,
+          color: 'text-success',
+          change: statsData.booksReceivedChange ?? null,
+        },
+        {
+          icon: Calendar,
+          label: 'Upcoming Events',
+          value: statsData.upcomingEvents ?? 0,
+          color: 'text-secondary',
+          change: statsData.upcomingEventsChange ?? null,
+        },
+        {
+          icon: TrendingUp,
+          label: 'Total Donations',
+          value: statsData.totalDonations ?? 0,
+          color: 'text-primary',
+          change: statsData.totalDonationsChange ?? null,
+        },
+      ]);
+
+      setRecentRequests(Array.isArray(requestsData) ? requestsData : []);
+      setUpcomingEvents(Array.isArray(eventsData) ? eventsData : []);
+    } catch (err) {
+      console.error('Dashboard data loading error:', err);
+      setError('Failed to load dashboard data. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      if (!orgId) {
+        setError('Organization ID is required');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      await loadDashboardData();
+      setLoading(false);
+    };
+
+    initializeDashboard();
+  }, [orgId]);
+
+  const handleRefresh = async () => {
+    if (!orgId) {
+      setError('Organization ID is required');
+      return;
+    }
+
+    setRefreshing(true);
+    await loadDashboardData();
+    setRefreshing(false);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return 'bg-success/10 text-success';
+      case 'pending':
+        return 'bg-secondary/10 text-primary';
+      case 'delivered':
+        return 'bg-accent/10 text-accent';
+      case 'rejected':
+        return 'bg-error/10 text-error';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No date';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    try {
+      return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch {
+      return timeString;
+    }
+  };
+
+  const handleQuickAction = async (action) => {
+    // These would typically navigate to other pages or open modals
+    console.log(`Quick action: ${action}`);
+    // You can implement navigation logic here
+    switch (action) {
+      case 'request-books':
+        // Navigate to book request page
+        break;
+      case 'create-event':
+        // Navigate to event creation page
+        break;
+      case 'view-donors':
+        // Navigate to donors page
+        break;
+      default:
+        break;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-gray-600">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-heading font-bold text-textPrimary">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your organization.</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-textPrimary">Dashboard</h1>
+          <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your organization.</p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+          <div>
+            <p className="text-red-800">{error}</p>
+            <button
+              onClick={handleRefresh}
+              className="text-red-600 hover:text-red-700 text-sm font-medium mt-1"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
           <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center">
-              <div className={`p-3 rounded-lg bg-gray-100 ${stat.color}`}>
-                <stat.icon className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-heading font-bold text-textPrimary">{stat.value}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className={`p-3 rounded-lg bg-gray-100 ${stat.color}`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                  <p className="text-2xl font-heading font-bold text-textPrimary">{stat.value}</p>
+                  {stat.change !== null && (
+                    <p className={`text-xs ${stat.change >= 0 ? 'text-success' : 'text-error'}`}>
+                      {stat.change >= 0 ? '+' : ''}{stat.change}% from last month
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -50,25 +311,36 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-heading font-semibold text-textPrimary">Recent Book Requests</h2>
-            <button className="text-accent hover:text-accent/80 text-sm font-medium">View All</button>
+            <button
+              className="text-accent hover:text-accent/80 text-sm font-medium"
+              onClick={() => handleQuickAction('view-all-requests')}
+            >
+              View All
+            </button>
           </div>
           <div className="space-y-4">
-            {recentRequests.map((request) => (
-              <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <h3 className="font-medium text-textPrimary">{request.title}</h3>
-                  <p className="text-sm text-gray-600">Quantity: {request.quantity} books</p>
-                  <p className="text-xs text-gray-500">{request.date}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  request.status === 'Approved' ? 'bg-success/10 text-success' :
-                  request.status === 'Pending' ? 'bg-secondary/10 text-primary' :
-                  'bg-accent/10 text-accent'
-                }`}>
-                  {request.status}
-                </span>
+            {recentRequests.length === 0 ? (
+              <div className="text-center py-8">
+                <BookOpen className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                <p className="text-gray-500 text-sm">No recent requests.</p>
               </div>
-            ))}
+            ) : (
+              recentRequests.slice(0, 5).map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-textPrimary">{request.title || 'Untitled Request'}</h3>
+                    <p className="text-sm text-gray-600">
+                      Quantity: {request.quantity || 0} books
+                      {request.subject && ` • ${request.subject}`}
+                    </p>
+                    <p className="text-xs text-gray-500">{formatDate(request.dateRequested || request.date)}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                    {request.status || 'Unknown'}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -76,24 +348,41 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-heading font-semibold text-textPrimary">Upcoming Events</h2>
-            <button className="text-accent hover:text-accent/80 text-sm font-medium">View All</button>
+            <button
+              className="text-accent hover:text-accent/80 text-sm font-medium"
+              onClick={() => handleQuickAction('view-all-events')}
+            >
+              View All
+            </button>
           </div>
           <div className="space-y-4">
-            {upcomingEvents.map((event) => (
-              <div key={event.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                <div className="p-2 bg-secondary/10 rounded-lg">
-                  <Calendar className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-textPrimary">{event.title}</h3>
-                  <p className="text-sm text-gray-600 flex items-center mt-1">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {event.date}
-                  </p>
-                  <p className="text-xs text-gray-500">{event.location}</p>
-                </div>
+            {upcomingEvents.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                <p className="text-gray-500 text-sm">No upcoming events.</p>
               </div>
-            ))}
+            ) : (
+              upcomingEvents.slice(0, 5).map((event) => (
+                <div key={event.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="p-2 bg-secondary/10 rounded-lg flex-shrink-0">
+                    <Calendar className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-textPrimary truncate">{event.title || event.name || 'Untitled Event'}</h3>
+                    <p className="text-sm text-gray-600 flex items-center mt-1">
+                      <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                      <span className="truncate">
+                        {formatDate(event.date || event.eventDate)}
+                        {event.time && ` at ${formatTime(event.time)}`}
+                      </span>
+                    </p>
+                    {event.location && (
+                      <p className="text-xs text-gray-500 truncate">{event.location}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -102,17 +391,26 @@ const Dashboard = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-heading font-semibold text-textPrimary mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center justify-center space-x-2 p-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+          <button
+            className="flex items-center justify-center space-x-2 p-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            onClick={() => handleQuickAction('request-books')}
+          >
             <BookOpen className="h-5 w-5" />
             <span>Request Books</span>
           </button>
-          <button className="flex items-center justify-center space-x-2 p-4 bg-secondary text-primary rounded-lg hover:bg-secondary/90 transition-colors">
+          <button
+            className="flex items-center justify-center space-x-2 p-4 bg-secondary text-primary rounded-lg hover:bg-secondary/90 transition-colors"
+            onClick={() => handleQuickAction('create-event')}
+          >
             <Calendar className="h-5 w-5" />
-            <span>Join Event</span>
+            <span>Create Event</span>
           </button>
-          <button className="flex items-center justify-center space-x-2 p-4 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
+          <button
+            className="flex items-center justify-center space-x-2 p-4 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+            onClick={() => handleQuickAction('view-donors')}
+          >
             <Users className="h-5 w-5" />
-            <span>Contact Donors</span>
+            <span>View Donors</span>
           </button>
         </div>
       </div>

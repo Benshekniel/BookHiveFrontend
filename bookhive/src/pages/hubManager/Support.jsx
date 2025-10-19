@@ -14,7 +14,7 @@ import {
   Send,
   RefreshCw
 } from 'lucide-react';
-import { deliveryApi, agentApi } from '../../services/HubmanagerService';
+import { deliveryApi, agentApi } from '../../services/deliveryService';
 
 const Support = () => {
   const [searchTerm, setSearchTerm] = useState('');

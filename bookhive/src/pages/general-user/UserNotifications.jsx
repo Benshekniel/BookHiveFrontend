@@ -6,9 +6,9 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([
     {
       id: 1,
-      type: 'donation',
-      title: 'New Book Donation Available',
-      message: 'Sarah Johnson has offered to donate 25 Mathematics Grade 10 textbooks matching your request.',
+      type: 'request',
+      title: '',
+      message: 'Sarah Johnson has requested to exchange.',
       timestamp: '2 hours ago',
       read: false,
       actionUrl: '/donations'
@@ -25,8 +25,8 @@ const Notifications = () => {
     {
       id: 3,
       type: 'event',
-      title: 'Upcoming Event Reminder',
-      message: 'Book Drive Campaign is starting tomorrow at 10:00 AM. Don\'t forget to participate!',
+      title: 'Upcoming competition Reminder',
+      message: 'writing Campaign is starting tomorrow at 10:00 AM. Don\'t forget to participate!',
       timestamp: '1 day ago',
       read: true,
       actionUrl: '/events'
@@ -34,8 +34,8 @@ const Notifications = () => {
     {
       id: 4,
       type: 'message',
-      title: 'New Message from Donor',
-      message: 'Dr. Michael Chen sent you a message about the Science textbooks donation.',
+      title: 'New Message from Buyer',
+      message: 'Dr. Michael Chen sent you a message about the Science textbooks.',
       timestamp: '2 days ago',
       read: true,
       actionUrl: '/messages'
@@ -44,7 +44,7 @@ const Notifications = () => {
       id: 5,
       type: 'delivery',
       title: 'Books Delivered Successfully',
-      message: 'Your donation of 15 History textbooks has been delivered to Green Valley School.',
+      message: 'Your History books has been delivered.',
       timestamp: '3 days ago',
       read: true,
       actionUrl: '/donations'
@@ -107,7 +107,7 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="max-w-8xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold text-textPrimary">Notifications</h1>

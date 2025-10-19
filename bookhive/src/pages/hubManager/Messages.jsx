@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { MessageCircle, Send, Search, RefreshCw, Radio } from 'lucide-react';
-import { agentApi, messageApi } from '../../services/HubmanagerService';
+// components/Messages/Messages.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { MessageCircle, Send, Search, RefreshCw, Radio, Wifi, WifiOff } from 'lucide-react';
+import { useAuth } from '../../components/AuthContext';
+import messageService from '../../services/messageService';
+import socketService from '../../services/socketService';
 
 const Messages = () => {
+  const { user } = useAuth();
+  const location = useLocation();
   const [selectedChat, setSelectedChat] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,281 +16,639 @@ const Messages = () => {
   const [messages, setMessages] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [hubId] = useState(1);
-  const [hubManagerId] = useState(1);
+  const [availableContacts, setAvailableContacts] = useState([]);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [sendingMessage, setSendingMessage] = useState(false);
 
-  // Fetch conversations and messages
+  // Refs
+  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const processedMessageIds = useRef(new Set());
+
+  // Handle navigation from agents page
   useEffect(() => {
-    fetchConversations();
-  }, [hubId]);
-
-  const fetchConversations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching conversations from backend...');
-
-      // Fetch agents from backend
-      let agentsResponse;
-      try {
-        console.log('Trying to get agents by hub:', hubId);
-        agentsResponse = await agentApi.getAgentsByHub(hubId);
-      } catch (hubError) {
-        console.warn('Hub agents failed, trying all agents:', hubError);
-        agentsResponse = await agentApi.getAllAgents();
-      }
-
-      console.log('Raw agents response:', agentsResponse);
-
-      // Handle different response formats
-      let agentsArray = [];
-      if (Array.isArray(agentsResponse)) {
-        agentsArray = agentsResponse;
-      } else if (agentsResponse && typeof agentsResponse === 'object') {
-        agentsArray = agentsResponse.data || agentsResponse.content || agentsResponse.agents || agentsResponse.result || [];
-      }
-
-      console.log('Processed agents array:', agentsArray);
-
-      if (agentsArray.length === 0) {
-        setError('No agents found for this hub.');
-        setConversations([]);
-        setMessages({});
-        return;
-      }
-
-      // Convert agents to conversations
-      const agentConversations = agentsArray.map((agent, index) => {
-        const getName = () => {
-          if (agent.name) return agent.name;
-          if (agent.userName) return agent.userName;
-          if (agent.firstName && agent.lastName) return `${agent.firstName} ${agent.lastName}`;
-          if (agent.firstName) return agent.firstName;
-          if (agent.lastName) return agent.lastName;
-          return `Agent ${agent.agentId || agent.id || index + 1}`;
-        };
-
-        const getAgentId = () => {
-          return agent.agentId || agent.id || (index + 1);
-        };
-
-        const name = getName();
-        const agentId = getAgentId();
-
-        return {
-          id: agentId,
-          name: name,
-          role: 'Agent',
-          avatar: name.split(' ').map(n => n && n[0] ? n[0] : '').join('').toUpperCase() || 'A',
-          lastMessage: 'No messages yet',
-          timestamp: 'Never',
-          unread: 0,
-          status: agent.availabilityStatus === 'AVAILABLE' ? 'online' : 'offline',
-          agentData: agent
-        };
-      });
-
-      console.log('Created agent conversations:', agentConversations);
-      setConversations(agentConversations);
-
-      // Initialize empty messages for all conversations
-      const initialMessages = {};
-      agentConversations.forEach(conv => {
-        initialMessages[conv.id] = [];
-      });
-      setMessages(initialMessages);
-
-      // Load real messages for each agent
-      await loadRealMessages(agentConversations);
-
-    } catch (err) {
-      console.error('Error fetching conversations:', err);
-      setError(`Failed to load conversations: ${err.message}`);
-      setConversations([]);
-      setMessages({});
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadRealMessages = async (conversations) => {
-    console.log('Loading real messages from backend...');
-    const allMessages = {};
-
-    for (const conv of conversations) {
-      try {
-        console.log(`Loading messages for agent ${conv.id}`);
+    if (location.state?.selectedAgent) {
+      const { selectedAgent } = location.state;
+      console.log('Agent selected from navigation:', selectedAgent);
+      
+      // Set the selected chat to the agent
+      setSelectedChat(selectedAgent.id);
+      
+      // Create or update conversation for this agent
+      setConversations(prev => {
+        const existingIndex = prev.findIndex(conv => conv.id === selectedAgent.id);
         
-        // Get conversation messages from backend
-        const conversationMessages = await messageApi.getConversation(hubManagerId, conv.id);
-        console.log(`Messages for agent ${conv.id}:`, conversationMessages);
-
-        if (conversationMessages && conversationMessages.length > 0) {
-          // Convert backend messages to UI format
-          allMessages[conv.id] = conversationMessages.map(msg => ({
-            id: msg.messageId || msg.id || Math.random().toString(36).substr(2, 9),
-            sender: msg.senderId === hubManagerId ? 'You' : (msg.senderName || conv.name),
-            message: msg.content || msg.message || '',
-            timestamp: formatTimestamp(msg.createdAt || msg.timestamp),
-            isOwn: msg.senderId === hubManagerId,
-            isRead: msg.isRead || false
-          }));
-
-          // Update conversation with last message info
-          const lastMessage = conversationMessages[conversationMessages.length - 1];
-          const convIndex = conversations.findIndex(c => c.id === conv.id);
-          if (convIndex !== -1) {
-            conversations[convIndex].lastMessage = lastMessage.content || lastMessage.message || 'New message';
-            conversations[convIndex].timestamp = formatTimestamp(lastMessage.createdAt || lastMessage.timestamp);
-
-            // Count unread messages
-            const unreadCount = conversationMessages.filter(msg =>
-              msg.receiverId === hubManagerId && !msg.isRead
-            ).length;
-            conversations[convIndex].unread = unreadCount;
-          }
+        if (existingIndex !== -1) {
+          // Agent already exists in conversations
+          return prev;
         } else {
-          // No messages yet
-          allMessages[conv.id] = [];
+          // Add new agent to conversations
+          const newConversation = {
+            id: selectedAgent.id,
+            name: selectedAgent.name,
+            role: selectedAgent.role || 'agent',
+            avatar: selectedAgent.name.charAt(0).toUpperCase(),
+            lastMessage: 'No messages yet',
+            timestamp: 'Never',
+            unread: 0,
+            status: 'offline',
+            lastMessageTime: null
+          };
+          
+          return [newConversation, ...prev];
         }
-      } catch (error) {
-        console.error(`Error loading messages for agent ${conv.id}:`, error);
-        // Initialize empty conversation
-        allMessages[conv.id] = [];
-      }
-    }
+      });
 
-    console.log('All real messages loaded:', allMessages);
-    setMessages(allMessages);
-    setConversations([...conversations]); // Trigger re-render with updated conversation data
+      // Initialize empty messages array if not exists
+      setMessages(prev => ({
+        ...prev,
+        [selectedAgent.id]: prev[selectedAgent.id] || []
+      }));
+
+      // Clear the navigation state to prevent re-execution
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  // Auto scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesEndRef.current && chatContainerRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   };
 
+  // Scroll to bottom when messages change for selected chat
+  useEffect(() => {
+    if (selectedChat && messages[selectedChat]) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages, selectedChat]);
+
+  // FIXED: Enhanced socket message handler with duplicate prevention
+  const handleSocketMessage = useCallback((data) => {
+    console.log('=== WEB SOCKET MESSAGE RECEIVED ===');
+    console.log('Full socket data:', JSON.stringify(data, null, 2));
+    console.log('Current user ID:', user.userId);
+    console.log('Selected chat:', selectedChat);
+
+    try {
+      const { type, message, senderId, receiverId } = data;
+
+      if (type === 'new_message') {
+        console.log('Processing new_message...');
+        console.log('Message senderId:', senderId, 'receiverId:', receiverId);
+
+        // Only process messages sent TO this user, not FROM this user
+        if (senderId === user.userId) {
+          console.log('⏭️ Ignoring message sent by current user to prevent duplicates');
+          return;
+        }
+
+        // Ensure we have the required data
+        if (!senderId || !receiverId || !message) {
+          console.error('❌ Missing required message data:', { senderId, receiverId, message });
+          return;
+        }
+
+        // Create unique message ID for duplicate detection
+        const messageId = message.id || message.messageId || `received_${Date.now()}_${Math.random()}`;
+        const messageKey = `${senderId}_${receiverId}_${message.content}_${message.createdAt}`;
+
+        // Check for duplicates
+        if (processedMessageIds.current.has(messageKey)) {
+          console.log('⏭️ Message already processed, skipping duplicate');
+          return;
+        }
+
+        // Add to processed messages
+        processedMessageIds.current.add(messageKey);
+
+        // Clean up old processed message IDs (keep last 100)
+        if (processedMessageIds.current.size > 100) {
+          const idsArray = Array.from(processedMessageIds.current);
+          processedMessageIds.current = new Set(idsArray.slice(-50));
+        }
+
+        console.log('📨 Processing new message from mobile...');
+        console.log('Message content:', message.content);
+
+        // For received messages, the chatPartnerId is the sender
+        const chatPartnerId = senderId;
+        console.log('Storing message under chatPartnerId:', chatPartnerId);
+
+        // Create message object
+        const newMessageObj = {
+          id: messageId,
+          sender: message.senderName || `User ${senderId}`,
+          message: message.content || '',
+          timestamp: formatTimestamp(message.createdAt || message.timestamp || new Date()),
+          isOwn: false,
+          isRead: false,
+          rawTimestamp: message.createdAt || message.timestamp || new Date()
+        };
+
+        console.log('📋 New message object:', newMessageObj);
+
+        // Update messages state
+        setMessages(prev => {
+          console.log('Previous messages for partner', chatPartnerId, ':', prev[chatPartnerId]?.length || 0);
+          const updated = { ...prev };
+
+          if (!updated[chatPartnerId]) {
+            updated[chatPartnerId] = [];
+            console.log('Created new message array for partner:', chatPartnerId);
+          }
+
+          // Double-check for duplicates in current messages
+          const existingMessage = updated[chatPartnerId].find(msg => 
+            msg.id === newMessageObj.id || 
+            (msg.message === newMessageObj.message && 
+             Math.abs(new Date(msg.rawTimestamp) - new Date(newMessageObj.rawTimestamp)) < 5000)
+          );
+
+          if (!existingMessage) {
+            updated[chatPartnerId] = [...updated[chatPartnerId], newMessageObj];
+            console.log('✅ Message added successfully. New array length:', updated[chatPartnerId].length);
+          } else {
+            console.log('⏭️ Message already exists in state, skipping');
+            return prev; // Return unchanged state
+          }
+
+          return updated;
+        });
+
+        // Update conversation list
+        setConversations(prev => {
+          console.log('📝 Updating conversations...');
+          const updated = [...prev];
+
+          // Find existing conversation
+          const existingIndex = updated.findIndex(conv => conv.id === chatPartnerId);
+
+          const messageContent = message.content || '';
+          const messageTime = message.createdAt || message.timestamp || new Date();
+
+          if (existingIndex !== -1) {
+            // Update existing conversation
+            const currentUnread = updated[existingIndex].unread || 0;
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              lastMessage: messageContent,
+              timestamp: formatTimestamp(messageTime),
+              unread: selectedChat === chatPartnerId ? 0 : currentUnread + 1,
+              lastMessageTime: messageTime
+            };
+            console.log('✅ Updated existing conversation:', updated[existingIndex]);
+          } else {
+            // Create new conversation if it doesn't exist
+            const newConv = {
+              id: chatPartnerId,
+              name: message.senderName || `User ${chatPartnerId}`,
+              role: 'user', // Default role
+              avatar: (message.senderName || `User ${chatPartnerId}`).charAt(0).toUpperCase(),
+              lastMessage: messageContent,
+              timestamp: formatTimestamp(messageTime),
+              unread: selectedChat === chatPartnerId ? 0 : 1,
+              status: 'offline',
+              lastMessageTime: messageTime
+            };
+            updated.push(newConv);
+            console.log('✅ Created new conversation:', newConv);
+          }
+
+          // Sort conversations by last message time
+          updated.sort((a, b) => {
+            if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+            if (!a.lastMessageTime) return 1;
+            if (!b.lastMessageTime) return -1;
+            return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+          });
+
+          return updated;
+        });
+
+        // If current chat is open, mark immediately as read
+        if (selectedChat === chatPartnerId) {
+          console.log('📖 Current chat is open, marking as read immediately');
+          setTimeout(() => markConversationAsRead(chatPartnerId), 100);
+        } else {
+          // Show notification if not in current chat
+          showNotification(
+            message.senderName || 'User',
+            message.content || 'New message'
+          );
+        }
+
+        // Refresh unread count
+        setTimeout(() => fetchUnreadCount(), 100);
+      }
+
+    } catch (error) {
+      console.error('❌ Error processing socket message:', error);
+    }
+
+    console.log('=== END WEB SOCKET MESSAGE PROCESSING ===');
+  }, [selectedChat, user.userId]);
+
+  // Format timestamp
   const formatTimestamp = (dateString) => {
     if (!dateString) return 'Unknown';
 
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Unknown';
-      
       const now = new Date();
       const diffMinutes = Math.floor((now - date) / (1000 * 60));
 
-      if (diffMinutes < 1) {
-        return 'Just now';
-      } else if (diffMinutes < 60) {
-        return `${diffMinutes} min ago`;
-      } else if (diffMinutes < 1440) {
-        return `${Math.floor(diffMinutes / 60)} hours ago`;
-      } else {
-        return `${Math.floor(diffMinutes / 1440)} days ago`;
-      }
+      if (diffMinutes < 1) return 'Just now';
+      if (diffMinutes < 60) return `${diffMinutes} min ago`;
+      if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)} hours ago`;
+      return `${Math.floor(diffMinutes / 1440)} days ago`;
     } catch (error) {
       return 'Unknown';
     }
   };
 
+  // Other callback handlers
+  const handleUnreadCountUpdate = useCallback((count) => {
+    console.log('📊 Unread count updated:', count);
+    setUnreadCount(count);
+  }, []);
+
+  const handleConversationUpdate = useCallback((data) => {
+    console.log('💬 Conversation update received:', data);
+    // Handle conversation updates if needed
+  }, []);
+
+  const handleConnectionChange = useCallback((connected) => {
+    console.log('🔌 Connection status changed:', connected);
+    setIsConnected(connected);
+    if (connected) {
+      setError(null);
+    } else {
+      setError('Connection lost. Trying to reconnect...');
+    }
+  }, []);
+
+  // Initialize socket connection
+  useEffect(() => {
+    if (user && user.userId) {
+      console.log('🚀 Initializing socket connection for user:', user.userId);
+      socketService.connect(user.userId);
+
+      // Set up event listeners
+      const unsubscribeMessage = socketService.onAllMessages(handleSocketMessage);
+      const unsubscribeUnreadCount = socketService.onUnreadCountUpdate(handleUnreadCountUpdate);
+      const unsubscribeConversationUpdate = socketService.onConversationUpdate(handleConversationUpdate);
+      const unsubscribeConnection = socketService.onConnectionChange(handleConnectionChange);
+
+      return () => {
+        unsubscribeMessage();
+        unsubscribeUnreadCount();
+        unsubscribeConversationUpdate();
+        unsubscribeConnection();
+      };
+    }
+
+    return () => {
+      socketService.disconnect();
+    };
+  }, [user, handleSocketMessage, handleUnreadCountUpdate, handleConversationUpdate, handleConnectionChange]);
+
+  // Initial data load
+  useEffect(() => {
+    if (user && user.userId) {
+      loadAllData();
+    }
+  }, [user]);
+
+  // Role-based contact mapping
+  const getRoleBasedContacts = (userRole) => {
+    const roleContactMap = {
+      'admin': ['moderator', 'manager', 'organization', 'hubmanager', 'agent'],
+      'moderator': ['admin', 'user', 'agent', 'bookstore'],
+      'bookstore': ['user', 'moderator', 'manager'],
+      'manager': ['agent', 'hubmanager', 'admin', 'moderator'],
+      'agent': ['manager', 'hubmanager'],
+      'hubmanager': ['agent', 'manager', 'admin'],
+      'organization': ['admin', 'moderator'],
+      'user': ['moderator', 'bookstore']
+    };
+    return roleContactMap[userRole.toLowerCase()] || [];
+  };
+
+  const canBroadcast = (userRole) => {
+    return ['admin', 'manager', 'hubmanager', 'moderator'].includes(userRole.toLowerCase());
+  };
+
+  // Data loading functions
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await fetchAvailableContacts();
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError('Failed to load messaging data');
+      setLoading(false);
+    }
+  };
+
+  const fetchAvailableContacts = async () => {
+    try {
+      console.log('📋 Fetching contacts for role:', user.role);
+
+      const allowedRoles = getRoleBasedContacts(user.role.toLowerCase());
+      console.log('Allowed contact roles:', allowedRoles);
+
+      const contacts = await messageService.getAvailableContactsByRole(user.role, user.userId);
+      const filteredContacts = contacts.filter(contact =>
+        allowedRoles.includes(contact.role.toLowerCase())
+      );
+
+      setAvailableContacts(filteredContacts);
+      console.log('Available contacts:', filteredContacts);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      setError('Failed to load available contacts');
+      throw error;
+    }
+  };
+
+  // Load conversations when contacts change
+  useEffect(() => {
+    if (availableContacts.length > 0) {
+      fetchConversations();
+    }
+  }, [availableContacts]);
+
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('📥 Fetching conversations for user:', user.userId);
+
+      const userMessages = await messageService.getUserMessages(user.userId);
+      console.log('User messages:', userMessages);
+
+      const conversationMap = new Map();
+
+      userMessages.forEach(message => {
+        const partnerId = message.senderId === user.userId ? message.receiverId : message.senderId;
+        const partnerName = message.senderId === user.userId ? message.receiverName : message.senderName;
+
+        if (!conversationMap.has(partnerId)) {
+          conversationMap.set(partnerId, {
+            id: partnerId,
+            name: partnerName || `User ${partnerId}`,
+            role: 'user', // Default role
+            avatar: partnerName ? partnerName.charAt(0).toUpperCase() : 'U',
+            lastMessage: message.content,
+            timestamp: formatTimestamp(message.createdAt),
+            unread: 0,
+            status: 'offline',
+            lastMessageTime: message.createdAt
+          });
+        }
+
+        const conversation = conversationMap.get(partnerId);
+        if (new Date(message.createdAt) > new Date(conversation.lastMessageTime || 0)) {
+          conversation.lastMessage = message.content;
+          conversation.timestamp = formatTimestamp(message.createdAt);
+          conversation.lastMessageTime = message.createdAt;
+        }
+
+        if (message.receiverId === user.userId && !message.Read) {
+          conversation.unread++;
+        }
+      });
+
+      availableContacts.forEach(contact => {
+        if (!conversationMap.has(contact.user_id)) {
+          conversationMap.set(contact.user_id, {
+            id: contact.user_id,
+            name: contact.name,
+            role: contact.role || 'user', // Ensure role has a default
+            avatar: contact.name.charAt(0).toUpperCase(),
+            lastMessage: 'No messages yet',
+            timestamp: 'Never',
+            unread: 0,
+            status: 'offline',
+            lastMessageTime: null
+          });
+        } else {
+          const conversation = conversationMap.get(contact.user_id);
+          conversation.role = contact.role || 'user'; // Ensure role has a default
+        }
+      });
+
+      const conversationsArray = Array.from(conversationMap.values())
+        .sort((a, b) => {
+          if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+          if (!a.lastMessageTime) return 1;
+          if (!b.lastMessageTime) return -1;
+          return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+        });
+
+      setConversations(conversationsArray);
+      console.log('Processed conversations:', conversationsArray);
+
+      await loadConversationMessages(conversationsArray, user.userId);
+
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+      setError('Failed to load conversations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadConversationMessages = async (conversations, userId) => {
+    const allMessages = {};
+
+    for (const conv of conversations) {
+      try {
+        const conversationMessages = await messageService.getConversation(userId, conv.id);
+
+        allMessages[conv.id] = conversationMessages.map(msg => ({
+          id: msg.messageId,
+          sender: msg.senderId === userId ? 'You' : msg.senderName,
+          message: msg.content,
+          timestamp: formatTimestamp(msg.createdAt),
+          isOwn: msg.senderId === userId,
+          isRead: msg.Read
+        }));
+      } catch (error) {
+        console.error(`Error loading messages for user ${conv.id}:`, error);
+        allMessages[conv.id] = [];
+      }
+    }
+
+    setMessages(allMessages);
+    console.log('All messages loaded:', allMessages);
+  };
+
+  // Fetch initial unread count
+  useEffect(() => {
+    if (user && user.userId) {
+      fetchUnreadCount();
+    }
+  }, [user]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const count = await messageService.getUnreadMessageCount(user.userId);
+      console.log('Fetched unread count:', count);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  // Notification
+  const showNotification = (sender, message) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`New message from ${sender}`, {
+        body: message,
+        icon: '/favicon.ico'
+      });
+    }
+  };
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Send message
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedChat) return;
+    if (!newMessage.trim() || !selectedChat || sendingMessage) return;
 
-    const messageContent = newMessage;
-    const selectedConv = conversations.find(c => c.id === selectedChat);
-
-    // Clear input immediately for better UX
+    const messageContent = newMessage.trim();
+    setSendingMessage(true);
     setNewMessage('');
 
-    // Add message to UI immediately for better UX
-    const tempMessage = {
-      id: Date.now().toString(),
+    // Add message immediately as sent
+    const immediateMessage = {
+      id: `sent_${Date.now()}_${Math.random()}`,
       sender: 'You',
       message: messageContent,
-      timestamp: 'Just now',
+      timestamp: formatTimestamp(new Date()),
       isOwn: true,
-      isTemporary: true
+      isRead: true
     };
 
     setMessages(prev => ({
       ...prev,
-      [selectedChat]: [...(prev[selectedChat] || []), tempMessage]
+      [selectedChat]: [...(prev[selectedChat] || []), immediateMessage]
     }));
 
+    // Update conversation list immediately
+    setConversations(prev => {
+      const updated = [...prev];
+      const existingIndex = updated.findIndex(conv => conv.id === selectedChat);
+
+      if (existingIndex !== -1) {
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          lastMessage: messageContent,
+          timestamp: formatTimestamp(new Date()),
+          lastMessageTime: new Date()
+        };
+      }
+
+      // Sort conversations
+      updated.sort((a, b) => {
+        if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+        if (!a.lastMessageTime) return 1;
+        if (!b.lastMessageTime) return -1;
+        return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+      });
+
+      return updated;
+    });
+
     try {
-      // Send message to backend
-      const messageData = {
-        senderId: hubManagerId,
+      await messageService.sendMessage({
+        senderId: user.userId,
         receiverId: selectedChat,
         content: messageContent
-      };
-
-      console.log('Sending message to backend:', messageData);
-      const sentMessage = await messageApi.sendMessage(messageData);
-      console.log('Message sent successfully:', sentMessage);
-
-      // Replace temporary message with real message
-      const realMessage = {
-        id: sentMessage.messageId || sentMessage.id || tempMessage.id,
-        sender: 'You',
-        message: messageContent,
-        timestamp: formatTimestamp(sentMessage.createdAt || new Date().toISOString()),
-        isOwn: true
-      };
-
-      setMessages(prev => ({
-        ...prev,
-        [selectedChat]: prev[selectedChat].map(msg => 
-          msg.id === tempMessage.id ? realMessage : msg
-        )
-      }));
-
-      // Update last message in conversation
-      setConversations(prev =>
-        prev.map(conv =>
-          conv.id === selectedChat
-            ? { ...conv, lastMessage: messageContent, timestamp: 'Just now', unread: 0 }
-            : conv
-        )
-      );
-
+      });
     } catch (error) {
       console.error('Error sending message:', error);
-
-      // Remove temporary message on error
-      setMessages(prev => ({
-        ...prev,
-        [selectedChat]: prev[selectedChat].filter(msg => msg.id !== tempMessage.id)
-      }));
-
-      // Restore the message input on error
-      setNewMessage(messageContent);
-
-      // Show error to user
       setError('Failed to send message. Please try again.');
       setTimeout(() => setError(null), 5000);
+    } finally {
+      setSendingMessage(false);
     }
   };
 
+  // Mark conversation as read
+  const markConversationAsRead = async (conversationId) => {
+    try {
+      console.log(`📖 Marking conversation ${conversationId} as read for user ${user.userId}`);
+
+      await messageService.markConversationAsRead(user.userId, conversationId);
+
+      // Update local state immediately
+      setConversations(prev => prev.map(conv =>
+        conv.id === conversationId ? { ...conv, unread: 0 } : conv
+      ));
+
+      // Update messages state to mark all as read
+      setMessages(prev => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).map(msg => ({
+          ...msg,
+          isRead: true
+        }))
+      }));
+
+      // Refresh unread count from DB
+      await fetchUnreadCount();
+
+      console.log(`✅ Conversation ${conversationId} marked as read`);
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+    }
+  };
+
+  // Select chat and mark as read
+  const handleSelectChat = async (chatId) => {
+    console.log('Selecting chat:', chatId);
+    setSelectedChat(chatId);
+
+    // Mark conversation as read immediately
+    const conversation = conversations.find(c => c.id === chatId);
+    if (conversation && conversation.unread > 0) {
+      await markConversationAsRead(chatId);
+    }
+  };
+
+  // Broadcast message
   const handleBroadcastMessage = async () => {
     if (!broadcastMessage.trim()) return;
 
     try {
-      const messageData = {
-        message: broadcastMessage,
-        senderId: hubManagerId
-      };
+      const broadcastPromises = availableContacts.map(contact =>
+        messageService.sendMessage({
+          senderId: user.userId,
+          receiverId: contact.user_id,
+          content: `[Broadcast] ${broadcastMessage}`
+        })
+      );
 
-      console.log('Broadcasting message to backend:', messageData);
-      await messageApi.broadcastMessage(hubId, messageData);
+      await Promise.all(broadcastPromises);
 
       setBroadcastMessage('');
       setShowBroadcast(false);
-
-      // Show success message
-      setError('Message broadcasted successfully to all agents!');
+      setError('Message broadcasted successfully!');
       setTimeout(() => setError(null), 3000);
-
-      // Refresh conversations to show the new messages
-      await fetchConversations();
 
     } catch (error) {
       console.error('Error broadcasting message:', error);
@@ -293,29 +657,52 @@ const Messages = () => {
     }
   };
 
+  // Refresh conversations
   const refreshConversations = async () => {
-    await fetchConversations();
+    await loadAllData();
   };
 
+  // Utility functions
   const filteredConversations = conversations.filter(conv =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.role.toLowerCase().includes(searchTerm.toLowerCase())
+    (conv.role && conv.role.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // FIXED: Safe getRoleColor function with null/undefined handling
   const getRoleColor = (role) => {
-    switch (role) {
-      case 'Agent': return 'text-blue-600';
-      case 'Support': return 'text-green-600';
-      case 'Customer': return 'text-purple-600';
-      default: return 'text-gray-600';
+    // Handle null, undefined, or empty values
+    if (!role || typeof role !== 'string') {
+      return 'text-gray-600'; // Default color
     }
+    
+    const roleColors = {
+      'admin': 'text-red-600',
+      'moderator': 'text-blue-600',
+      'bookstore': 'text-green-600',
+      'manager': 'text-purple-600',
+      'agent': 'text-orange-600',
+      'hubmanager': 'text-indigo-600',
+      'organization': 'text-pink-600',
+      'user': 'text-gray-600'
+    };
+    return roleColors[role.toLowerCase()] || 'text-gray-600';
   };
 
   const getStatusColor = (status) => {
     return status === 'online' ? 'bg-green-400' : 'bg-gray-400';
   };
 
-  // Show loading screen
+  // Safe role display function
+  const displayRole = (role) => {
+    return role || 'user';
+  };
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    window.location.href = "http://localhost:9999/login";
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -327,30 +714,13 @@ const Messages = () => {
     );
   }
 
-  // Show error screen if there's a critical error
-  if (error && conversations.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-600 text-lg mb-4">{error}</p>
-          <button
-            onClick={refreshConversations}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-[calc(100vh-8rem)]">
+    <div className="h-[calc(100vh-8rem)] overflow-hidden">
       {/* Broadcast Modal */}
       {showBroadcast && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4">Broadcast Message to All Agents</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">Broadcast Message</h3>
             <textarea
               value={broadcastMessage}
               onChange={(e) => setBroadcastMessage(e.target.value)}
@@ -364,9 +734,9 @@ const Messages = () => {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleBroadcastMessage}
-                disabled={!broadcastMessage.trim()}
+              <button 
+                onClick={handleBroadcastMessage} 
+                disabled={!broadcastMessage.trim()} 
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
               >
                 Broadcast
@@ -379,8 +749,8 @@ const Messages = () => {
       {/* Error Message */}
       {error && (
         <div className={`mb-4 p-3 border-l-4 ${error.includes('success')
-            ? 'bg-green-100 border-green-500 text-green-700'
-            : 'bg-red-100 border-red-500 text-red-700'
+          ? 'bg-green-100 border-green-500 text-green-700'
+          : 'bg-red-100 border-red-500 text-red-700'
           }`}>
           {error}
         </div>
@@ -388,18 +758,34 @@ const Messages = () => {
 
       <div className="flex h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {/* Conversations List */}
-        <div className="w-1/3 border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+        <div className="w-1/3 border-r border-gray-200 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-gray-200 flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
+                {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
               <div className="flex space-x-2">
-                <button
-                  onClick={() => setShowBroadcast(true)}
-                  className="text-blue-600 hover:text-blue-800"
-                  title="Broadcast message to all agents"
-                >
-                  <Radio className="h-4 w-4" />
-                </button>
+                <div className="flex items-center">
+                  {isConnected ? (
+                    <Wifi className="h-4 w-4 text-green-500" title="Connected" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-red-500" title="Disconnected" />
+                  )}
+                </div>
+                {canBroadcast(user.role) && (
+                  <button
+                    onClick={() => setShowBroadcast(true)}
+                    className="text-blue-600 hover:text-blue-800"
+                    title="Broadcast message"
+                  >
+                    <Radio className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   onClick={refreshConversations}
                   disabled={loading}
@@ -409,14 +795,15 @@ const Messages = () => {
                 </button>
               </div>
             </div>
-            <div className="relative">
+
+            <div className="relative mb-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
                 placeholder="Search conversations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -426,7 +813,7 @@ const Messages = () => {
               filteredConversations.map((conversation) => (
                 <div
                   key={conversation.id}
-                  onClick={() => setSelectedChat(conversation.id)}
+                  onClick={() => handleSelectChat(conversation.id)}
                   className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 ${selectedChat === conversation.id ? 'bg-blue-50 border-blue-200' : ''
                     }`}
                 >
@@ -454,7 +841,7 @@ const Messages = () => {
                       </div>
 
                       <p className={`text-xs mt-1 font-medium ${getRoleColor(conversation.role)}`}>
-                        {conversation.role}
+                        {displayRole(conversation.role)}
                       </p>
                     </div>
                   </div>
@@ -462,20 +849,18 @@ const Messages = () => {
               ))
             ) : (
               <div className="p-4 text-center text-gray-500">
-                {loading ? 'Loading conversations...' : 
-                 conversations.length === 0 ? 'No agents found for this hub' : 
-                 'No conversations match your search'}
+                {conversations.length === 0 ? 'No conversations available' : 'No conversations match your search'}
               </div>
             )}
           </div>
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {selectedChat ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-medium">
@@ -489,14 +874,17 @@ const Messages = () => {
                       {conversations.find(c => c.id === selectedChat)?.name}
                     </h3>
                     <p className={`text-sm font-medium ${getRoleColor(conversations.find(c => c.id === selectedChat)?.role)}`}>
-                      {conversations.find(c => c.id === selectedChat)?.role}
+                      {displayRole(conversations.find(c => c.id === selectedChat)?.role)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Messages Container */}
+              <div
+                ref={chatContainerRef}
+                className="flex-1 p-4 space-y-4 overflow-y-auto"
+              >
                 {(messages[selectedChat] || []).length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
@@ -505,24 +893,27 @@ const Messages = () => {
                     </div>
                   </div>
                 ) : (
-                  (messages[selectedChat] || []).map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.isOwn
+                  <>
+                    {(messages[selectedChat] || []).map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.isOwn
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 text-gray-900'
-                        } ${message.isTemporary ? 'opacity-75' : ''}`}>
-                        <p className="text-sm">{message.message}</p>
-                        <div className={`flex items-center justify-end mt-1 space-x-1 ${message.isOwn ? 'text-blue-100' : 'text-gray-500'
                           }`}>
-                          <span className="text-xs">{message.timestamp}</span>
-                          {message.isTemporary && <span className="text-xs">Sending...</span>}
+                          <p className="text-sm">{message.message}</p>
+                          <div className={`flex items-center justify-end mt-1 space-x-1 ${message.isOwn ? 'text-blue-100' : 'text-gray-500'
+                            }`}>
+                            <span className="text-xs">{message.timestamp}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    {/* Scroll anchor */}
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
               </div>
 
@@ -534,13 +925,13 @@ const Messages = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type your message..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={!isConnected || sendingMessage}
                   />
                   <button
                     type="submit"
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || !isConnected || sendingMessage}
                     className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Send message"
                   >
                     <Send className="h-4 w-4" />
                   </button>
@@ -548,12 +939,11 @@ const Messages = () => {
               </div>
             </>
           ) : (
-            /* No Chat Selected */
             <div className="flex-1 flex items-center justify-center bg-gray-50">
               <div className="text-center">
                 <MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Select a conversation</h3>
-                <p className="text-gray-500">Choose an agent from the list to start messaging</p>
+                <p className="text-gray-500">Choose a contact from the list to start messaging</p>
               </div>
             </div>
           )}

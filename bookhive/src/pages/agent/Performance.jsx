@@ -13,7 +13,7 @@ export default function Performance() {
     totalHours: 156.5,
     totalKilometers: 2847,
     trustScore: 4.8,
-    totalEarnings: 3250.75,
+    totalEarnings: 487500.75, // LKR
     deliveriesCompleted: 142,
     onTimeRate: 96.5,
     customerRating: 4.9,
@@ -21,22 +21,22 @@ export default function Performance() {
   }
 
   const weeklyTrends = [
-    { day: 'Mon', hours: 8, earnings: 180, deliveries: 12 },
-    { day: 'Tue', hours: 7.5, earnings: 165, deliveries: 11 },
-    { day: 'Wed', hours: 9, earnings: 210, deliveries: 15 },
-    { day: 'Thu', hours: 8.5, earnings: 195, deliveries: 13 },
-    { day: 'Fri', hours: 7, earnings: 155, deliveries: 10 },
-    { day: 'Sat', hours: 6, earnings: 140, deliveries: 9 },
-    { day: 'Sun', hours: 8, earnings: 185, deliveries: 12 }
+    { day: 'Mon', hours: 8, earnings: 27000, deliveries: 12 },
+    { day: 'Tue', hours: 7.5, earnings: 24750, deliveries: 11 },
+    { day: 'Wed', hours: 9, earnings: 31500, deliveries: 15 },
+    { day: 'Thu', hours: 8.5, earnings: 29250, deliveries: 13 },
+    { day: 'Fri', hours: 7, earnings: 23250, deliveries: 10 },
+    { day: 'Sat', hours: 6, earnings: 21000, deliveries: 9 },
+    { day: 'Sun', hours: 8, earnings: 27750, deliveries: 12 }
   ]
 
   const achievements = [
-    { id: 1, name: 'Speed Demon', description: '100+ deliveries completed', icon: '🚀', earned: true, date: '2024-01-15' },
+    { id: 1, name: 'Colombo Champion', description: '100+ deliveries in Colombo district', icon: '🏆', earned: true, date: '2024-01-15' },
     { id: 2, name: 'Customer Favorite', description: 'Maintain 4.8+ rating for 30 days', icon: '⭐', earned: true, date: '2024-01-20' },
-    { id: 3, name: 'Distance Master', description: 'Travel 1000+ km in a month', icon: '🗺️', earned: true, date: '2024-01-10' },
-    { id: 4, name: 'Perfect Week', description: '100% on-time deliveries for a week', icon: '🎯', earned: false, progress: 85 },
-    { id: 5, name: 'Early Bird', description: 'Complete 50 morning deliveries', icon: '🌅', earned: false, progress: 62 },
-    { id: 6, name: 'Night Owl', description: 'Complete 25 evening deliveries', icon: '🌙', earned: false, progress: 40 }
+    { id: 3, name: 'Island Explorer', description: 'Deliver to all 9 provinces', icon: '🗺️', earned: true, date: '2024-01-10' },
+    { id: 4, name: 'Monsoon Master', description: '100% on-time deliveries during rainy season', icon: '🌧️', earned: false, progress: 85 },
+    { id: 5, name: 'Poya Day Hero', description: 'Complete 50 deliveries on Poya days', icon: '🌕', earned: false, progress: 62 },
+    { id: 6, name: 'Tea Country Specialist', description: 'Complete 25 deliveries in hill country', icon: '🍃', earned: false, progress: 40 }
   ]
 
   return (
@@ -47,7 +47,7 @@ export default function Performance() {
         <MetricCard title="Total Hours" value={performanceMetrics.totalHours} sub="+12% from last month" icon={<Clock />} color="blue" />
         <MetricCard title="Distance (km)" value={performanceMetrics.totalKilometers.toLocaleString()} sub="+8% from last month" icon={<MapPin />} color="blue" />
         <MetricCard title="TrustScore" value={`${performanceMetrics.trustScore}/5.0`} sub="+0.2 from last month" icon={<Star />} color="yellow" />
-        <MetricCard title="Total Earnings" value={`$${performanceMetrics.totalEarnings.toLocaleString()}`} sub="+15% from last month" icon={<DollarSign />} color="green" />
+        <MetricCard title="Total Earnings" value={`Rs. ${performanceMetrics.totalEarnings.toLocaleString()}`} sub="+15% from last month" icon={<DollarSign />} color="green" />
       </div>
 
       {/* Chart and Additional Metrics */}
@@ -60,10 +60,13 @@ export default function Performance() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" />
               <YAxis />
-              <Tooltip />
+              <Tooltip formatter={(value, name) => {
+                if (name === 'Earnings') return [`Rs. ${value.toLocaleString()}`, name]
+                return [value, name]
+              }} />
               <Legend />
               <Bar dataKey="hours" fill="#3B82F6" name="Hours" />
-              <Bar dataKey="earnings" fill="#22C55E" name="Earnings" />
+              <Bar dataKey="earnings" fill="#22C55E" name="Earnings (LKR)" />
               <Bar dataKey="deliveries" fill="#FBBF24" name="Deliveries" />
             </BarChart>
           </ResponsiveContainer>

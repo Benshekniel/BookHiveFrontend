@@ -1,148 +1,5 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Mail, Phone, MapPin, Camera, Save, Edit, Link, Share2 } from "lucide-react";
-import Button from "../../components/profile/Button";
-import Input from "../../components/profile/Input";
-import Toast from "../../components/common/Toast";
-
-// Memoized form sections for better performance
-const PersonalInfo = memo(({ userData, handleInputChange, isEditing }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <Input
-      label="Full Name"
-      icon={User}
-      name="name"
-      value={userData.name}
-      onChange={handleInputChange}
-      disabled={!isEditing}
-    />
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-      <textarea
-        name="bio"
-        value={userData.bio}
-        onChange={handleInputChange}
-        disabled={!isEditing}
-        rows="4"
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
-        placeholder="Tell others about yourself and your reading interests..."
-      />
-    </div>
-  </div>
-));
-
-const ContactInfo = memo(({ userData, handleInputChange, isEditing }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <Input
-      label="Email Address"
-      icon={Mail}
-      type="email"
-      name="email"
-      value={userData.email}
-      onChange={handleInputChange}
-      disabled={!isEditing}
-    />
-    <Input
-      label="Phone Number"
-      icon={Phone}
-      type="tel"
-      name="phone"
-      value={userData.phone}
-      onChange={handleInputChange}
-      disabled={!isEditing}
-      placeholder="+94 77 123 4567"
-    />
-    <Input
-      label="Location"
-      icon={MapPin}
-      name="location"
-      value={userData.location}
-      onChange={handleInputChange}
-      disabled={!isEditing}
-    />
-  </div>
-));
-
-const ReferralSection = memo(({ userId, handleCopyReferralLink, handleShare }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <h3 className="text-xl font-semibold text-gray-900 mb-4">Referral Program</h3>
-    <div className="space-y-4">
-      <div>
-        <h4 className="font-medium text-gray-900">Your Referral Link</h4>
-        <p className="text-sm text-gray-600">Invite friends to join the book-sharing community!</p>
-        <div className="mt-2 flex items-center space-x-2">
-          <input
-            type="text"
-            value={`https://book-sharing-app.com/referral/${userId}`}
-            readOnly
-            className="w-300 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-          />
-          <Button onClick={handleCopyReferralLink}>
-            <Link className="h-4 w-4" />
-            <span>Copy Link</span>
-          </Button>
-        </div>
-      </div>
-      <div>
-        <h4 className="font-medium text-gray-900">Share Your Link</h4>
-        <div className="mt-2 flex space-x-2">
-          {["email", "whatsapp", "twitter"].map((platform) => (
-            <Button
-              key={platform}
-              onClick={() => handleShare(platform)}
-            >
-              {platform === "email" ? <Mail className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-              <span>{platform.charAt(0).toUpperCase() + platform.slice(1)}</span>
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-));
-
-const PasswordForm = memo(({ passwordData, passwordError, handlePasswordChange, handlePasswordSubmit, handlePasswordCancel }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">Change Password</h3>
-      <form onSubmit={handlePasswordSubmit} className="space-y-4">
-        <Input
-          label="Old Password"
-          type="password"
-          name="oldPassword"
-          value={passwordData.oldPassword}
-          onChange={handlePasswordChange}
-          required
-        />
-        <Input
-          label="New Password"
-          type="password"
-          name="newPassword"
-          value={passwordData.newPassword}
-          onChange={handlePasswordChange}
-          required
-        />
-        <Input
-          label="Confirm New Password"
-          type="password"
-          name="confirmPassword"
-          value={passwordData.confirmPassword}
-          onChange={handlePasswordChange}
-          required
-        />
-        {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
-        <div className="flex items-center space-x-4">
-          <Button type="submit" variant="yellow">
-            <Save className="h-4 w-4" />
-            <span>Update Password</span>
-          </Button>
-          <Button variant="secondary" onClick={handlePasswordCancel}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </div>
-  </div>
-));
 
 const ProfileSettings = () => {
   // Mock current user data
@@ -170,57 +27,65 @@ const ProfileSettings = () => {
   });
   const [passwordError, setPasswordError] = useState("");
 
-  // Memoized handlers
-  const handleInputChange = useCallback((e) => {
+  // Handle form input changes
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData(prev => ({ ...prev, [name]: value }));
-  }, []);
+    setUserData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const handlePasswordChange = useCallback((e) => {
+  // Handle password form input changes
+  const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswordData((prev) => ({ ...prev, [name]: value }));
     setPasswordError(""); // Clear error on input change
-  }, []);
+  };
 
-  const handleImageUpload = useCallback((e) => {
+  // Handle image upload
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (file) {
+      // Check file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setToast({ visible: true, message: "File size must be less than 2MB", type: "error" });
+        return;
+      }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setToast({ visible: true, message: "File size must be less than 2MB", type: "error" });
-      return;
+      // Check file type
+      const validTypes = ["image/jpeg", "image/png", "image/gif"];
+      if (!validTypes.includes(file.type)) {
+        setToast({ visible: true, message: "Only JPG, PNG, or GIF files are allowed", type: "error" });
+        return;
+      }
+
+      // Convert file to base64 for preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewAvatar(reader.result);
+        setUserData((prev) => ({ ...prev, avatar: reader.result }));
+      };
+      reader.readAsDataURL(file);
     }
+  };
 
-    const validTypes = ["image/jpeg", "image/png", "image/gif"];
-    if (!validTypes.includes(file.type)) {
-      setToast({ visible: true, message: "Only JPG, PNG, or GIF files are allowed", type: "error" });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewAvatar(reader.result);
-      setUserData(prev => ({ ...prev, avatar: reader.result }));
-    };
-    reader.readAsDataURL(file);
-  }, []);
-
-  const handleSubmit = useCallback((e) => {
+  // Handle form submission
+  const handleSubmit = (e) => {
     e.preventDefault();
-    // Simulate API call
     setTimeout(() => {
+      console.log("Saving user data:", userData);
       setToast({ visible: true, message: "Profile updated successfully!", type: "success" });
       setIsEditing(false);
     }, 500);
-  }, []);
+  };
 
-  const handleCancel = useCallback(() => {
+  // Handle cancel
+  const handleCancel = () => {
     setUserData(initialUser);
     setPreviewAvatar(null);
     setIsEditing(false);
-  }, [initialUser]);
+  };
 
-  const handlePasswordSubmit = useCallback((e) => {
+  // Handle password form submission
+  const handlePasswordSubmit = (e) => {
     e.preventDefault();
     const { oldPassword, newPassword, confirmPassword } = passwordData;
 
@@ -246,31 +111,45 @@ const ProfileSettings = () => {
       setPasswordError("");
       setShowPasswordForm(false);
     }, 500);
-  }, [passwordData, userData.password]);
+  };
 
-  const handlePasswordCancel = useCallback(() => {
+  // Handle password form cancel
+  const handlePasswordCancel = () => {
     setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
     setPasswordError("");
     setShowPasswordForm(false);
-  }, []);
+  };
 
-  const handleCopyReferralLink = useCallback(() => {
+  // Handle referral link copy
+  const handleCopyReferralLink = () => {
     const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
-    navigator.clipboard.writeText(referralLink)
-      .then(() => setToast({ visible: true, message: "Referral link copied!", type: "success" }))
-      .catch(() => setToast({ visible: true, message: "Failed to copy link", type: "error" }));
-  }, [userData.id]);
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setToast({ visible: true, message: "Referral link copied to clipboard!", type: "success" });
+    }).catch(() => {
+      setToast({ visible: true, message: "Failed to copy referral link", type: "error" });
+    });
+  };
 
-  const handleShare = useCallback((platform) => {
+  // Handle social sharing
+  const handleShare = (platform) => {
     const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
+    let shareUrl;
     const shareText = `Join me on this awesome book-sharing app! 📚 ${referralLink}`;
-    const shareUrls = {
-      email: `mailto:?subject=Join our Book Sharing App!&body=${encodeURIComponent(shareText)}`,
-      whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`,
-      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
-    };
-    window.open(shareUrls[platform], "_blank");
-  }, [userData.id]);
+    switch (platform) {
+      case "email":
+        shareUrl = `mailto:?subject=Join our Book Sharing App!&body=${encodeURIComponent(shareText)}`;
+        break;
+      case "whatsapp":
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        break;
+      case "twitter":
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+        break;
+      default:
+        return;
+    }
+    window.open(shareUrl, "_blank");
+  };
 
   // Toast auto-hide
   useEffect(() => {
@@ -293,10 +172,13 @@ const ProfileSettings = () => {
               <p className="text-blue-100 text-lg">Update your personal details and preferences</p>
             </div>
             {!isEditing && (
-              <Button variant="yellow" onClick={() => setIsEditing(true)}>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+              >
                 <Edit className="h-4 w-4" />
                 <span>Edit Profile</span>
-              </Button>
+              </button>
             )}
           </div>
         </div>
@@ -314,11 +196,12 @@ const ProfileSettings = () => {
                 />
                 <div>
                   {isEditing && (
-                    <label htmlFor="avatar-upload">
-                      <Button variant="primary">
-                        <Camera className="h-4 w-4" />
-                        <span>Change Photo</span>
-                      </Button>
+                    <label
+                      htmlFor="avatar-upload"
+                      className="bg-[#1e3a8a] hover:bg-blue-800 text-white px-3 py-2 rounded-lg font-medium flex items-center space-x-2 cursor-pointer transition-colors text-sm"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Change Photo</span>
                     </label>
                   )}
                   <input
@@ -332,58 +215,261 @@ const ProfileSettings = () => {
                 </div>
               </div>
 
-              <PersonalInfo
-                userData={userData}
-                handleInputChange={handleInputChange}
-                isEditing={isEditing}
-              />
+              {/* Personal Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      name="name"
+                      value={userData.name}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bio
+                  </label>
+                  <textarea
+                    name="bio"
+                    value={userData.bio}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    rows="4"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
+                    placeholder="Tell others about yourself and your reading interests..."
+                  />
+                </div>
+              </div>
 
-              <ContactInfo
-                userData={userData}
-                handleInputChange={handleInputChange}
-                isEditing={isEditing}
-              />
+              {/* Contact Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={userData.email}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={userData.phone}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="+94 77 123 4567"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      name="location"
+                      value={userData.location}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
+                    />
+                  </div>
+                </div>
+              </div>
 
-              <ReferralSection
-                userId={userData.id}
-                handleCopyReferralLink={handleCopyReferralLink}
-                handleShare={handleShare}
-              />
+              {/* Referral Program */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Referral Program
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900">Your Referral Link</h4>
+                    <p className="text-sm text-gray-600">Invite friends to join the book-sharing community!</p>
+                    <div className="mt-2 flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={`https://book-sharing-app.com/referral/${userData.id}`}
+                        readOnly
+                        className="w-300 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCopyReferralLink}
+                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
+                      >
+                        <Link className="h-4 w-4" />
+                        <span>Copy Link</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">Share Your Link</h4>
+                    <div className="mt-2 flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => handleShare("email")}
+                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
+                      >
+                        <Mail className="h-4 w-4" />
+                        <span>Email</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleShare("whatsapp")}
+                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
+                      >
+                        <Share2 className="h-4 w-4" />
+                        <span>WhatsApp</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleShare("twitter")}
+                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
+                      >
+                        <Share2 className="h-4 w-4" />
+                        <span>Twitter</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Account Security */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Account Security</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Account Security
+                </h3>
                 <div className="space-y-4">
                   <div>
-                    <Button onClick={() => setShowPasswordForm(true)}>
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordForm(true)}
+                      className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors text-sm"
+                    >
                       Change Password
-                    </Button>
-                    <p className="text-sm text-gray-600 mt-2">Last changed 3 months ago</p>
+                    </button>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Last changed 3 months ago
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Password Change Form */}
               {showPasswordForm && (
-                <PasswordForm
-                  passwordData={passwordData}
-                  passwordError={passwordError}
-                  handlePasswordChange={handlePasswordChange}
-                  handlePasswordSubmit={handlePasswordSubmit}
-                  handlePasswordCancel={handlePasswordCancel}
-                />
+                <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      Change Password
+                    </h3>
+                    <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Old Password
+                        </label>
+                        <input
+                          type="password"
+                          name="oldPassword"
+                          value={passwordData.oldPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]"
+                          required
+                        />
+                      </div>
+                      {passwordError && (
+                        <p className="text-sm text-red-600">{passwordError}</p>
+                      )}
+                      <div className="flex items-center space-x-4">
+                        <button
+                          type="submit"
+                          className="flex items-center space-x-2 bg-[#1e3a8a] text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors text-sm"
+                        >
+                          <Save className="h-4 w-4" />
+                          <span>Update Password</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handlePasswordCancel}
+                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
               )}
 
               {/* Action Buttons */}
               {isEditing && (
                 <div className="flex items-center space-x-4">
-                  <Button variant="yellow" onClick={handleSubmit}>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    className="flex items-center space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                  >
                     <Save className="h-4 w-4" />
                     <span>Save Changes</span>
-                  </Button>
-                  <Button variant="secondary" onClick={handleCancel}>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                  >
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>
@@ -392,11 +478,15 @@ const ProfileSettings = () => {
 
         {/* Toast Notification */}
         {toast.visible && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(prev => ({ ...prev, visible: false }))}
-          />
+          <div
+            className={`fixed top-18 right-6 p-4 rounded-lg shadow-lg z-1000 ${
+              toast.type === "success"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            <p className="text-sm font-medium">{toast.message}</p>
+          </div>
         )}
       </div>
     </div>
