@@ -8,6 +8,8 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   const location = useLocation();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasShownExpiredModal, setHasShownExpiredModal] = useState(false);
 
   // console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
 
@@ -69,9 +71,24 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
 
   const { user } = useAuth();
 
+  // Mark initial load as complete after first render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 500); // Wait 500ms for auth to load
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Handle session expiration - redirect to login with message
   useEffect(() => {
-    if (!user) {
+    // Only show modal if:
+    // 1. Not on initial load/refresh
+    // 2. User is null (session expired)
+    // 3. Haven't already shown the modal
+    if (!isInitialLoad && !user && !hasShownExpiredModal) {
+      setHasShownExpiredModal(true);
+
       // Show session expired message
       const sessionExpiredMsg = document.createElement('div');
       sessionExpiredMsg.innerHTML = `
@@ -143,7 +160,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
         navigate('/login');
       }, 2000);
     }
-  }, [user, navigate]);
+  }, [user, navigate, isInitialLoad, hasShownExpiredModal]);
 
   // If no user, show nothing (the useEffect will handle redirection)
   if (!user) {
