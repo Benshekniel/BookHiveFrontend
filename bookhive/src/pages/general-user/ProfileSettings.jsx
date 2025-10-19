@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from "react";
-import { User, Mail, Phone, MapPin, Camera, Save, Edit, Link, Share2 } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { User, Mail, Phone, MapPin, Camera, Save, Edit } from "lucide-react";
+import { useAuth } from '../../components/AuthContext';
 
 const ProfileSettings = () => {
-  // Mock current user data
-  const initialUser = {
-    id: 1,
-    name: "Nive",
-    email: "nive@example.com",
-    location: "Colombo, Sri Lanka",
+  const { user } = useAuth();
+
+  // Initial user data structure
+  const [userData, setUserData] = useState({
+    id: "",
+    name: "",
+    fname: "",
+    lname: "",
+    email: "",
+    address: "",
     avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-    bio: "Passionate reader and occasional writer enjoying Sri Lankan literature.",
+    bio: "",
     phone: "",
-    password: "oldPassword123", // Mock existing password
-  };
+    password: "", // For password validation only
+  });
 
   // State for form data, edit mode, image preview, toast notifications, and password change
   const [isEditing, setIsEditing] = useState(false);
-  const [userData, setUserData] = useState(initialUser);
   const [previewAvatar, setPreviewAvatar] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -26,6 +30,73 @@ const ProfileSettings = () => {
     confirmPassword: "",
   });
   const [passwordError, setPasswordError] = useState("");
+  const [loadingUserData, setLoadingUserData] = useState(true);
+
+  // Fetch user details from backend
+  const fetchUserDetails = useCallback(async () => {
+    try {
+      setLoadingUserData(true);
+      console.log('Fetching user details for email:', user.email);
+      
+      // URL encode the email to handle special characters
+      const encodedEmail = encodeURIComponent(user.email);
+      const url = `http://localhost:9090/api/getLoginUser?email=${encodedEmail}`;
+      console.log('Fetching from URL:', url);
+      
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch user details: ${response.status} - ${errorText}`);
+      }
+      
+      const fetchedUserData = await response.json();
+      console.log('User data received:', fetchedUserData);
+      
+      // Update user data with fetched information
+      setUserData({
+        id: fetchedUserData.id || "",
+        name: fetchedUserData.fname && fetchedUserData.lname ? 
+          `${fetchedUserData.fname} ${fetchedUserData.lname}` : 
+          (fetchedUserData.name || ""),
+        fname: fetchedUserData.fname || "",
+        lname: fetchedUserData.lname || "",
+        email: fetchedUserData.email || user.email || "",
+        address: fetchedUserData.address || "",
+        avatar: fetchedUserData.avatar || "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+        bio: fetchedUserData.bio || "Passionate reader and book enthusiast.",
+        phone: fetchedUserData.phone ? 
+          (fetchedUserData.phone.toString().startsWith('+') ? 
+            fetchedUserData.phone.toString() : 
+            `+94 ${fetchedUserData.phone}`) : "",
+        password: "", // Never store actual password
+      });
+      
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      setToast({ visible: true, message: "Failed to load user details", type: "error" });
+      // Set defaults with user email from auth context
+      setUserData(prev => ({
+        ...prev,
+        email: user.email || "",
+      }));
+    } finally {
+      setLoadingUserData(false);
+    }
+  }, [user.email]);
+
+  // Fetch user details on component mount
+  useEffect(() => {
+    console.log('useEffect triggered with user:', user);
+    if (user?.email) {
+      console.log('User email exists, calling fetchUserDetails');
+      fetchUserDetails();
+    } else {
+      console.log('No user email available');
+      setLoadingUserData(false);
+    }
+  }, [user, fetchUserDetails]);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -79,7 +150,8 @@ const ProfileSettings = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    setUserData(initialUser);
+    // Refetch user data to reset any changes
+    fetchUserDetails();
     setPreviewAvatar(null);
     setIsEditing(false);
   };
@@ -90,8 +162,8 @@ const ProfileSettings = () => {
     const { oldPassword, newPassword, confirmPassword } = passwordData;
 
     // Validation
-    if (oldPassword !== userData.password) {
-      setPasswordError("Old password is incorrect");
+    if (!oldPassword.trim()) {
+      setPasswordError("Old password is required");
       return;
     }
     if (newPassword.length < 8) {
@@ -103,9 +175,8 @@ const ProfileSettings = () => {
       return;
     }
 
-    // Simulate password update
+    // TODO: Implement actual password update API call
     setTimeout(() => {
-      setUserData((prev) => ({ ...prev, password: newPassword }));
       setToast({ visible: true, message: "Password updated successfully!", type: "success" });
       setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
       setPasswordError("");
@@ -298,64 +369,6 @@ const ProfileSettings = () => {
                       disabled={!isEditing}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
                     />
-                  </div>
-                </div>
-              </div>
-
-              {/* Referral Program */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Referral Program
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900">Your Referral Link</h4>
-                    <p className="text-sm text-gray-600">Invite friends to join the book-sharing community!</p>
-                    <div className="mt-2 flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={`https://book-sharing-app.com/referral/${userData.id}`}
-                        readOnly
-                        className="w-300 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCopyReferralLink}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Link className="h-4 w-4" />
-                        <span>Copy Link</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">Share Your Link</h4>
-                    <div className="mt-2 flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => handleShare("email")}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Mail className="h-4 w-4" />
-                        <span>Email</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleShare("whatsapp")}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Share2 className="h-4 w-4" />
-                        <span>WhatsApp</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleShare("twitter")}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Share2 className="h-4 w-4" />
-                        <span>Twitter</span>
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>

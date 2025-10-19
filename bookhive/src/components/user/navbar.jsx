@@ -1,6 +1,8 @@
-import React, { useState, Component } from 'react';
+import React, { useState, Component, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTrustScore } from '../TrustScoreContext';
+import { useAuth } from '../AuthContext';
+
 
 import { 
   Menu, 
@@ -22,7 +24,7 @@ import Logo from './logo.png';
 class ErrorBoundary extends Component {
   state = { hasError: false };
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
 
@@ -34,17 +36,67 @@ class ErrorBoundary extends Component {
   }
 }
 
-const UserNavbar = ({ user, onLogout, children }) => {
+const UserNavbar = ({ onLogout, children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [currentUserData, setCurrentUserData] = useState(null);
+  const [loadingUserData, setLoadingUserData] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const { trustScore, isLoading } = useTrustScore();
+  const { user } = useAuth(); // Get authenticated user from context
 
-  React.useEffect(() => {
-    console.log('Trust Score:', trustScore, 'Loading:', isLoading);
-  }, [trustScore, isLoading]);
+  // Fetch current user profile data
+  const fetchCurrentUserData = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      setLoadingUserData(true);
+      const encodedEmail = encodeURIComponent(user.email);
+      const url = `http://localhost:9090/api/getLoginUser?email=${encodedEmail}`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const userData = await response.json();
+        setCurrentUserData({
+          id: userData.id,
+          name: userData.fname && userData.lname ? 
+            `${userData.fname} ${userData.lname}` : 
+            (userData.name || user.name || 'User'),
+          email: userData.email || user.email,
+          avatar: userData.avatar || null,
+          username: userData.username || userData.fname || user.name || 'User'
+        });
+      } else {
+        // Fallback to auth context data
+        setCurrentUserData({
+          name: user.name || 'User',
+          email: user.email,
+          username: user.name || 'User',
+          avatar: null
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      // Fallback to auth context data
+      setCurrentUserData({
+        name: user.name || 'User',
+        email: user.email,
+        username: user.name || 'User',
+        avatar: null
+      });
+    } finally {
+      setLoadingUserData(false);
+    }
+  }, [user]);
+
+  // Fetch user data when component mounts or user changes
+  useEffect(() => {
+    if (user?.email) {
+      fetchCurrentUserData();
+    }
+  }, [user, fetchCurrentUserData]);
 
   const handleLogout = () => {
     if (onLogout) {
@@ -56,6 +108,14 @@ const UserNavbar = ({ user, onLogout, children }) => {
 
   const isActivePath = (path) => {
     return location.pathname === path;
+  };
+
+  // Get display data with fallbacks
+  const displayUser = currentUserData || {
+    name: user?.name || 'User',
+    email: user?.email || 'user@example.com',
+    username: user?.name || 'User',
+    avatar: null
   };
 
   const userNavItems = [
@@ -158,12 +218,12 @@ const UserNavbar = ({ user, onLogout, children }) => {
                   className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <img
-                    src={user?.profileImage || "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"}
+                    src={displayUser.avatar || "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"}
                     alt="Profile"
                     className="h-8 w-8 rounded-full object-cover border-2 border-yellow-400"
                   />
                   <span className="text-sm font-medium text-gray-700 hidden xl:block">
-                    {user?.username || 'Nive'}
+                    {loadingUserData ? '...' : displayUser.username}
                   </span>
                 </button>
 
@@ -217,13 +277,15 @@ const UserNavbar = ({ user, onLogout, children }) => {
               <div className="space-y-2">
                 <div className="flex items-center space-x-3 px-4 py-3 bg-gray-50 rounded-lg mb-4">
                   <img
-                    src={user?.profileImage || "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"}
+                    src={displayUser.avatar || "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg"}
                     alt="Profile"
                     className="h-10 w-10 rounded-full object-cover border-2 border-yellow-400"
                   />
                   <div>
-                    <p className="font-medium text-gray-900">{user?.username || 'User'}</p>
-                    <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
+                    <p className="font-medium text-gray-900">
+                      {loadingUserData ? 'Loading...' : displayUser.name}
+                    </p>
+                    <p className="text-sm text-gray-500">{displayUser.email}</p>
                     {user?.role === 'user' && (
                       <p className="text-sm font-bold" style={{ color: getTrustScoreColorAndSymbol().color }}>
                         {isLoading ? '...' : trustScore !== null ? trustScore : 'N/A'} {getTrustScoreColorAndSymbol().symbol}
