@@ -18,11 +18,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { books } from "../../data/mockData";
+import axios from "axios";
+import { useAuth } from "../../components/AuthContext";
 import Button from "../../components/shared/Button";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import LazyImage from "../../components/LazyImage";
+import imageCache from "../../utils/imageCache";
 
 // Fix missing marker icon issue in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -34,6 +37,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
+
+// Placeholder for images
+const placeholder = "data:image/svg+xml,%3csvg width='150' height='200' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='150' height='200' fill='%236B7280'/%3e%3ctext x='75' y='100' text-anchor='middle' fill='%23FFFFFF' font-size='14'%3eNo Image%3c/text%3e%3c/svg%3e";
+
+const baseUrl = 'http://localhost:9090';
 
 // Levenshtein distance function for fuzzy matching
 function levenshteinDistance(a, b) {
@@ -93,8 +101,70 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
+// UserAvatar component for consistent user image handling
+const UserAvatar = ({ user, size = "md", className = "" }) => {
+  // Size configurations
+  const sizes = {
+    xs: "w-4 h-4",
+    sm: "w-6 h-6",
+    md: "w-10 h-10", 
+    lg: "w-12 h-12"
+  };
+  
+  // Generate colored avatar based on user name for visual distinction
+  const getDefaultUserAvatar = (userName) => {
+    const colors = [
+      ['%237C3AED', '%234C1D95'], // Purple
+      ['%2306B6D4', '%230891B2'], // Cyan
+      ['%2310B981', '%23059669'], // Emerald
+      ['%23F59E0B', '%23D97706'], // Amber
+      ['%23EF4444', '%23DC2626'], // Red
+      ['%238B5CF6', '%237C3AED'], // Violet
+    ];
+    
+    // Simple hash function to get consistent color for user
+    const hash = (userName || 'User').split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    const colorIndex = Math.abs(hash) % colors.length;
+    const [color1, color2] = colors[colorIndex];
+    
+    return `data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cradialGradient id='bg' cx='50%25' cy='30%25'%3e%3cstop offset='0%25' stop-color='${color1}'/%3e%3cstop offset='100%25' stop-color='${color2}'/%3e%3c/radialGradient%3e%3c/defs%3e%3ccircle cx='50' cy='50' r='50' fill='url(%23bg)'/%3e%3ccircle cx='50' cy='37' r='18' fill='%23FFFFFF' opacity='0.9'/%3e%3cpath d='M50 60c-15 0-28 10-30 22 0 3 2 5 5 5h50c3 0 5-2 5-5-2-12-15-22-30-22z' fill='%23FFFFFF' opacity='0.9'/%3e%3c/svg%3e`;
+  };
+
+  // If user has a profile image from backend, try to load it
+  const getUserImageSrc = () => {
+    if (user?.profileImage) {
+      // Try backend endpoint for user profile images
+      return `${baseUrl}/getFileAsBase64?fileName=${user.profileImage}&folderName=userProfiles`;
+    }
+    if (user?.avatar && user.avatar !== "https://via.placeholder.com/50" && user.avatar !== null) {
+      // Use provided avatar URL if it's not a placeholder
+      return user.avatar;
+    }
+    // Use default vector avatar (will be used most of the time)
+    return getDefaultUserAvatar(user?.name);
+  };
+
+  return (
+    <img
+      src={getUserImageSrc()}
+      alt={user?.name || "User"}
+      className={`${sizes[size]} rounded-full object-cover ${className}`}
+      onError={(e) => {
+        // Fallback to default avatar if loading fails
+        e.target.src = getDefaultUserAvatar(user?.name);
+      }}
+    />
+  );
+};
+
 const BooksPage = () => {
-  const [filteredBooks, setFilteredBooks] = useState(books || []);
+  const { user } = useAuth();
+  const [books, setBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [wishlistedBooks, setWishlistedBooks] = useState([]);
   const [favoriteBooks, setFavoriteBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,13 +189,14 @@ const BooksPage = () => {
   const [aiRecommendations, setAIRecommendations] = useState([]);
 
   // New states for enhanced functionality
+  const [loading, setLoading] = useState(true);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [disabledBooks, setDisabledBooks] = useState(new Set());
   const [myRequests, setMyRequests] = useState([
-    // Pre-approved borrow request
+    // Pre-approved borrow request (mock, map to real book if exists)
     {
       id: "req-approved-borrow-1",
       bookId: "1",
@@ -138,7 +209,7 @@ const BooksPage = () => {
         title: "To Kill a Mockingbird",
         author: "Harper Lee",
         price: 1500,
-        cover: "https://via.placeholder.com/150",
+        cover: placeholder,
         owner: { name: "John Smith" },
       },
     },
@@ -155,7 +226,7 @@ const BooksPage = () => {
         title: "The Great Gatsby",
         author: "F. Scott Fitzgerald",
         price: 1200,
-        cover: "https://via.placeholder.com/150",
+        cover: placeholder,
         owner: { name: "Jane Doe" },
       },
     },
@@ -166,6 +237,28 @@ const BooksPage = () => {
   const [showExchangeBookModal, setShowExchangeBookModal] = useState(false);
 
   const navigate = useNavigate();
+
+  // Preload images for better performance (same as BookListing)
+  const preloadImages = useCallback(async (books) => {
+    const preloadPromises = books
+      .filter(book => book.bookImage)
+      .map(async (book) => {
+        const cachedImage = imageCache.get(book.bookImage, 'userBooks');
+        if (!cachedImage) {
+          try {
+            const response = await fetch(`${baseUrl}/getFileAsBase64?fileName=${book.bookImage}&folderName=userBooks`);
+            if (response.ok) {
+              const imageData = await response.text();
+              imageCache.set(book.bookImage, 'userBooks', imageData);
+            }
+          } catch (error) {
+            console.error(`Failed to preload image for ${book.title}:`, error);
+          }
+        }
+      });
+    
+    await Promise.allSettled(preloadPromises);
+  }, []);
 
   const allGenres = Array.from(
     new Set((books || []).flatMap((book) => book.genre))
@@ -203,13 +296,89 @@ const BooksPage = () => {
     }, 300000); // 5 minutes
   };
 
-  useEffect(() => {
-    console.log("Books data:", books);
-    if (!books || books.length === 0) {
-      console.warn("No books data available");
+  // Fetch books from backend
+  const fetchBooks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${baseUrl}/api/getBooks`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      // Show all books (not filtered by user like in BookListing page)
+      const mappedBooks = response.data.map((book, index) => ({
+        id: book.bookId || Date.now() + index,
+        bookId: book.bookId || Date.now() + index,
+        title: book.title || '',
+        author: book.authors ? book.authors.join(', ') : '',
+        authors: book.authors || [],
+        genre: book.genres || [],
+        genres: book.genres || [],
+        condition: book.condition || 'New',
+        forSale: book.forSale || false,
+        price: book.price || 0,
+        forLend: book.forLend || false,
+        lendingAmount: book.lendingAmount || 0,
+        lendingPeriod: book.lendingPeriod || '',
+        forExchange: book.forExchange || false,
+        exchangePeriod: book.exchangePeriod || '',
+        forBidding: book.forBidding || false,
+        initialBidPrice: book.initialBidPrice || 0,
+        biddingStartDate: book.biddingStartDate || '',
+        biddingEndDate: book.biddingEndDate || '',
+        description: book.description || '',
+        location: book.location || '',
+        publishYear: book.publishYear || '',
+        isbn: book.isbn || '',
+        language: book.language || 'English',
+        hashtags: book.hashtags || [],
+        createdAt: book.createdAt || new Date().toISOString(),
+        updatedAt: book.updatedAt || new Date().toISOString(),
+        wishlistedCount: book.wishlistedBy || 0,
+        views: book.views || 0,
+        owner: {
+          name: book.userEmail?.split('@')[0] || 'Anonymous User',
+          email: book.userEmail || '',
+          avatar: book.userAvatar || null, // Backend might provide user avatar
+          profileImage: book.userProfileImage || null, // Backend might provide user profile image filename
+          trustScore: book.trustScore || 4.5,
+        },
+        cover: placeholder,
+        bookImage: book.bookImage || null,
+        reviews: book.reviews || 0,
+        rating: book.rating || 0,
+        status: book.status || 'active',
+        userEmail: book.userEmail || '',
+      }));
+
+      // Filter out inactive books
+      const activeBooks = mappedBooks.filter(book => book.status === 'active');
+      
+      setBooks(activeBooks);
+      setFilteredBooks(activeBooks);
+      console.log(`✅ Successfully fetched ${activeBooks.length} books`);
+      
+      // Preload images after a short delay (same as BookListing)
+      setTimeout(() => {
+        preloadImages(activeBooks);
+      }, 1000);
+    } catch (err) {
+      console.error("Failed to fetch books:", err);
+      showToast("Failed to load books. Please try again.", "error");
+    } finally {
+      setLoading(false);
     }
-    setFilteredBooks(books || []);
-  }, []);
+  }, [preloadImages]);
+
+  useEffect(() => {
+    fetchBooks();
+  }, [fetchBooks]);
+
+  // Clear cache when user logs out (same as BookListing)
+  useEffect(() => {
+    if (!user) {
+      imageCache.clear();
+    }
+  }, [user]);
 
   const applyFilters = useCallback(() => {
     let result = [...(books || [])];
@@ -281,6 +450,7 @@ const BooksPage = () => {
     }
     setFilteredBooks(result);
   }, [
+    books,
     searchQuery,
     selectedGenres,
     selectedConditions,
@@ -324,7 +494,7 @@ const BooksPage = () => {
         .slice(0, 4);
     }
     setAIRecommendations(result);
-  }, [aiSearchQuery]);
+  }, [books, aiSearchQuery]);
 
   useEffect(() => {
     applyFilters();
@@ -519,8 +689,7 @@ const BooksPage = () => {
       title: "The Great Gatsby",
       author: "F. Scott Fitzgerald",
       condition: "Good",
-      cover:
-        "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
+      cover: placeholder,
     };
     setExchangeBook(mockExchangeBook);
     setSelectedBook(request.book);
@@ -582,17 +751,17 @@ const BooksPage = () => {
           />
         )}
 
-        {!books || books.length === 0 ? (
+        {loading || books.length === 0 ? (
           <div className="text-center py-12 bg-white/90 rounded-2xl shadow-md border border-gray-200">
             <BookOpen size={40} className="mx-auto mb-3 text-gray-300" />
             <h3
               className="text-lg font-semibold text-gray-900"
               style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
             >
-              No books available
+              {loading ? "Loading books..." : "No books available"}
             </h3>
             <p className="text-gray-600 text-sm">
-              Please check your data source or try again later.
+              {loading ? "Fetching books from the library. Please wait." : "Check back later for new listings."}
             </p>
           </div>
         ) : (
@@ -904,12 +1073,23 @@ const BooksPage = () => {
                                 }`}
                               >
                                 <div className="relative h-40 sm:h-48 overflow-hidden">
-                                  <img
-                                    src={book.cover || "/placeholder.svg" }
-
-                                    alt={book.title}
-                                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                                  />
+                                  {book.bookImage ? (
+                                    <LazyImage
+                                      src={book.cover}
+                                      alt={book.title}
+                                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                      fileName={book.bookImage}
+                                      folderName="userBooks"
+                                      baseUrl={baseUrl}
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <div className="text-xs">No Image</div>
+                                        <div className="text-xs">{book.title}</div>
+                                      </div>
+                                    </div>
+                                  )}
                                   {isDisabled && (
                                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                                       <div className="text-white text-center">
@@ -989,14 +1169,10 @@ const BooksPage = () => {
                                   </div>
                                   <div className="flex items-center justify-between mt-2">
                                     <div className="text-xs flex items-center">
-                                      <img
-                                        src={
-                                          book.owner?.avatar ||
-                                          "https://via.placeholder.com/50" ||
-                                          "/placeholder.svg"
-                                        }
-                                        alt={book.owner?.name || "Owner"}
-                                        className="h-4 w-4 rounded-full object-cover mr-1"
+                                      <UserAvatar 
+                                        user={book.owner} 
+                                        size="xs" 
+                                        className="mr-1" 
                                       />
                                       <span className="text-gray-600">
                                         {book.owner?.name || "Unknown"}
@@ -1004,10 +1180,6 @@ const BooksPage = () => {
                                       <span className="ml-1 bg-blue-100 text-blue-800 px-1 rounded text-xs">
                                         {book.owner?.trustScore || "N/A"}★
                                       </span>
-                                    </div>
-                                    <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                                      <MessageSquare className="w-3 h-3 mr-0.5" />
-                                      <span>Contact</span>
                                     </div>
                                   </div>
                                   <div className="mt-2 flex flex-col space-y-1">
@@ -1215,11 +1387,12 @@ const BooksPage = () => {
                           className="bg-white/90 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden"
                         >
                           <div className="relative h-40 sm:h-48 overflow-hidden">
-                            <img
-                              src={
-                                book.cover || "https://via.placeholder.com/150"
-                              }
+                            <LazyImage
+                              src={book.cover}
                               alt={book.title}
+                              fileName={book.bookImage}
+                              folderName="userBooks"
+                              baseUrl={baseUrl}
                               className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                             />
                             <button
@@ -1285,16 +1458,6 @@ const BooksPage = () => {
                               >
                                 View Details
                               </Link>
-                              {/* {book.forLend && (
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-1"
-                                  onClick={() => handleBorrowRequest(book)}
-                                >
-                                  Borrow
-                                </Button>
-                              )} */}
                             </div>
                           </div>
                         </div>
@@ -1437,11 +1600,12 @@ const BooksPage = () => {
                         className="bg-white/90 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden"
                       >
                         <div className="relative h-40 sm:h-48 overflow-hidden">
-                          <img
-                            src={
-                              book.cover || "https://via.placeholder.com/150"
-                            }
+                          <LazyImage
+                            src={book.cover}
                             alt={book.title}
+                            fileName={book.bookImage}
+                            folderName="userBooks"
+                            baseUrl={baseUrl}
                             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                           />
                           <button
@@ -1557,17 +1721,6 @@ const BooksPage = () => {
                               {request.status.charAt(0).toUpperCase() +
                                 request.status.slice(1)}
                             </span>
-                            {/* Mock approve button for demo */}
-                            {/* {request.status === "pending" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-xs px-2 py-1 bg-transparent"
-                                onClick={() => approveRequest(request.id)}
-                              >
-                                Mock Approve
-                              </Button>
-                            )} */}
                           </div>
                         </div>
 
@@ -1652,7 +1805,7 @@ const BooksPage = () => {
                         Owner: {selectedBook?.owner?.name}
                       </p>
                       <p className="text-sm text-gray-600">
-                        Borrowing Price: Rs. {selectedBook?.price*0.2}
+                        Borrowing Price: Rs. {Math.round(selectedBook?.price * 0.2)}
                       </p>
                       <p className="text-sm text-gray-600">
                         Delivery Price: Rs. 200
@@ -1865,12 +2018,12 @@ const BooksPage = () => {
                       The owner has offered this book for exchange:
                     </p>
                     <div className="bg-gray-50 rounded-lg p-4 flex items-center space-x-3">
-                      <img
-                        src={
-                          exchangeBook?.cover ||
-                          "https://via.placeholder.com/80"
-                        }
+                      <LazyImage
+                        src={exchangeBook?.cover || placeholder}
                         alt={exchangeBook?.title}
+                        fileName={exchangeBook?.bookImage}
+                        folderName="userBooks"
+                        baseUrl={baseUrl}
                         className="w-16 h-20 object-cover rounded"
                       />
                       <div>

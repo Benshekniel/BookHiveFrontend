@@ -6,7 +6,7 @@ const LazyImage = ({
   src, 
   alt, 
   className = '', 
-  placeholder = "https://via.placeholder.com/150x200/6B7280/FFFFFF?text=No+Image",
+  placeholder = "data:image/svg+xml,%3csvg width='150' height='200' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='150' height='200' fill='%236B7280'/%3e%3ctext x='75' y='100' text-anchor='middle' fill='%23FFFFFF' font-size='14'%3eNo Image%3c/text%3e%3c/svg%3e",
   baseUrl = 'http://localhost:9090',
   folderName = 'userBooks',
   fileName = null,
