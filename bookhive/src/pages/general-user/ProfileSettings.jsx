@@ -1,31 +1,71 @@
 import React, { useState, useEffect } from "react";
-import { User, Mail, Phone, MapPin, Camera, Save, Edit, Link, Share2 } from "lucide-react";
+import { User, Mail, Phone, MapPin, Camera, Save, Edit, Lock, Shield, Eye, EyeOff, CheckCircle, AlertCircle, X, Loader } from "lucide-react";
+import Button from "../../components/shared/Button";
+import UserService from "../../services/userService";
 
 const ProfileSettings = () => {
-  // Mock current user data
-  const initialUser = {
-    id: 1,
-    name: "Nive",
-    email: "nive@example.com",
-    location: "Colombo, Sri Lanka",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-    bio: "Passionate reader and occasional writer enjoying Sri Lankan literature.",
-    phone: "",
-    password: "oldPassword123", // Mock existing password
-  };
+  // Get userId from localStorage, props, or auth context
+  // For now, using a mock userId - replace with actual implementation
+  const currentUserId = localStorage.getItem('userId') || 1;
 
   // State for form data, edit mode, image preview, toast notifications, and password change
   const [isEditing, setIsEditing] = useState(false);
-  const [userData, setUserData] = useState(initialUser);
+  const [userData, setUserData] = useState({
+    id: null,
+    name: "",
+    email: "",
+    location: "",
+    avatar: "",
+    bio: "",
+    phone: "",
+  });
+  const [initialUserData, setInitialUserData] = useState({});
   const [previewAvatar, setPreviewAvatar] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    old: false,
+    new: false,
+    confirm: false,
+  });
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
   const [passwordError, setPasswordError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  // Fetch user profile on component mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  /**
+   * Fetch user profile from API
+   */
+  const fetchUserProfile = async () => {
+    setPageLoading(true);
+    try {
+      const response = await UserService.getUserProfile(currentUserId);
+      setUserData(response);
+      setInitialUserData(response);
+    } catch (error) {
+      const errorMessage = UserService.handleError(error);
+      showToast(errorMessage, "error");
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  /**
+   * Show toast notification
+   */
+  const showToast = (message, type = "success") => {
+    setToast({ visible: true, message, type });
+  };
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -40,77 +80,111 @@ const ProfileSettings = () => {
     setPasswordError(""); // Clear error on input change
   };
 
+  // Toggle password visibility
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
+
   // Handle image upload
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Check file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setToast({ visible: true, message: "File size must be less than 2MB", type: "error" });
-        return;
-      }
+    if (!file) return;
 
-      // Check file type
-      const validTypes = ["image/jpeg", "image/png", "image/gif"];
-      if (!validTypes.includes(file.type)) {
-        setToast({ visible: true, message: "Only JPG, PNG, or GIF files are allowed", type: "error" });
-        return;
-      }
-
-      // Convert file to base64 for preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewAvatar(reader.result);
-        setUserData((prev) => ({ ...prev, avatar: reader.result }));
-      };
-      reader.readAsDataURL(file);
+    // Validate file
+    const validation = UserService.validateAvatarFile(file);
+    if (!validation.valid) {
+      showToast(validation.error, "error");
+      return;
     }
+
+    // Store file for upload
+    setAvatarFile(file);
+
+    // Convert file to base64 for preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewAvatar(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setTimeout(() => {
-      console.log("Saving user data:", userData);
-      setToast({ visible: true, message: "Profile updated successfully!", type: "success" });
+    setLoading(true);
+
+    try {
+      // Upload avatar if changed
+      if (avatarFile) {
+        const avatarResponse = await UserService.uploadAvatar(currentUserId, avatarFile);
+        userData.avatar = avatarResponse.avatarUrl;
+      }
+
+      // Update profile
+      const response = await UserService.updateUserProfile(currentUserId, userData);
+      
+      // Update local state with response
+      if (response.user) {
+        setUserData(response.user);
+        setInitialUserData(response.user);
+      }
+
+      showToast(response.message || "Profile updated successfully!", "success");
       setIsEditing(false);
-    }, 500);
+      setPreviewAvatar(null);
+      setAvatarFile(null);
+    } catch (error) {
+      const errorMessage = UserService.handleError(error);
+      showToast(errorMessage, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle cancel
   const handleCancel = () => {
-    setUserData(initialUser);
+    setUserData(initialUserData);
     setPreviewAvatar(null);
+    setAvatarFile(null);
     setIsEditing(false);
   };
 
   // Handle password form submission
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     const { oldPassword, newPassword, confirmPassword } = passwordData;
 
-    // Validation
-    if (oldPassword !== userData.password) {
-      setPasswordError("Old password is incorrect");
+    // Client-side validation
+    if (!oldPassword || oldPassword.trim().length === 0) {
+      setPasswordError("Old password is required");
       return;
     }
+
     if (newPassword.length < 8) {
       setPasswordError("New password must be at least 8 characters long");
       return;
     }
+
     if (newPassword !== confirmPassword) {
       setPasswordError("New password and confirm password do not match");
       return;
     }
 
-    // Simulate password update
-    setTimeout(() => {
-      setUserData((prev) => ({ ...prev, password: newPassword }));
-      setToast({ visible: true, message: "Password updated successfully!", type: "success" });
+    setLoading(true);
+
+    try {
+      const response = await UserService.updatePassword(currentUserId, passwordData);
+      
+      showToast(response.message || "Password updated successfully!", "success");
       setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
       setPasswordError("");
       setShowPasswordForm(false);
-    }, 500);
+    } catch (error) {
+      const errorMessage = UserService.handleError(error);
+      setPasswordError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle password form cancel
@@ -118,37 +192,6 @@ const ProfileSettings = () => {
     setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
     setPasswordError("");
     setShowPasswordForm(false);
-  };
-
-  // Handle referral link copy
-  const handleCopyReferralLink = () => {
-    const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
-    navigator.clipboard.writeText(referralLink).then(() => {
-      setToast({ visible: true, message: "Referral link copied to clipboard!", type: "success" });
-    }).catch(() => {
-      setToast({ visible: true, message: "Failed to copy referral link", type: "error" });
-    });
-  };
-
-  // Handle social sharing
-  const handleShare = (platform) => {
-    const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
-    let shareUrl;
-    const shareText = `Join me on this awesome book-sharing app! 📚 ${referralLink}`;
-    switch (platform) {
-      case "email":
-        shareUrl = `mailto:?subject=Join our Book Sharing App!&body=${encodeURIComponent(shareText)}`;
-        break;
-      case "whatsapp":
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-        break;
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-        break;
-      default:
-        return;
-    }
-    window.open(shareUrl, "_blank");
   };
 
   // Toast auto-hide
@@ -161,331 +204,466 @@ const ProfileSettings = () => {
     }
   }, [toast.visible]);
 
+  // Password strength indicator
+  const getPasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
+  };
+
+  const passwordStrength = getPasswordStrength(passwordData.newPassword);
+
+  // Show loading spinner while fetching data
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 text-lg">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-8xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+      {/* Toast Notification */}
+      {toast.visible && (
+        <div
+          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+            toast.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+          }`}
+        >
+          <div className="flex items-center space-x-2">
+            {toast.type === "success" ? (
+              <CheckCircle size={20} />
+            ) : (
+              <AlertCircle size={20} />
+            )}
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-8 text-white">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="mb-4 md:mb-0">
               <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
-              <p className="text-blue-100 text-lg">Update your personal details and preferences</p>
+              <p className="text-blue-100 text-lg">
+                Manage your personal information and security preferences
+              </p>
             </div>
             {!isEditing && (
-              <button
+              <Button
+                variant="primary"
                 onClick={() => setIsEditing(true)}
                 className="flex items-center space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                icon={<Edit size={16} />}
               >
-                <Edit className="h-4 w-4" />
-                <span>Edit Profile</span>
-              </button>
+                Edit Profile
+              </Button>
             )}
           </div>
         </div>
 
-        {/* Profile Settings Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        {/* Profile Information Card */}
+        <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-200">
           <div className="p-6">
-            <div className="space-y-6">
-              {/* Profile Picture */}
-              <div className="flex items-center space-x-4">
-                <img
-                  src={previewAvatar || userData.avatar}
-                  alt={userData.name}
-                  className="w-32 h-32 rounded-full object-cover border-4 border-[#1e3a8a]"
-                />
-                <div>
-                  {isEditing && (
-                    <label
-                      htmlFor="avatar-upload"
-                      className="bg-[#1e3a8a] hover:bg-blue-800 text-white px-3 py-2 rounded-lg font-medium flex items-center space-x-2 cursor-pointer transition-colors text-sm"
-                    >
-                      <Camera className="w-4 h-4" />
-                      <span>Change Photo</span>
-                    </label>
-                  )}
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/jpeg,image/png,image/gif"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">JPG, PNG or GIF. Max size 2MB</p>
-                </div>
-              </div>
-
-              {/* Personal Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
-                  </label>
+            <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-3 mb-4">
+              <User className="h-6 w-6 text-blue-600" />
+              <span>Personal Information</span>
+            </h2>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-6">
+                {/* Profile Picture Section */}
+                <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <img
+                      src={previewAvatar || userData.avatar || "https://via.placeholder.com/150"}
+                      alt={userData.name}
+                      className="w-24 h-24 rounded-full object-cover border-2 border-blue-100 shadow-md"
+                    />
+                    {isEditing && (
+                      <div className="absolute -bottom-1 -right-1">
+                        <label
+                          htmlFor="avatar-upload"
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full cursor-pointer transition-colors shadow-md flex items-center justify-center"
+                        >
+                          <Camera className="w-4 h-4" />
+                        </label>
+                      </div>
+                    )}
                     <input
-                      type="text"
-                      name="name"
-                      value={userData.name}
-                      onChange={handleInputChange}
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif"
+                      onChange={handleImageUpload}
+                      className="hidden"
                       disabled={!isEditing}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bio
-                  </label>
-                  <textarea
-                    name="bio"
-                    value={userData.bio}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    rows="4"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
-                    placeholder="Tell others about yourself and your reading interests..."
-                  />
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={userData.email}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={userData.phone}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      placeholder="+94 77 123 4567"
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input
-                      type="text"
-                      name="location"
-                      value={userData.location}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Referral Program */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Referral Program
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900">Your Referral Link</h4>
-                    <p className="text-sm text-gray-600">Invite friends to join the book-sharing community!</p>
-                    <div className="mt-2 flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={`https://book-sharing-app.com/referral/${userData.id}`}
-                        readOnly
-                        className="w-300 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCopyReferralLink}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Link className="h-4 w-4" />
-                        <span>Copy Link</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">Share Your Link</h4>
-                    <div className="mt-2 flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => handleShare("email")}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Mail className="h-4 w-4" />
-                        <span>Email</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleShare("whatsapp")}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Share2 className="h-4 w-4" />
-                        <span>WhatsApp</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleShare("twitter")}
-                        className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center space-x-2 text-sm"
-                      >
-                        <Share2 className="h-4 w-4" />
-                        <span>Twitter</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Account Security */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Account Security
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordForm(true)}
-                      className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors text-sm"
-                    >
-                      Change Password
-                    </button>
-                    <p className="text-sm text-gray-600 mt-2">
-                      Last changed 3 months ago
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{userData.name}</h3>
+                    <p className="text-gray-600 mb-3">Upload a new profile picture to personalize your account</p>
+                    <p className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-lg inline-block">
+                      JPG, PNG or GIF files • Maximum size: 2MB
                     </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Password Change Form */}
-              {showPasswordForm && (
-                <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      Change Password
-                    </h3>
-                    <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Old Password
-                        </label>
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Full Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                         <input
-                          type="password"
-                          name="oldPassword"
-                          value={passwordData.oldPassword}
-                          onChange={handlePasswordChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]"
+                          type="text"
+                          name="name"
+                          value={userData.name}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-50 disabled:text-gray-500 transition-all"
                           required
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          New Password
-                        </label>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                         <input
-                          type="password"
-                          name="newPassword"
-                          value={passwordData.newPassword}
-                          onChange={handlePasswordChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]"
+                          type="email"
+                          name="email"
+                          value={userData.email}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-50 disabled:text-gray-500 transition-all"
                           required
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Confirm New Password
-                        </label>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                         <input
-                          type="password"
-                          name="confirmPassword"
-                          value={passwordData.confirmPassword}
-                          onChange={handlePasswordChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]"
-                          required
+                          type="tel"
+                          name="phone"
+                          value={userData.phone || ""}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="+94 77 123 4567"
+                          className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-50 disabled:text-gray-500 transition-all"
                         />
                       </div>
-                      {passwordError && (
-                        <p className="text-sm text-red-600">{passwordError}</p>
-                      )}
-                      <div className="flex items-center space-x-4">
-                        <button
-                          type="submit"
-                          className="flex items-center space-x-2 bg-[#1e3a8a] text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors text-sm"
-                        >
-                          <Save className="h-4 w-4" />
-                          <span>Update Password</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handlePasswordCancel}
-                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                        >
-                          Cancel
-                        </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Location
+                      </label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        <input
+                          type="text"
+                          name="location"
+                          value={userData.location || ""}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-50 disabled:text-gray-500 transition-all"
+                        />
                       </div>
-                    </form>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bio
+                    </label>
+                    <textarea
+                      name="bio"
+                      value={userData.bio || ""}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      rows="6"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-50 disabled:text-gray-500 transition-all resize-none"
+                      placeholder="Tell others about yourself and your reading interests..."
+                    />
+                    <p className="text-sm text-gray-500 mt-2">Share your interests, favorite books, or anything you'd like others to know about you.</p>
                   </div>
                 </div>
-              )}
 
-              {/* Action Buttons */}
-              {isEditing && (
-                <div className="flex items-center space-x-4">
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    className="flex items-center space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                {/* Action Buttons */}
+                {isEditing && (
+                  <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      disabled={loading}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save size={16} />
+                          <span>Save Changes</span>
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={handleCancel}
+                      disabled={loading}
+                      className="border-gray-200 text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Account Security Card */}
+        <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-200">
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-3 mb-4">
+              <Shield className="h-6 w-6 text-blue-600" />
+              <span>Account Security</span>
+            </h2>
+            <div className="space-y-4">
+              {/* Password Section */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center space-x-2">
+                      <Lock className="h-5 w-5 text-gray-600" />
+                      <span>Password</span>
+                    </h3>
+                    <p className="text-gray-600 mb-3">Keep your account secure with a strong password</p>
+                    <div className="flex items-center space-x-4 text-sm">
+                      <span className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-gray-600">Last updated: 3 months ago</span>
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowPasswordForm(true)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-300 transition-colors"
                   >
-                    <Save className="h-4 w-4" />
-                    <span>Save Changes</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
+                    Change Password
+                  </Button>
                 </div>
-              )}
+              </div>
+
+              {/* Security Tips */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Security Recommendations</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-gray-700">Use a strong, unique password</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-gray-700">Keep your email address updated</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-gray-700">Review your account regularly</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Toast Notification */}
-        {toast.visible && (
-          <div
-            className={`fixed top-18 right-6 p-4 rounded-lg shadow-lg z-1000 ${
-              toast.type === "success"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            <p className="text-sm font-medium">{toast.message}</p>
+        {/* Password Change Modal */}
+        {showPasswordForm && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 p-4">
+            <div className="bg-white/95 backdrop-blur-md rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold mb-2 flex items-center space-x-2">
+                      <Lock className="h-6 w-6 text-blue-600" />
+                      <span>Change Password</span>
+                    </h3>
+                    <p className="text-gray-600">Update your account password</p>
+                  </div>
+                  <button
+                    onClick={handlePasswordCancel}
+                    className="text-gray-500 hover:text-gray-700"
+                    disabled={loading}
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPasswords.old ? "text" : "password"}
+                        name="oldPassword"
+                        value={passwordData.oldPassword}
+                        onChange={handlePasswordChange}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        required
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('old')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        disabled={loading}
+                      >
+                        {showPasswords.old ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPasswords.new ? "text" : "password"}
+                        name="newPassword"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        required
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('new')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        disabled={loading}
+                      >
+                        {showPasswords.new ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {passwordData.newPassword && (
+                      <div className="mt-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                passwordStrength <= 2 ? 'bg-red-500' :
+                                passwordStrength <= 3 ? 'bg-yellow-500' :
+                                'bg-green-500'
+                              }`}
+                              style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                            />
+                          </div>
+                          <span className={`text-xs font-medium ${
+                            passwordStrength <= 2 ? 'text-red-600' :
+                            passwordStrength <= 3 ? 'text-yellow-600' :
+                            'text-green-600'
+                          }`}>
+                            {passwordStrength <= 2 ? 'Weak' : passwordStrength <= 3 ? 'Medium' : 'Strong'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPasswords.confirm ? "text" : "password"}
+                        name="confirmPassword"
+                        value={passwordData.confirmPassword}
+                        onChange={handlePasswordChange}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        required
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('confirm')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        disabled={loading}
+                      >
+                        {showPasswords.confirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {passwordError && (
+                    <p className="text-red-600 text-sm flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {passwordError}
+                    </p>
+                  )}
+
+                  <div className="flex justify-end space-x-3 mt-4">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={handlePasswordCancel}
+                      disabled={loading}
+                      className="border-gray-200 text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      disabled={loading}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          <span>Updating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save size={16} />
+                          <span>Update Password</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         )}
       </div>
