@@ -45,7 +45,7 @@ class ApiClient {
 
     try {
       console.log(`API Request: ${config.method || 'GET'} ${url}`);
-      
+
       const response = await fetch(url, config);
 
       if (!response.ok) {
@@ -98,7 +98,7 @@ const apiClient = new ApiClient();
 export const agentApi = {
   getAllAgents: async (useCache = true) => {
     const cacheKey = 'all_agents';
-    
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
@@ -115,7 +115,7 @@ export const agentApi = {
 
   getAvailableAgents: async (useCache = true) => {
     const cacheKey = 'available_agents';
-    
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
@@ -202,7 +202,7 @@ export const agentApi = {
 export const deliveryApi = {
   getAllDeliveries: async (useCache = true) => {
     const cacheKey = 'all_deliveries';
-    
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
@@ -214,7 +214,7 @@ export const deliveryApi = {
 
   getDeliveryStats: async (useCache = true) => {
     const cacheKey = 'delivery_stats';
-    
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
@@ -226,7 +226,7 @@ export const deliveryApi = {
 
   getDeliverySummary: async (useCache = true) => {
     const cacheKey = 'delivery_summary';
-    
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
@@ -269,27 +269,36 @@ export const deliveryApi = {
 };
 
 // Hub API Service
+// Hub API Service
 export const hubApi = {
-  getAllHubs: async (useCache = true) => {
-    const cacheKey = 'all_hubs';
-    
+  // 🔥 Updated to support limit parameter
+  getAllHubs: async (useCache = true, limit = null) => {
+    // 🔥 Modified cache key to include limit for proper caching
+    const cacheKey = limit ? `all_hubs_limit_${limit}` : 'all_hubs';
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
 
-    const hubs = await apiClient.get('/hubs');
+    // 🔥 Add limit parameter to URL if provided
+    const url = limit ? `/hubs?limit=${limit}` : '/hubs';
+    const hubs = await apiClient.get(url);
     setCache(cacheKey, hubs);
     return hubs;
   },
 
-  getHubStats: async (useCache = true) => {
-    const cacheKey = 'hub_stats';
-    
+  // 🔥 Updated to support limit parameter
+  getHubStats: async (useCache = true, limit = null) => {
+    // 🔥 Modified cache key to include limit for proper caching
+    const cacheKey = limit ? `hub_stats_limit_${limit}` : 'hub_stats';
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
 
-    const stats = await apiClient.get('/hubs/stats');
+    // 🔥 Add limit parameter to URL if provided
+    const url = limit ? `/hubs/stats?limit=${limit}` : '/hubs/stats';
+    const stats = await apiClient.get(url);
     setCache(cacheKey, stats);
     return stats;
   },
@@ -593,7 +602,7 @@ export const routeAssignmentApi = {
 export const transactionApi = {
   getAllTransactions: async (useCache = true) => {
     const cacheKey = 'all_transactions';
-    
+
     if (useCache && isValidCache(cacheKey)) {
       return getCache(cacheKey);
     }
@@ -633,7 +642,7 @@ export const transactionApi = {
 // export const dashboardApi = {
 //   getDashboardSummary: async (useCache = true) => {
 //     const cacheKey = 'dashboard_summary';
-    
+
 //     if (useCache && isValidCache(cacheKey)) {
 //       return getCache(cacheKey);
 //     }
@@ -1096,7 +1105,7 @@ export const documentApi = {
       }
 
       const blob = await response.blob();
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1104,11 +1113,11 @@ export const documentApi = {
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error downloading document:', error);
@@ -1120,7 +1129,7 @@ export const documentApi = {
   downloadApplicationDocument: async (applicationId, documentType) => {
     try {
       const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/download`;
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -1133,7 +1142,7 @@ export const documentApi = {
       }
 
       const blob = await response.blob();
-      
+
       // Get filename from Content-Disposition header or use default
       let filename = `${applicationId}_${documentType}`;
       const contentDisposition = response.headers.get('Content-Disposition');
@@ -1155,17 +1164,17 @@ export const documentApi = {
         }
         filename += `.${extension}`;
       }
-      
+
       const url2 = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url2;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      
+
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url2);
-      
+
       return { success: true };
     } catch (error) {
       console.error(`Error downloading ${documentType} for application ${applicationId}:`, error);
@@ -1178,11 +1187,11 @@ export const documentApi = {
     try {
       const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/base64`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to get document base64: ${response.status} ${response.statusText}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error(`Error getting ${documentType} base64 for application ${applicationId}:`, error);
@@ -1194,7 +1203,7 @@ export const documentApi = {
   downloadAllDocuments: async (applicationId) => {
     try {
       const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/download-all`;
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -1207,7 +1216,7 @@ export const documentApi = {
       }
 
       const blob = await response.blob();
-      
+
       // Get filename from Content-Disposition header or use default
       let filename = `application_${applicationId}_documents.zip`;
       const contentDisposition = response.headers.get('Content-Disposition');
@@ -1217,17 +1226,17 @@ export const documentApi = {
           filename = filenameMatch[1];
         }
       }
-      
+
       const url2 = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url2;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      
+
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url2);
-      
+
       return { success: true };
     } catch (error) {
       console.error(`Error downloading all documents for application ${applicationId}:`, error);
@@ -1240,11 +1249,11 @@ export const documentApi = {
     try {
       const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/exists`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to check document: ${response.status} ${response.statusText}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error(`Error checking ${documentType} for application ${applicationId}:`, error);
@@ -1257,11 +1266,11 @@ export const documentApi = {
     try {
       const url = `${API_BASE_URL}/agent-applications/${applicationId}/documents/${documentType}/info`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to get document info: ${response.status} ${response.statusText}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error(`Error getting ${documentType} info for application ${applicationId}:`, error);
@@ -1275,7 +1284,7 @@ export const documentHelpers = {
   getDocumentTypeDisplayName: (documentType) => {
     const displayNames = {
       'idFront': 'ID Front',
-      'idBack': 'ID Back', 
+      'idBack': 'ID Back',
       'vehicleRc': 'Vehicle RC',
       'profileImage': 'Profile Image'
     };
@@ -1286,7 +1295,7 @@ export const documentHelpers = {
     const typeMap = {
       'idFront': 'id_front',
       'idBack': 'id_back',
-      'vehicleRc': 'vehicle_rc', 
+      'vehicleRc': 'vehicle_rc',
       'profileImage': 'profile_image'
     };
     const mappedType = typeMap[documentType] || documentType;
@@ -1296,7 +1305,7 @@ export const documentHelpers = {
   getFileExtension: (contentType) => {
     const typeMap = {
       'image/jpeg': 'jpg',
-      'image/jpg': 'jpg', 
+      'image/jpg': 'jpg',
       'image/png': 'png',
       'image/gif': 'gif',
       'image/webp': 'webp',

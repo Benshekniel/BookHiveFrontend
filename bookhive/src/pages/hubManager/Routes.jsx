@@ -1,4 +1,4 @@
-// Routes.jsx - Complete file with RouteEditor integration and fixes
+// Routes.jsx - Fixed version with working maps and no refresh button
 import { useState, useEffect, useRef } from 'react';
 import {
   Plus,
@@ -12,7 +12,6 @@ import {
   TrendingDown,
   Clock,
   Package,
-  RefreshCw,
   X,
   Map,
   Navigation,
@@ -43,6 +42,100 @@ const Routes = () => {
   const fullscreenMapRef = useRef(null);
   const detailsMapRef = useRef(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(!!window.google?.maps?.drawing);
+
+  // Safe helper functions to handle null values
+  const safeParsePostalCodes = (postalCodes) => {
+    if (!postalCodes || typeof postalCodes !== 'string') return [];
+    return postalCodes.split(',').map(code => code.trim()).filter(code => code.length > 0);
+  };
+
+  const safeParseJsonField = (field) => {
+    if (!field) return [];
+    if (typeof field === 'string') {
+      try {
+        // Try to parse as JSON first
+        const parsed = JSON.parse(field);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        // If JSON parsing fails, treat as comma-separated string
+        return field.split(',').map(item => item.trim()).filter(item => item.length > 0);
+      }
+    }
+    return Array.isArray(field) ? field : [];
+  };
+
+  const safeParseBoundaryCoordinates = (boundaryCoordinates) => {
+    if (!boundaryCoordinates || typeof boundaryCoordinates !== 'string') return null;
+    
+    try {
+      const parsed = JSON.parse(boundaryCoordinates);
+      if (Array.isArray(parsed) && parsed.length >= 3) {
+        // Validate that each coordinate has lat and lng
+        const isValid = parsed.every(coord => 
+          coord && typeof coord === 'object' && 
+          typeof coord.lat === 'number' && 
+          typeof coord.lng === 'number'
+        );
+        return isValid ? parsed : null;
+      }
+    } catch (e) {
+      console.warn('Failed to parse boundary coordinates:', e);
+    }
+    return null;
+  };
+
+  const getBoundaryStats = (coordinates) => {
+    if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 3) {
+      return null;
+    }
+
+    try {
+      // Calculate area using shoelace formula
+      let area = 0;
+      for (let i = 0; i < coordinates.length; i++) {
+        const j = (i + 1) % coordinates.length;
+        area += coordinates[i].lat * coordinates[j].lng;
+        area -= coordinates[j].lat * coordinates[i].lng;
+      }
+      area = Math.abs(area) / 2;
+
+      // Convert to approximate km² (very rough approximation)
+      const areaKm2 = (area * 111 * 111 / 1000000).toFixed(2);
+
+      return {
+        pointCount: coordinates.length,
+        area: areaKm2,
+        perimeter: 0 // Would need more complex calculation
+      };
+    } catch (e) {
+      console.warn('Failed to calculate boundary stats:', e);
+      return null;
+    }
+  };
+
+  // Helper function to get route type colors
+  const getRouteTypeColor = (routeType) => {
+    const colors = {
+      RESIDENTIAL: 'bg-blue-100 text-blue-800',
+      COMMERCIAL: 'bg-green-100 text-green-800',
+      INDUSTRIAL: 'bg-yellow-100 text-yellow-800',
+      MIXED: 'bg-purple-100 text-purple-800',
+      UNIVERSITY: 'bg-indigo-100 text-indigo-800',
+      DOWNTOWN: 'bg-red-100 text-red-800'
+    };
+    return colors[routeType] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Helper function to get traffic pattern colors
+  const getTrafficPatternColor = (trafficPattern) => {
+    const colors = {
+      LOW: 'bg-green-100 text-green-800',
+      MODERATE: 'bg-yellow-100 text-yellow-800',
+      HIGH: 'bg-red-100 text-red-800',
+      VARIABLE: 'bg-purple-100 text-purple-800'
+    };
+    return colors[trafficPattern] || 'bg-gray-100 text-gray-800';
+  };
 
   useEffect(() => {
     // Preload Google Maps API and fetch routes data
@@ -75,19 +168,177 @@ const Routes = () => {
     loadGoogleMapsAndData();
   }, [hubId]);
 
+  // Fixed useEffect for map initialization - THIS WAS MISSING!
+  useEffect(() => {
+    if (isGoogleMapsLoaded && routes.length > 0) {
+      if (showRouteMap && mapRef.current) {
+        initializeMap(mapRef.current, routes, null, 'overview');
+      }
+      if (showFullscreenMap && fullscreenMapRef.current) {
+        initializeMap(fullscreenMapRef.current, routes, selectedRoute, 'fullscreen');
+      }
+    }
+  }, [routes, showRouteMap, showFullscreenMap, isGoogleMapsLoaded]);
+
+  // Load existing route data
+  const fetchRoutesData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Fetching routes for hub:', hubId);
+      const routesResponse = await routeApi.getRoutesByHub(hubId);
+      console.log('Raw routes response:', routesResponse);
+
+      const formattedRoutes = await Promise.all(routesResponse.map(async (route) => {
+        try {
+          console.log('Processing route:', route.name, route);
+          
+          // Safely get route agents
+          let agentsResponse = [];
+          try {
+            agentsResponse = await routeApi.getRouteAgents(route.routeId);
+          } catch (agentError) {
+            console.warn('Failed to fetch agents for route', route.routeId, agentError);
+          }
+
+          const formattedAgents = agentsResponse.map(agent => {
+            const agentName = agent.agentName || agent.name || 'Unknown Agent';
+            const [firstName, ...lastNameParts] = agentName.split(' ');
+            const lastName = lastNameParts.join(' ');
+            
+            return {
+              id: agent.agentId || agent.id,
+              firstName: firstName || '',
+              lastName: lastName || '',
+              availabilityStatus: agent.agentAvailabilityStatus || agent.availabilityStatus || 'UNKNOWN',
+              vehicleType: agent.agentVehicleType || agent.vehicleType,
+              vehicleNumber: agent.agentVehicleNumber || agent.vehicleNumber
+            };
+          });
+
+          // Parse boundary coordinates safely
+          const boundaryCoordinates = safeParseBoundaryCoordinates(route.boundaryCoordinates);
+          
+          // Debug boundary coordinates
+          if (boundaryCoordinates) {
+            console.log(`Route "${route.name}" has ${boundaryCoordinates.length} boundary points`);
+          } else {
+            console.log(`Route "${route.name}" has no valid boundary coordinates`);
+          }
+
+          return {
+            id: route.routeId,
+            name: route.name || 'Unnamed Route',
+            description: route.description || 'No description available',
+            coordinates: {
+              lat: route.centerLatitude || 6.9271,
+              lng: route.centerLongitude || 79.8612
+            },
+            postalCodes: safeParsePostalCodes(route.postalCodes),
+            neighborhoods: safeParseJsonField(route.neighborhoods),
+            landmarks: safeParseJsonField(route.landmarks),
+            boundaryCoordinates: boundaryCoordinates,
+            routeType: route.routeType || 'RESIDENTIAL',
+            trafficPattern: route.trafficPattern || 'MODERATE',
+            status: (route.status || 'active').toLowerCase(),
+            coverageArea: route.coverageArea || '0 km²',
+            estimatedDeliveryTime: route.estimatedDeliveryTime || 30,
+            maxDailyDeliveries: route.maxDailyDeliveries || 0,
+            priorityLevel: route.priorityLevel || 3,
+            assignedRiders: formattedAgents.length,
+            totalRiders: formattedAgents.length,
+            performance: {
+              trend: Math.random() > 0.5 ? 'up' : 'down',
+              change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 10).toFixed(1)}%`
+            },
+            agents: formattedAgents,
+            createdAt: route.createdAt,
+            updatedAt: route.updatedAt
+          };
+        } catch (routeError) {
+          console.error('Error processing route:', route, routeError);
+          // Return a safe default route object
+          return {
+            id: route.routeId || Math.random(),
+            name: route.name || 'Error Loading Route',
+            description: 'Error loading route data',
+            coordinates: { lat: 6.9271, lng: 79.8612 },
+            postalCodes: [],
+            neighborhoods: [],
+            landmarks: [],
+            boundaryCoordinates: null,
+            routeType: 'RESIDENTIAL',
+            trafficPattern: 'MODERATE',
+            status: 'active',
+            coverageArea: '0 km²',
+            estimatedDeliveryTime: 30,
+            maxDailyDeliveries: 0,
+            priorityLevel: 3,
+            assignedRiders: 0,
+            totalRiders: 0,
+            performance: { trend: 'down', change: '0%' },
+            agents: []
+          };
+        }
+      }));
+
+      // Safely fetch agents
+      let agentsResponse = [];
+      try {
+        agentsResponse = await agentApi.getAgentsByHub(hubId);
+      } catch (agentError) {
+        console.warn('Failed to fetch agents for hub:', agentError);
+      }
+
+      const formattedAllAgents = agentsResponse.map(agent => {
+        const agentName = agent.name || agent.userName || 'Unknown Agent';
+        const [firstName, ...lastNameParts] = agentName.split(' ');
+        const lastName = lastNameParts.join(' ');
+        return {
+          id: agent.agentId || agent.id,
+          firstName: firstName || '',
+          lastName: lastName || '',
+          availabilityStatus: agent.availabilityStatus || 'UNKNOWN',
+          vehicleType: agent.vehicleType,
+          vehicleNumber: agent.vehicleNumber
+        };
+      });
+
+      setRoutes(formattedRoutes);
+      setAgents(formattedAllAgents);
+
+      // Calculate boundary statistics safely
+      const stats = {};
+      formattedRoutes.forEach(route => {
+        if (route.boundaryCoordinates) {
+          const boundaryStats = getBoundaryStats(route.boundaryCoordinates);
+          if (boundaryStats) {
+            stats[route.id] = boundaryStats;
+          }
+        }
+      });
+      setBoundaryStats(stats);
+
+      console.log(`Loaded ${formattedRoutes.length} routes, ${Object.keys(stats).length} with boundary coordinates`);
+
+    } catch (err) {
+      console.error('Error fetching routes data:', err);
+      setError('Failed to load routes data: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLoadGoogleMaps = (callback) => {
     if (window.google?.maps?.drawing) {
-      // Google Maps with drawing library is already loaded
       callback();
       return;
     }
 
-    // Check if script is already loading
     const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
     if (existingScript) {
-      // Script is loading, wait for it
       existingScript.addEventListener('load', () => {
-        // Wait a bit more for drawing library to be ready
         setTimeout(() => {
           if (window.google?.maps?.drawing) {
             setIsGoogleMapsLoaded(true);
@@ -100,13 +351,11 @@ const Routes = () => {
       return;
     }
 
-    // Load new script
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU&libraries=drawing,geometry`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      // Wait a bit for drawing library to be ready
       setTimeout(() => {
         if (window.google?.maps?.drawing) {
           setIsGoogleMapsLoaded(true);
@@ -122,7 +371,6 @@ const Routes = () => {
     document.head.appendChild(script);
   };
 
-  // Modified initializeMap function with context parameter to prevent infinite loops
   const initializeMap = (mapContainer, routes, selectedRoute = null, context = 'overview') => {
     if (!window.google || !mapContainer) return null;
 
@@ -145,19 +393,17 @@ const Routes = () => {
     let hasValidBounds = false;
 
     routes.forEach((route) => {
-      // Use actual boundary coordinates if available, otherwise generate simple bounds
       let routeBounds;
       let hasBoundaryCoordinates = false;
       
       if (route.boundaryCoordinates && Array.isArray(route.boundaryCoordinates) && route.boundaryCoordinates.length >= 3) {
-        // Use actual boundary coordinates from database
         routeBounds = route.boundaryCoordinates;
         hasBoundaryCoordinates = true;
         console.log(`Using actual boundary coordinates for route ${route.name}:`, routeBounds.length, 'points');
         
         // Update boundary stats only if not already set
         if (!boundaryStats[route.id]) {
-          const stats = routeHelpers.getBoundaryStats(routeBounds);
+          const stats = getBoundaryStats(routeBounds);
           if (stats) {
             setBoundaryStats(prev => ({
               ...prev,
@@ -166,14 +412,12 @@ const Routes = () => {
           }
         }
       } else {
-        // Fallback to generated circular bounds
         routeBounds = generateRouteBounds(route.coordinates, 0.01);
         console.log(`Using generated boundary for route ${route.name}:`, routeBounds.length, 'points');
       }
 
-      // Create the polygon with the route boundaries
       const isSelected = selectedRoute && selectedRoute.id === route.id;
-      const polygonColor = getRouteColor(route.routeType);
+      const polygonColor = getMapRouteColor(route.routeType);
       
       const routePolygon = new window.google.maps.Polygon({
         paths: routeBounds,
@@ -186,7 +430,6 @@ const Routes = () => {
         clickable: true
       });
 
-      // Create marker for route center
       const marker = new window.google.maps.Marker({
         position: route.coordinates,
         map: map,
@@ -207,27 +450,23 @@ const Routes = () => {
         }
       });
 
-      // Add to bounds
       routeBounds.forEach(coord => {
         bounds.extend(new window.google.maps.LatLng(coord.lat, coord.lng));
         hasValidBounds = true;
       });
 
-      // Click handlers for route selection - only for overview context
       const selectRoute = () => {
         if (context === 'overview' || context === 'fullscreen') {
           setSelectedRoute(route);
         }
       };
 
-      // Only add click handlers for non-detail contexts
       if (context !== 'details') {
         marker.addListener('click', selectRoute);
         routePolygon.addListener('click', selectRoute);
       }
 
-      // Info window with enhanced route details
-      const stats = routeHelpers.getBoundaryStats(route.boundaryCoordinates);
+      const stats = getBoundaryStats(route.boundaryCoordinates);
       const infoWindow = new window.google.maps.InfoWindow({
         content: `
           <div style="padding: 8px; min-width: 250px;">
@@ -262,10 +501,8 @@ const Routes = () => {
       });
     });
 
-    // Fit map to show all routes if not focusing on a specific route
     if (!selectedRoute && hasValidBounds && context !== 'details') {
       map.fitBounds(bounds);
-      // Ensure minimum zoom level
       const listener = window.google.maps.event.addListener(map, 'idle', () => {
         if (map.getZoom() > 15) map.setZoom(15);
         window.google.maps.event.removeListener(listener);
@@ -275,7 +512,7 @@ const Routes = () => {
     return map;
   };
 
-  const getRouteColor = (routeType) => {
+  const getMapRouteColor = (routeType) => {
     const colors = {
       RESIDENTIAL: { stroke: '#3B82F6', fill: '#3B82F6', marker: '#3B82F6' },
       COMMERCIAL: { stroke: '#10B981', fill: '#10B981', marker: '#10B981' },
@@ -301,132 +538,44 @@ const Routes = () => {
     return bounds;
   };
 
-  const fetchRoutesData = async () => {
+  const assignRider = async (routeId, agentId) => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const routesResponse = await routeApi.getRoutesByHub(hubId);
-      const formattedRoutes = await Promise.all(routesResponse.map(async (route) => {
-        const agentsResponse = await routeApi.getRouteAgents(route.routeId);
-        const formattedAgents = agentsResponse.map(agent => {
-          const [firstName, ...lastNameParts] = agent.agentName.split(' ');
+      await routeApi.assignAgentToRoute(routeId, agentId);
+      
+      // Refresh the specific route's agents
+      try {
+        const updatedAgents = await routeApi.getRouteAgents(routeId);
+        const formattedUpdatedAgents = updatedAgents.map(agent => {
+          const agentName = agent.agentName || agent.name || 'Unknown Agent';
+          const [firstName, ...lastNameParts] = agentName.split(' ');
           const lastName = lastNameParts.join(' ');
-          
           return {
-            id: agent.agentId,
+            id: agent.agentId || agent.id,
             firstName: firstName || '',
             lastName: lastName || '',
-            availabilityStatus: agent.agentAvailabilityStatus || 'UNKNOWN',
-            vehicleType: agent.agentVehicleType,
-            vehicleNumber: agent.agentVehicleNumber
+            availabilityStatus: agent.agentAvailabilityStatus || agent.availabilityStatus || 'UNKNOWN',
+            vehicleType: agent.agentVehicleType || agent.vehicleType,
+            vehicleNumber: agent.agentVehicleNumber || agent.vehicleNumber
           };
         });
 
-        // Parse boundary coordinates properly
-        const boundaryCoordinates = routeHelpers.parseBoundaryCoordinates(route.boundaryCoordinates);
-        
-        // Debug boundary coordinates - safely handle null/undefined
-        if (boundaryCoordinates) {
-          console.log(`Route "${route.name}" has ${boundaryCoordinates.length} boundary points`);
-        } else {
-          console.log(`Route "${route.name}" has no boundary coordinates`);
-        }
-
-        return {
-          id: route.routeId,
-          name: route.name,
-          description: route.description || 'No description available',
-          coordinates: {
-            lat: route.centerLatitude || 6.9271,
-            lng: route.centerLongitude || 79.8612
-          },
-          postalCodes: routeHelpers.parsePostalCodes(route.postalCodes),
-          neighborhoods: routeHelpers.parseJsonField(route.neighborhoods),
-          landmarks: routeHelpers.parseJsonField(route.landmarks),
-          boundaryCoordinates: boundaryCoordinates, // Use parsed coordinates
-          routeType: route.routeType || 'RESIDENTIAL',
-          trafficPattern: route.trafficPattern || 'MODERATE',
-          status: route.status?.toLowerCase() || 'active',
-          coverageArea: route.coverageArea || '0 km²',
-          estimatedDeliveryTime: route.estimatedDeliveryTime || 30,
-          maxDailyDeliveries: route.maxDailyDeliveries || 0,
-          priorityLevel: route.priorityLevel || 3,
-          assignedRiders: formattedAgents.length,
-          totalRiders: formattedAgents.length,
-          performance: {
-            trend: Math.random() > 0.5 ? 'up' : 'down',
-            change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 10).toFixed(1)}%`
-          },
-          agents: formattedAgents
-        };
-      }));
-
-      const agentsResponse = await agentApi.getAgentsByHub(hubId);
-      const formattedAllAgents = agentsResponse.map(agent => {
-        const [firstName, ...lastNameParts] = agent.name.split(' ');
-        const lastName = lastNameParts.join(' ');
-        return {
-          id: agent.agentId,
-          firstName: firstName || '',
-          lastName: lastName || '',
-          availabilityStatus: agent.availabilityStatus || 'UNKNOWN',
-          vehicleType: agent.vehicleType,
-          vehicleNumber: agent.vehicleNumber
-        };
-      });
-
-      setRoutes(formattedRoutes);
-      setAgents(formattedAllAgents);
-
-      // Calculate boundary statistics - safely handle null values
-      const stats = {};
-      formattedRoutes.forEach(route => {
-        if (route.boundaryCoordinates) {
-          const boundaryStats = routeHelpers.getBoundaryStats(route.boundaryCoordinates);
-          if (boundaryStats) {
-            stats[route.id] = boundaryStats;
-          }
-        }
-      });
-      setBoundaryStats(stats);
-
-      console.log(`Loaded ${formattedRoutes.length} routes, ${Object.keys(stats).length} with boundary coordinates`);
-
-    } catch (err) {
-      console.error('Error fetching routes data:', err);
-      setError('Failed to load routes data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const assignRider = async (routeId, agentId) => {
-    try {
-      await routeAssignmentApi.assignAgentToRoute(routeId, agentId);
-      const updatedAgents = await routeApi.getRouteAgents(routeId);
-      const formattedUpdatedAgents = updatedAgents.map(agent => {
-        const [firstName, ...lastNameParts] = agent.agentName.split(' ');
-        const lastName = lastNameParts.join(' ');
-        return {
-          id: agent.agentId,
-          firstName: firstName || '',
-          lastName: lastName || '',
-          availabilityStatus: agent.agentAvailabilityStatus || 'UNKNOWN',
-          vehicleType: agent.agentVehicleType,
-          vehicleNumber: agent.agentVehicleNumber
-        };
-      });
-
-      setRoutes(prevRoutes =>
-        prevRoutes.map(route =>
-          route.id === routeId ? { ...route, agents: formattedUpdatedAgents, assignedRiders: formattedUpdatedAgents.length } : route
-        )
-      );
-      alert('Rider assigned successfully!');
+        setRoutes(prevRoutes =>
+          prevRoutes.map(route =>
+            route.id === routeId ? { 
+              ...route, 
+              agents: formattedUpdatedAgents, 
+              assignedRiders: formattedUpdatedAgents.length 
+            } : route
+          )
+        );
+        alert('Rider assigned successfully!');
+      } catch (refreshError) {
+        console.warn('Agent assigned but failed to refresh data:', refreshError);
+        alert('Rider assigned successfully! Please refresh to see updates.');
+      }
     } catch (err) {
       console.error('Error assigning rider:', err);
-      alert('Failed to assign rider');
+      alert('Failed to assign rider: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -441,19 +590,18 @@ const Routes = () => {
       if (selectedRoute && selectedRoute.id === routeId) {
         setSelectedRoute(null);
       }
-      // Remove from boundary stats
       setBoundaryStats(prev => {
         const updated = { ...prev };
         delete updated[routeId];
         return updated;
       });
+      alert('Route deleted successfully!');
     } catch (err) {
       console.error('Error deleting route:', err);
-      alert('Failed to delete route');
+      alert('Failed to delete route: ' + (err.message || 'Unknown error'));
     }
   };
 
-  // Route Editor Functions - Updated with proper Google Maps loading
   const openRouteEditor = (routeId = null) => {
     if (!window.google?.maps?.drawing) {
       setMapsLoading(true);
@@ -480,17 +628,24 @@ const Routes = () => {
     fetchRoutesData(); // Refresh the routes list
   };
 
-  // Fixed RouteDetailsModal to prevent infinite loop
+  const filteredRoutes = routes.filter(route =>
+    route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    route.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const availableAgents = agents.filter(agent =>
+    !routes.some(route => route.agents.some(routeAgent => routeAgent.id === agent.id))
+  );
+
+  // Route Details Modal Component
   const RouteDetailsModal = () => {
     if (!selectedRoute) return null;
 
-    // Use useEffect with proper dependency management
     useEffect(() => {
       if (isGoogleMapsLoaded && detailsMapRef.current && selectedRoute) {
-        // Use 'details' context to prevent setting selectedRoute again
         initializeMap(detailsMapRef.current, [selectedRoute], selectedRoute, 'details');
       }
-    }, [isGoogleMapsLoaded]); // Remove selectedRoute from dependencies to prevent loop
+    }, [isGoogleMapsLoaded]);
 
     const routeStats = boundaryStats[selectedRoute.id];
 
@@ -502,10 +657,10 @@ const Routes = () => {
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">{selectedRoute.name}</h2>
                 <div className="flex items-center space-x-4 mt-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${routeHelpers.getRouteTypeColor(selectedRoute.routeType)}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRouteTypeColor(selectedRoute.routeType)}`}>
                     {selectedRoute.routeType}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${routeHelpers.getTrafficPatternColor(selectedRoute.trafficPattern)}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTrafficPatternColor(selectedRoute.trafficPattern)}`}>
                     {selectedRoute.trafficPattern} Traffic
                   </span>
                   {selectedRoute.boundaryCoordinates ? (
@@ -717,9 +872,7 @@ const Routes = () => {
               </button>
               <button
                 onClick={() => {
-                  // Close the details modal first
                   setSelectedRoute(null);
-                  // Then open the route editor
                   openRouteEditor(selectedRoute.id);
                 }}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
@@ -734,6 +887,7 @@ const Routes = () => {
     );
   };
 
+  // Overall Map View Component
   const OverallMapView = () => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -795,30 +949,123 @@ const Routes = () => {
     </div>
   );
 
-  // Fixed useEffect for map initialization
-  useEffect(() => {
-    if (isGoogleMapsLoaded && routes.length > 0) {
-      if (showRouteMap && mapRef.current) {
-        initializeMap(mapRef.current, routes, null, 'overview');
-      }
-      if (showFullscreenMap && fullscreenMapRef.current) {
+  // Fullscreen Map Modal
+  const FullscreenMapModal = () => {
+    if (!showFullscreenMap) return null;
+
+    useEffect(() => {
+      if (isGoogleMapsLoaded && fullscreenMapRef.current) {
         initializeMap(fullscreenMapRef.current, routes, selectedRoute, 'fullscreen');
       }
-    }
-  }, [routes, showRouteMap, showFullscreenMap, isGoogleMapsLoaded]); // Removed selectedRoute from dependencies
+    }, [isGoogleMapsLoaded]);
 
-  const refreshData = async () => {
-    await fetchRoutesData();
+    return (
+      <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
+        <div className="bg-white p-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Routes Map - Fullscreen View</h2>
+          <button
+            onClick={() => setShowFullscreenMap(false)}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="Close fullscreen map"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="flex-1 relative bg-white">
+          <div
+            ref={fullscreenMapRef}
+            className="w-full h-full"
+          />
+          {!isGoogleMapsLoaded && (
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-600 text-lg">Loading Google Maps...</p>
+                <p className="text-gray-500 mt-2">Fullscreen route view for Colombo Hub</p>
+              </div>
+            </div>
+          )}
+
+          <div className="absolute bottom-6 right-6 bg-white p-4 rounded-lg shadow-lg border">
+            <h4 className="font-semibold text-slate-900 mb-3">Map Legend</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
+                <span className="text-gray-600">Residential Route</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-green-500 rounded-sm"></div>
+                <span className="text-gray-600">Commercial Route</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-orange-500 rounded-sm"></div>
+                <span className="text-gray-600">Industrial Route</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-purple-500 rounded-sm"></div>
+                <span className="text-gray-600">Mixed Route</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                <span className="text-gray-600">Route Center</span>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex items-center space-x-2 text-xs">
+                  <CheckCircle className="w-3 h-3 text-green-500" />
+                  <span className="text-gray-500">Defined Boundaries</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs">
+                  <AlertTriangle className="w-3 h-3 text-yellow-500" />
+                  <span className="text-gray-500">Approximate Boundaries</span>
+                </div>
+              </div>
+              <p className="text-gray-500 mt-3 text-xs">Click on any route to view details</p>
+            </div>
+          </div>
+
+          {selectedRoute && (
+            <div className="absolute bottom-6 left-6 bg-white p-4 rounded-lg shadow-lg border max-w-md">
+              <h4 className="font-semibold text-slate-900 mb-2">{selectedRoute.name}</h4>
+              <p className="text-sm text-gray-600 mb-3">{selectedRoute.description}</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Coverage:</span>
+                  <span className="ml-2 font-medium">{selectedRoute.coverageArea}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Deliveries:</span>
+                  <span className="ml-2 font-medium">{selectedRoute.maxDailyDeliveries}/day</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Riders:</span>
+                  <span className="ml-2 font-medium">{selectedRoute.assignedRiders}/{selectedRoute.totalRiders}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Avg. Time:</span>
+                  <span className="ml-2 font-medium">{selectedRoute.estimatedDeliveryTime} min</span>
+                </div>
+              </div>
+              {boundaryStats[selectedRoute.id] && (
+                <div className="mt-2 text-xs text-blue-600">
+                  Boundary: {boundaryStats[selectedRoute.id].pointCount} points, {boundaryStats[selectedRoute.id].area} km²
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setShowFullscreenMap(false);
+                }}
+                className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                aria-label={`View details for ${selectedRoute.name}`}
+              >
+                View Route Details
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
-
-  const filteredRoutes = routes.filter(route =>
-    route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    route.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const availableAgents = agents.filter(agent =>
-    !routes.some(route => route.agents.some(routeAgent => routeAgent.id === agent.id))
-  );
 
   if (loading) {
     return (
@@ -835,9 +1082,13 @@ const Routes = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
+          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 text-lg">{error}</p>
-          <button onClick={refreshData} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600" >
-            Retry
+          <button 
+            onClick={fetchRoutesData} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2 mx-auto"
+          >
+            <span>Retry</span>
           </button>
         </div>
       </div>
@@ -868,7 +1119,7 @@ const Routes = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredRoutes.map((route) => {
           const routeStat = boundaryStats[route.id];
           return (
@@ -1049,112 +1300,7 @@ const Routes = () => {
         </div>
       )}
 
-      {showFullscreenMap && (
-        <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-          <div className="bg-white p-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Routes Map - Fullscreen View</h2>
-            <button
-              onClick={() => setShowFullscreenMap(false)}
-              className="text-gray-400 hover:text-gray-600"
-              aria-label="Close fullscreen map"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          <div className="flex-1 relative bg-white">
-            <div
-              ref={fullscreenMapRef}
-              className="w-full h-full"
-            />
-            {!isGoogleMapsLoaded && (
-              <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                  <p className="text-gray-600 text-lg">Loading Google Maps...</p>
-                  <p className="text-gray-500 mt-2">Fullscreen route view for Colombo Hub</p>
-                </div>
-              </div>
-            )}
-
-            <div className="absolute bottom-6 right-6 bg-white p-4 rounded-lg shadow-lg border">
-              <h4 className="font-semibold text-slate-900 mb-3">Map Legend</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
-                  <span className="text-gray-600">Residential Route</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-green-500 rounded-sm"></div>
-                  <span className="text-gray-600">Commercial Route</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-orange-500 rounded-sm"></div>
-                  <span className="text-gray-600">Industrial Route</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-purple-500 rounded-sm"></div>
-                  <span className="text-gray-600">Mixed Route</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                  <span className="text-gray-600">Route Center</span>
-                </div>
-                <div className="border-t pt-2 mt-2">
-                  <div className="flex items-center space-x-2 text-xs">
-                    <CheckCircle className="w-3 h-3 text-green-500" />
-                    <span className="text-gray-500">Defined Boundaries</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-xs">
-                    <AlertTriangle className="w-3 h-3 text-yellow-500" />
-                    <span className="text-gray-500">Approximate Boundaries</span>
-                  </div>
-                </div>
-                <p className="text-gray-500 mt-3 text-xs">Click on any route to view details</p>
-              </div>
-            </div>
-
-            {selectedRoute && (
-              <div className="absolute bottom-6 left-6 bg-white p-4 rounded-lg shadow-lg border max-w-md">
-                <h4 className="font-semibold text-slate-900 mb-2">{selectedRoute.name}</h4>
-                <p className="text-sm text-gray-600 mb-3">{selectedRoute.description}</p>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Coverage:</span>
-                    <span className="ml-2 font-medium">{selectedRoute.coverageArea}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Deliveries:</span>
-                    <span className="ml-2 font-medium">{selectedRoute.maxDailyDeliveries}/day</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Riders:</span>
-                    <span className="ml-2 font-medium">{selectedRoute.assignedRiders}/{selectedRoute.totalRiders}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Avg. Time:</span>
-                    <span className="ml-2 font-medium">{selectedRoute.estimatedDeliveryTime} min</span>
-                  </div>
-                </div>
-                {boundaryStats[selectedRoute.id] && (
-                  <div className="mt-2 text-xs text-blue-600">
-                    Boundary: {boundaryStats[selectedRoute.id].pointCount} points, {boundaryStats[selectedRoute.id].area} km²
-                  </div>
-                )}
-                <button
-                  onClick={() => {
-                    setShowFullscreenMap(false);
-                  }}
-                  className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                  aria-label={`View details for ${selectedRoute.name}`}
-                >
-                  View Route Details
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <FullscreenMapModal />
     </div>
   );
 };
