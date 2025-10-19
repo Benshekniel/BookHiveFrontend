@@ -26,7 +26,7 @@ const LoginPage = () => {
         if (res.data.token) {
           login(res.data.token); // Decode and store email, userId, role
         }
-        navigate('/' + (res.data.role || 'default'));
+        navigate('/' + (res.data.role || 'login'));
       } else {
         setPopup({ show: true, message: res.data.message });
         setTimeout(() => setPopup({ show: false, message: '' }), 5000); // Auto-close after 5 seconds
