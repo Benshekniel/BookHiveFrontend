@@ -5,47 +5,10 @@ import {
 } from 'lucide-react';
 
 import RecentOrders from '../../components/bookStore/dashboard/RecentOrders';
+import DashboardStats from '../../components/bookStore/dashboard/DashboardStats';
 
 // MetricCard component inline
-const MetricCard = ({
-  title,
-  value,
-  change,
-  isPositive,
-  icon: IconComponent,
-  lastUpdated
-}) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">{title}</h3>
-        <div className="p-2 bg-blue-50 rounded-lg">
-          <IconComponent className="w-5 h-5 text-blue-600" />
-        </div>
-      </div>
-      
-      <div className="mb-3">
-        <span className="text-3xl font-bold text-gray-900">{value}</span>
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-1">
-          {isPositive ? (
-            <TrendingUp className="w-4 h-4 text-green-500" />
-          ) : (
-            <TrendingDown className="w-4 h-4 text-red-500" />
-          )}
-          <span className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            {change}
-          </span>
-        </div>
-        {lastUpdated && (
-          <span className="text-xs text-gray-400">{lastUpdated}</span>
-        )}
-      </div>
-    </div>
-  );
-};
+
 // };
 
 // QuickActions component inline
@@ -116,15 +79,15 @@ const Dashboard = () => {
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your bookstore today.</p>
           </div>
-          <div className="text-right">
+          {/* <div className="text-right">
             <p className="text-sm text-gray-500">Last updated</p>
             <p className="text-sm font-medium text-gray-900">6/24/2025, 7:51:01 PM</p>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* Summer Reading Event Banner */}
-      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl p-6 mb-8 text-white">
+      {/* <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl p-6 mb-8 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="p-2 bg-white bg-opacity-20 rounded-lg">
@@ -139,57 +102,14 @@ const Dashboard = () => {
             Register Now
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Performance Overview */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Performance Overview</h2>
-          <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>Last 30 days</option>
-            <option>Last 7 days</option>
-            <option>Last 90 days</option>
-          </select>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard
-            title="Total Sales"
-            value="Yen4,278"
-            change="+12% vs last month"
-            isPositive={true}
-            icon={DollarSign}
-            lastUpdated="Updated 2 hours ago"
-          />
-          <MetricCard
-            title="Orders"
-            value="87"
-            change="+8% vs last month"
-            isPositive={true}
-            icon={ShoppingCart}
-            lastUpdated="Updated 2 hours ago"
-          />
-          <MetricCard
-            title="Store Visits"
-            value="1,245"
-            change="+15% vs last month"
-            isPositive={true}
-            icon={Eye}
-            lastUpdated="Updated 30 minutes ago"
-          />
-          <MetricCard
-            title="Avg. Order Value"
-            value="$49.17"
-            change="+1% vs last month"
-            isPositive={false}
-            icon={TrendingUp}
-            lastUpdated="Updated 2 hours ago"
-          />
-        </div>
-      </div>
+      <DashboardStats />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
         {/* Recent Orders - Takes 2 columns */}
         <div className="lg:col-span-2">
           <RecentOrders />
@@ -198,7 +118,7 @@ const Dashboard = () => {
         {/* Right Column */}
         <div className="space-y-8">
           {/* Inventory Summary */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Inventory Summary</h3>
               <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
@@ -235,15 +155,12 @@ const Dashboard = () => {
                 <span className="text-sm font-semibold text-red-600">24</span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Top Selling Books */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Top Selling Books</h3>
-              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                View all
-              </button>
             </div>
             <div className="space-y-4">
               {[
@@ -262,13 +179,14 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <QuickActions />
           </div>
+
         </div>
       </div>
     </div>

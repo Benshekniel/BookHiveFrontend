@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
 import LoadingSpinner from "../CommonStuff/LoadingSpinner";
+import { useAuth } from "../../AuthContext";
 
 const BookFromInventorySchema = z.object({
   condition: z.enum(["NEW", "USED", "FAIR"]).optional(),
@@ -25,8 +26,7 @@ type formFields = z.infer<typeof BookFromInventorySchema>;
 
 
 const BookFromInventory = ({inventoryId}: {inventoryId: number}) => {
-  // const {user} = useAuth();
-  const user = { userId: 603 }; // hard-coded userId until login completed
+  const {user} = useAuth();
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);
