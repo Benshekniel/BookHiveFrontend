@@ -1,11 +1,62 @@
 import React, { useState } from 'react';
-import { 
-  User, Mail, Phone, MapPin, Clock, Camera, Edit3, Save, X, 
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import {
+  User, Mail, Phone, MapPin, Clock, Camera, Edit3, Save, X,
   Store, Globe, Star, Calendar, Package, TrendingUp, Users, BookOpen, Award, Settings
 } from 'lucide-react';
 
-const StoreProfile = () => {
+import PasswordSection from '../../components/bookStore/profile/PasswordSection';
+
+const ProfileSettings = () => {
+  // const {user} = useAuth();
+  const user = { userId: 603 }; // hard-coded userId until login completed
+
   const [isEditing, setIsEditing] = useState(false);
+
+  const [storeImage, setStoreImage] = useState <File | null> (null);
+  const [storePreviewUrl, setStorePreviewUrl] = useState <string | null> (null);
+  const [storeImageChanged, setStoreImageChanged] = useState(false);
+
+  const [storeLogoImage, setStoreLogoImage] = useState <File | null> (null);
+  const [storeLogoPreviewUrl, setStoreLogoPreviewUrl] = useState <string | null> (null);
+  const [logoImageChanged, setLogoImageChanged] = useState(false);
+
+  const fetchStoreDetails = async () => {
+    try {
+      const response = await axios.get(`http://localhost:9090/api/bookstore/store-details/${user?.userId}`);
+      const item = response.data;
+      console.log(response.data);
+
+      // Store image
+      if (item.storeImage) {
+        const storeImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
+          params: { fileName: item.storeImage, folderName: "???" }
+        });
+        setStorePreviewUrl(storeImageRes.data);
+      }
+      // Store logo image
+      if (item.storeLogoImage) {
+        const storeLogoImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
+          params: { fileName: item.storeLogoImage, folderName: "???" }
+        });
+        setStoreLogoPreviewUrl(storeLogoImageRes.data);
+      }
+
+      return item;
+    }
+    catch (err) {
+      console.error("Axios Error: ", err);
+      throw err;
+    }
+  };
+
+  const { data: storeDetails, isPending } = useQuery({
+    queryKey: ["storeDetails", user?.userId],
+    queryFn: fetchStoreDetails,
+    enabled: !!user?.userId,
+  });
+
   const [profileData, setProfileData] = useState({
     storeName: 'PageTurner Books',
     storeDescription: 'A cozy independent bookstore specializing in rare finds and beloved classics. We\'ve been serving book lovers in the community for over 15 years.',
@@ -102,29 +153,28 @@ const StoreProfile = () => {
           <div className="flex items-center space-x-3">
             {isEditing ? (
               <>
-                <button 
-                  onClick={handleCancel}
-                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
+                <button onClick={handleCancel}
+                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" >
                   <X className="w-4 h-4 mr-2" />
                   Cancel
                 </button>
-                <button 
-                  onClick={handleSave}
-                  className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                >
+                <button onClick={handleSave}
+                  className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors" >
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
                 </button>
               </>
             ) : (
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Edit3 className="w-4 h-4 mr-2" />
-                Edit Profile
-              </button>
+              <>
+                <PasswordSection />
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Edit3 className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -167,6 +217,7 @@ const StoreProfile = () => {
             </div>
 
             {/* Profile Photo Section */}
+            <div className="flex mb-2 justify-around">
             <div className="flex items-center mb-6">
               <div className="relative">
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
@@ -179,9 +230,27 @@ const StoreProfile = () => {
                 )}
               </div>
               <div className="ml-4">
-                <p className="text-sm text-gray-600">Change Photo</p>
+                <p className="text-sm text-gray-600">Change Store Logo</p>
                 <p className="text-xs text-gray-500">JPG, PNG or GIF. Max size 2MB</p>
               </div>
+            </div>
+
+            <div className="flex items-center mb-6">
+              <div className="relative">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  PB
+                </div>
+                {isEditing && (
+                  <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+                    <Camera className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Change Store Image</p>
+                <p className="text-xs text-gray-500">JPG, PNG or GIF. Max size 2MB</p>
+              </div>
+            </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -350,7 +419,7 @@ const StoreProfile = () => {
             </div>
             <div className="space-y-2">
               {profileData.specialties.map((specialty, index) => (
-                <span 
+                <span
                   key={index}
                   className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full mr-2 mb-2"
                 >
@@ -361,7 +430,7 @@ const StoreProfile = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center mb-4">
               <Settings className="w-5 h-5 text-gray-600 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
@@ -380,7 +449,7 @@ const StoreProfile = () => {
                 Store Visibility
               </button>
             </div>
-          </div>
+          </div> */}
 
           {/* Store Since */}
           <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-sm p-6 text-white">
@@ -397,4 +466,4 @@ const StoreProfile = () => {
   );
 };
 
-export default StoreProfile;
+export default ProfileSettings;

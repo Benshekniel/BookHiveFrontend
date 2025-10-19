@@ -118,7 +118,7 @@ const Dashboard = () => {
         {/* Right Column */}
         <div className="space-y-8">
           {/* Inventory Summary */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Inventory Summary</h3>
               <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
@@ -155,10 +155,10 @@ const Dashboard = () => {
                 <span className="text-sm font-semibold text-red-600">24</span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Top Selling Books */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Top Selling Books</h3>
             </div>
@@ -179,7 +179,7 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
