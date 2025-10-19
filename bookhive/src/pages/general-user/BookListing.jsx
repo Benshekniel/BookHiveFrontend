@@ -1225,4 +1225,3 @@ const BookListingManagementPage = () => {
 };
 
 export default BookListingManagementPage;
-

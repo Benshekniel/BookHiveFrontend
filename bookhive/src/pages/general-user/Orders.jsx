@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Package, Clock, CheckCircle, Truck, MapPin, Calendar, Star, MessageSquare, RefreshCw, AlertCircle, Eye, BookOpen, DollarSign, User, Phone, Mail, ArrowRight, Download, FileText, Camera, ThumbsUp, ThumbsDown, Gavel, Trophy, X, XCircle, CreditCard } from "lucide-react";
-import { books, users } from "../../data/mockData";
+import {
+  Package, Clock, CheckCircle, Truck, MapPin, Calendar, Star, MessageSquare,
+  RefreshCw, AlertCircle, Eye, BookOpen, DollarSign, User, Phone, Mail,
+  ArrowRight, Download, FileText, Camera, ThumbsUp, ThumbsDown, Gavel,
+  Trophy, X, XCircle, CreditCard, Loader
+} from "lucide-react";
+import { 
+  userTransactionApi, 
+  userApi, 
+  bookApi, 
+  reviewApi, 
+  userServiceHelpers,
+  enhancedBookApi  // Add this
+} from "../../services/userService";
 
 const OrdersPage = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -8,11 +20,25 @@ const OrdersPage = () => {
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState(null);
+
+  // State for orders and pagination
+  const [orders, setOrders] = useState([]);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // Current user ID (replace with actual auth context)
+  const currentUserId = 2001;
+
   const [cancelForm, setCancelForm] = useState({
     reason: "",
     otherReason: "",
     refundMethod: "original",
   });
+
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     comment: "",
@@ -20,267 +46,181 @@ const OrdersPage = () => {
     ownerRating: 5,
   });
 
-  // Mock orders data with real-time tracking, including exchange orders
-  const [orders, setOrders] = useState([
-    {
-      id: "ORD001",
-      type: "purchase",
-      book: books[0],
-      seller: users[0],
-      orderDate: "2024-01-15",
-      status: "delivered",
-      totalAmount: 1500,
-      deliveryMethod: "pickup",
-      deliveryAddress: "University of Colombo, Colombo 03",
-      estimatedDelivery: "2024-01-17",
-      actualDelivery: "2024-01-16",
-      trackingNumber: "BH001234567",
-      paymentMethod: "cash_on_delivery",
-      tracking: [
-        { status: "Order Placed", timestamp: "2024-01-15 10:30 AM", description: "Your order has been confirmed" },
-        { status: "Seller Confirmed", timestamp: "2024-01-15 02:15 PM", description: "Seller has confirmed the order" },
-        { status: "Ready for Pickup", timestamp: "2024-01-16 09:00 AM", description: "Book is ready for pickup" },
-        { status: "Delivered", timestamp: "2024-01-16 03:30 PM", description: "Order successfully delivered" },
-      ],
-    },
-    {
-      id: "ORD002",
-      type: "borrow",
-      book: books[1],
-      lender: users[1],
-      orderDate: "2024-01-18",
-      status: "active",
-      borrowPeriod: 21,
-      startDate: "2024-01-20",
-      returnDate: "2024-02-10",
-      deliveryMethod: "delivery",
-      deliveryAddress: "123 Galle Road, Colombo 04",
-      trackingNumber: "BH001234568",
-      securityDeposit: 500,
-      tracking: [
-        { status: "Request Approved", timestamp: "2024-01-18 11:00 AM", description: "Lender approved your request" },
-        { status: "Book Dispatched", timestamp: "2024-01-19 02:00 PM", description: "Book is on the way to you" },
-        { status: "Delivered", timestamp: "2024-01-20 10:15 AM", description: "Book delivered successfully" },
-        { status: "Borrowing Active", timestamp: "2024-01-20 10:15 AM", description: "Enjoy reading! Return by Feb 10" },
-      ],
-    },
-    {
-      id: "ORD003",
-      type: "purchase",
-      book: books[2],
-      seller: users[2],
-      orderDate: "2024-01-20",
-      status: "in_transit",
-      totalAmount: 2000,
-      deliveryMethod: "delivery",
-      deliveryAddress: "456 Kandy Road, Kandy",
-      estimatedDelivery: "2024-01-23",
-      trackingNumber: "BH001234569",
-      paymentMethod: "online",
-      tracking: [
-        { status: "Order Placed", timestamp: "2024-01-20 09:15 AM", description: "Your order has been confirmed" },
-        { status: "Payment Confirmed", timestamp: "2024-01-20 09:20 AM", description: "Payment received successfully" },
-        { status: "Seller Confirmed", timestamp: "2024-01-20 01:30 PM", description: "Seller has confirmed the order" },
-        { status: "In Transit", timestamp: "2024-01-21 08:00 AM", description: "Book is on the way to you" },
-      ],
-    },
-    {
-      id: "ORD004",
-      type: "borrow",
-      book: books[3],
-      lender: users[3],
-      orderDate: "2024-01-10",
-      status: "overdue",
-      borrowPeriod: 14,
-      startDate: "2024-01-12",
-      returnDate: "2024-01-26",
-      deliveryMethod: "pickup",
-      deliveryAddress: "University Library, Colombo 07",
-      trackingNumber: "BH001234570",
-      securityDeposit: 300,
-      overdueBy: 2,
-      tracking: [
-        { status: "Request Approved", timestamp: "2024-01-10 02:00 PM", description: "Lender approved your request" },
-        { status: "Book Collected", timestamp: "2024-01-12 11:00 AM", description: "You collected the book" },
-        { status: "Return Due", timestamp: "2024-01-26 11:59 PM", description: "Book return was due" },
-        { status: "Overdue", timestamp: "2024-01-27 12:00 AM", description: "Book is now overdue" },
-      ],
-    },
-    // New mock exchange orders
-    {
-      id: "ORD005",
-      type: "exchange",
-      book: books[4] || books[0], // Fallback if books[4] not defined
-      exchanger: users[4] || users[0],
-      orderDate: "2024-02-01",
-      status: "active",
-      exchangePeriod: 30,
-      startDate: "2024-02-02",
-      returnDate: "2024-03-03",
-      deliveryMethod: "delivery",
-      deliveryAddress: "789 Main Street, Colombo 05",
-      trackingNumber: "BH001234571",
-      tracking: [
-        { status: "Exchange Approved", timestamp: "2024-02-01 10:00 AM", description: "Exchanger approved your request" },
-        { status: "Books Exchanged", timestamp: "2024-02-02 02:00 PM", description: "Books have been exchanged" },
-        { status: "Exchange Active", timestamp: "2024-02-02 02:00 PM", description: "Exchange period started" },
-      ],
-    },
-    {
-      id: "ORD006",
-      type: "exchange",
-      book: books[5] || books[1],
-      exchanger: users[5] || users[1],
-      orderDate: "2024-02-05",
-      status: "delivered",
-      exchangePeriod: 14,
-      startDate: "2024-02-06",
-      returnDate: "2024-02-20",
-      deliveryMethod: "pickup",
-      deliveryAddress: "Library Pickup Point, Colombo 03",
-      trackingNumber: "BH001234572",
-      tracking: [
-        { status: "Exchange Approved", timestamp: "2024-02-05 11:00 AM", description: "Exchanger approved your request" },
-        { status: "Books Picked Up", timestamp: "2024-02-06 09:00 AM", description: "Books exchanged via pickup" },
-        { status: "Exchange Completed", timestamp: "2024-02-20 05:00 PM", description: "Exchange period ended successfully" },
-      ],
-    },
-    // New mock bidding orders
-    {
-      id: "ORD007",
-      type: "bidding",
-      book: books[2] || books[0],
-      seller: users[2] || users[0],
-      orderDate: "2024-02-10",
-      status: "delivered",
-      totalAmount: 1800,
-      winningBid: 1700,
-      deliveryAmount: 100,
-      deliveryMethod: "delivery",
-      deliveryAddress: "456 University Avenue, Colombo 07",
-      auctionEndDate: "2024-02-08",
-      paymentMethod: "credit_card",
-      trackingNumber: "BH001234573",
-      tracking: [
-        { status: "Auction Won", timestamp: "2024-02-08 06:00 PM", description: "Congratulations! You won the auction" },
-        { status: "Payment Completed", timestamp: "2024-02-08 06:30 PM", description: "Payment processed successfully" },
-        { status: "Book Dispatched", timestamp: "2024-02-10 10:00 AM", description: "Book has been dispatched" },
-        { status: "Delivered", timestamp: "2024-02-12 03:00 PM", description: "Book delivered successfully" },
-      ],
-    },
-    {
-      id: "ORD008",
-      type: "bidding",
-      book: books[3] || books[1],
-      seller: users[3] || users[1],
-      orderDate: "2024-02-15",
-      status: "in_transit",
-      totalAmount: 2200,
-      winningBid: 2100,
-      deliveryAmount: 100,
-      deliveryMethod: "delivery",
-      deliveryAddress: "789 Campus Road, Colombo 03",
-      auctionEndDate: "2024-02-14",
-      paymentMethod: "cash_on_delivery",
-      trackingNumber: "BH001234574",
-      tracking: [
-        { status: "Auction Won", timestamp: "2024-02-14 08:00 PM", description: "Congratulations! You won the auction" },
-        { status: "Payment Confirmed", timestamp: "2024-02-14 08:15 PM", description: "Cash on delivery confirmed" },
-        { status: "Book Dispatched", timestamp: "2024-02-15 11:00 AM", description: "Book is on the way" },
-        { status: "Out for Delivery", timestamp: "2024-02-16 09:00 AM", description: "Book will be delivered today" },
-      ],
-    },
-    {
-      id: "ORD009",
-      type: "bidding",
-      book: books[0],
-      seller: users[0],
-      orderDate: "2024-02-20",
-      status: "active",
-      totalAmount: 1550,
-      winningBid: 1450,
-      deliveryAmount: 100,
-      deliveryMethod: "pickup",
-      deliveryAddress: "Central Library, Colombo 01",
-      auctionEndDate: "2024-02-19",
-      paymentMethod: "credit_card",
-      trackingNumber: "BH001234575",
-      tracking: [
-        { status: "Auction Won", timestamp: "2024-02-19 07:30 PM", description: "Congratulations! You won the auction" },
-        { status: "Payment Completed", timestamp: "2024-02-19 07:45 PM", description: "Payment processed successfully" },
-        { status: "Ready for Pickup", timestamp: "2024-02-20 10:00 AM", description: "Book is ready for pickup at the specified location" },
-      ],
-    },
-    // Cancellable orders for testing
-    {
-      id: "ORD010",
-      type: "purchase",
-      book: books[1] || books[0],
-      seller: users[1] || users[0],
-      orderDate: "2024-02-25",
-      status: "pending",
-      totalAmount: 1200,
-      deliveryMethod: "delivery",
-      deliveryAddress: "123 Main Street, Colombo 05",
-      estimatedDelivery: "2024-02-28",
-      paymentMethod: "credit_card",
-      trackingNumber: "BH001234576",
-      tracking: [
-        { status: "Order Placed", timestamp: "2024-02-25 11:00 AM", description: "Your order has been confirmed" },
-        { status: "Payment Confirmed", timestamp: "2024-02-25 11:05 AM", description: "Payment received successfully" },
-        { status: "Awaiting Seller Confirmation", timestamp: "2024-02-25 11:05 AM", description: "Waiting for seller to confirm the order" },
-      ],
-    },
-    {
-      id: "ORD011",
-      type: "borrow",
-      book: books[2] || books[0],
-      lender: users[2] || users[0],
-      orderDate: "2024-02-26",
-      status: "pending",
-      borrowPeriod: 14,
-      securityDeposit: 400,
-      deliveryMethod: "pickup",
-      deliveryAddress: "University Campus, Colombo 07",
-      trackingNumber: "BH001234577",
-      tracking: [
-        { status: "Borrow Request Submitted", timestamp: "2024-02-26 02:00 PM", description: "Your borrow request has been submitted" },
-        { status: "Awaiting Lender Approval", timestamp: "2024-02-26 02:00 PM", description: "Waiting for lender to approve the request" },
-      ],
-    },
-  ]);
+  // Fetch orders from API
+  const fetchOrders = async (filters = {}) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "delivered":
-        return "text-green-800 bg-green-100";
-      case "active":
-        return "text-blue-800 bg-blue-100";
-      case "in_transit":
-        return "text-yellow-800 bg-yellow-100";
-      case "overdue":
-        return "text-red-800 bg-red-100";
-      case "pending":
-        return "text-gray-800 bg-gray-100";
-      case "cancelled":
-        return "text-gray-500 bg-gray-200";
-      default:
-        return "text-gray-500 bg-gray-200";
+      const apiFilters = {
+        page: currentPage,
+        size: 20,
+        sortBy: 'createdAt',
+        sortDirection: 'DESC',
+        ...filters
+      };
+
+      // Map frontend tabs to API filters
+      if (activeTab !== "all") {
+        switch (activeTab) {
+          case "borrowed":
+            apiFilters.type = "borrow";
+            break;
+          case "purchased":
+            apiFilters.type = "purchase";
+            break;
+          case "exchanged":
+            apiFilters.type = "exchange";
+            break;
+          case "bidding":
+            apiFilters.type = "bidding";
+            break;
+          case "active":
+            apiFilters.status = "active";
+            break;
+          case "completed":
+            apiFilters.status = "delivered";
+            break;
+        }
+      }
+
+      const response = await userTransactionApi.getUserTransactions(currentUserId, apiFilters);
+
+      // Transform API response to frontend format (synchronously)
+      const transformedOrders = response.content.map(transaction => {
+        const transformed = userServiceHelpers.transformTransactionResponse(transaction);
+
+        // Ensure book object always exists with safe defaults
+        if (!transformed.book) {
+          transformed.book = {
+            id: transaction.bookId || 0,
+            title: `Book ${transaction.bookId || 'Unknown'}`,
+            author: 'Unknown Author',
+            cover: generateSafeFallbackImage(transaction.bookId || 0),
+            bookImage: null
+          };
+        }
+
+        return transformed;
+      });
+
+      setOrders(transformedOrders);
+      setTotalOrders(response.totalElements);
+      setTotalPages(response.totalPages);
+
+      // Load real book data in background (non-blocking)
+      loadBookDataInBackground(transformedOrders);
+
+    } catch (err) {
+      setError('Failed to fetch orders: ' + err.message);
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const generateSafeFallbackImage = (bookId) => {
+    const title = `Book ${bookId}`;
+    return `data:image/svg+xml,${encodeURIComponent(`
+    <svg width="150" height="200" xmlns="http://www.w3.org/2000/svg">
+      <rect width="150" height="200" fill="#4F46E5"/>
+      <text x="75" y="100" text-anchor="middle" fill="#FFFFFF" font-size="12">${title}</text>
+    </svg>
+  `)}`;
+  };
+
+  const loadBookDataInBackground = async (orders) => {
+    try {
+      // Get unique book IDs
+      const bookIds = [...new Set(orders.map(order => order.book.id).filter(id => id))];
+
+      // Load book details for each book
+      for (const bookId of bookIds) {
+        try {
+          const bookData = await enhancedBookApi.getBookDetails(bookId);
+          if (bookData) {
+            // Update orders with real book data
+            setOrders(prevOrders =>
+              prevOrders.map(order =>
+                order.book.id === bookId
+                  ? {
+                    ...order,
+                    book: {
+                      ...order.book,
+                      title: bookData.title,
+                      author: bookData.author,
+                      cover: bookData.cover || order.book.cover,
+                      bookImage: bookData.bookImage
+                    }
+                  }
+                  : order
+              )
+            );
+          }
+        } catch (error) {
+          console.error(`Failed to load book ${bookId}:`, error);
+          // Continue with other books even if one fails
+        }
+      }
+    } catch (error) {
+      console.error('Error loading book data in background:', error);
+    }
+  };
+
+  // Fetch user statistics
+  const fetchStats = async () => {
+    try {
+      const userStats = await userTransactionApi.getUserTransactionStats(currentUserId);
+      setStats(userStats);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+      // Set default stats if API fails
+      setStats({
+        totalOrders: 0,
+        activeOrders: 0,
+        completedOrders: 0,
+        overdueOrders: 0,
+        cancelledOrders: 0,
+        borrowedBooks: 0,
+        purchasedBooks: 0,
+        exchangedBooks: 0,
+        wonAuctions: 0
+      });
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchOrders();
+    fetchStats();
+  }, [activeTab, currentPage]);
+
+  // Real-time updates (optional)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only refresh if we're not on the first page to avoid disrupting user
+      if (currentPage === 0) {
+        fetchOrders();
+      }
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [currentPage, activeTab]);
+
+  const getStatusColor = (status) => userServiceHelpers.getStatusColor(status);
 
   const getStatusIcon = (status) => {
     switch (status) {
       case "delivered":
+      case "completed":
         return <CheckCircle size={16} />;
       case "active":
         return <BookOpen size={16} />;
       case "in_transit":
+      case "pending":
         return <Truck size={16} />;
       case "overdue":
         return <AlertCircle size={16} />;
-      case "pending":
-        return <Clock size={16} />;
       case "cancelled":
         return <XCircle size={16} />;
       default:
@@ -288,85 +228,31 @@ const OrdersPage = () => {
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "borrowed") return order.type === "borrow";
-    if (activeTab === "purchased") return order.type === "purchase";
-    if (activeTab === "exchanged") return order.type === "exchange";
-    if (activeTab === "bidding") return order.type === "bidding";
-    if (activeTab === "active") return ["active", "in_transit"].includes(order.status);
-    if (activeTab === "completed") return order.status === "delivered";
-    return true;
-  });
+  const filteredOrders = orders; // Already filtered by API
 
-  const handleReviewSubmit = () => {
-    console.log("Review submitted:", reviewForm);
-    alert("Thank you for your review!");
-    setShowReviewModal(false);
-    setReviewForm({ rating: 5, comment: "", bookCondition: 5, ownerRating: 5 });
+  const handleReviewSubmit = async () => {
+    try {
+      const reviewData = {
+        transactionId: selectedOrder.transactionId,
+        userId: currentUserId,
+        bookId: selectedOrder.book.id,
+        rating: reviewForm.rating,
+        comment: reviewForm.comment,
+        bookCondition: reviewForm.bookCondition,
+        ownerRating: reviewForm.ownerRating
+      };
+
+      await reviewApi.submitReview(reviewData);
+      alert("Thank you for your review!");
+      setShowReviewModal(false);
+      setReviewForm({ rating: 5, comment: "", bookCondition: 5, ownerRating: 5 });
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert("Failed to submit review. Please try again.");
+    }
   };
 
-  // Cancellation reasons based on order type
-  const getCancellationReasons = (orderType) => {
-    const commonReasons = [
-      "Changed my mind",
-      "Found a better deal",
-      "No longer needed",
-      "Delivery taking too long",
-      "Payment issues",
-      "Other"
-    ];
-
-    const specificReasons = {
-      purchase: [...commonReasons, "Book condition concerns", "Seller unavailable"],
-      borrow: [...commonReasons, "Shorter borrowing period needed", "Changed reading plans"],
-      exchange: [...commonReasons, "Changed my book preference", "Exchange terms not suitable"],
-      bidding: [...commonReasons, "Bid amount too high", "Found alternative book"]
-    };
-
-    return specificReasons[orderType] || commonReasons;
-  };
-
-  // Calculate refund amount with deductions
-  const calculateRefundAmount = (order) => {
-    if (!order.totalAmount) return { refundAmount: 0, deductionAmount: 0, deductionReasons: [] };
-
-    let baseAmount = order.totalAmount;
-    let deductionAmount = 0;
-    let deductionReasons = [];
-
-    // Time-based deductions
-    const orderDate = new Date(order.orderDate);
-    const currentDate = new Date();
-    const hoursDiff = Math.abs(currentDate - orderDate) / 36e5;
-
-    if (hoursDiff > 24) {
-      // After 24 hours, 10% processing fee
-      const processingFee = Math.round(baseAmount * 0.1);
-      deductionAmount += processingFee;
-      deductionReasons.push(`Processing fee (10%): Rs. ${processingFee}`);
-    }
-
-    // Status-based deductions
-    if (order.status === "in_transit") {
-      const shippingFee = 150;
-      deductionAmount += shippingFee;
-      deductionReasons.push(`Shipping charges: Rs. ${shippingFee}`);
-    }
-
-    // Order type specific deductions
-    if (order.type === "bidding") {
-      const auctionFee = Math.round(baseAmount * 0.05);
-      deductionAmount += auctionFee;
-      deductionReasons.push(`Auction processing fee (5%): Rs. ${auctionFee}`);
-    }
-
-    const refundAmount = Math.max(0, baseAmount - deductionAmount);
-
-    return { refundAmount, deductionAmount, deductionReasons };
-  };
-
-  const handleCancelOrder = () => {
+  const handleCancelOrder = async () => {
     if (!selectedOrder || !cancelForm.reason) {
       alert("Please select a reason for cancellation.");
       return;
@@ -377,121 +263,98 @@ const OrdersPage = () => {
       return;
     }
 
-    const { refundAmount, deductionAmount, deductionReasons } = calculateRefundAmount(selectedOrder);
+    try {
+      const cancelData = {
+        reason: cancelForm.reason === "Other" ? cancelForm.otherReason : cancelForm.reason,
+        refundMethod: cancelForm.refundMethod,
+        additionalNotes: cancelForm.reason === "Other" ? cancelForm.otherReason : ""
+      };
 
-    // Update order status to cancelled
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === selectedOrder.id
-          ? {
-              ...order,
-              status: "cancelled",
-              cancelReason: cancelForm.reason === "Other" ? cancelForm.otherReason : cancelForm.reason,
-              cancelDate: new Date().toLocaleDateString(),
-              refundAmount,
-              deductionAmount,
-              tracking: [
-                ...order.tracking,
-                {
-                  status: "Order Cancelled",
-                  timestamp: new Date().toLocaleString(),
-                  description: `Order cancelled by customer. Refund of Rs. ${refundAmount} will be processed within 3-5 business days.`
-                }
-              ]
-            }
-          : order
-      )
-    );
-
-    const deductionMessage = deductionReasons.length > 0 ? 
-      `\nDeductions applied: ${deductionReasons.join(', ')}` : '';
-    alert(`Order cancelled successfully! Refund of Rs. ${refundAmount} will be processed within 3-5 business days.${deductionMessage}`);
-    setShowCancelModal(false);
-    setCancelForm({ reason: "", otherReason: "", refundMethod: "original" });
-  };
-
-  const canCancelOrder = (order) => {
-    const cancellableStatuses = ["pending", "active", "in_transit"];
-    return cancellableStatuses.includes(order.status);
-  };
-
-  // Simulate real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setOrders((prevOrders) =>
-        prevOrders.map((order) => {
-          if (order.status === "in_transit" && Math.random() > 0.8) {
-            // Simulate tracking update
-            const newTracking = [...order.tracking];
-            if (newTracking.length < 5) {
-              newTracking.push({
-                status: "Out for Delivery",
-                timestamp: new Date().toLocaleString(),
-                description: "Your book is out for delivery",
-              });
-            }
-            return { ...order, tracking: newTracking };
-          }
-          return order;
-        })
+      const response = await userTransactionApi.cancelTransaction(
+        selectedOrder.transactionId,
+        currentUserId,
+        cancelData
       );
-    }, 30000); // Update every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
+
+      // Update the order in local state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === selectedOrder.id
+            ? userServiceHelpers.transformTransactionResponse(response)
+            : order
+        )
+      );
+
+      const { refundAmount } = userServiceHelpers.calculateRefund(selectedOrder);
+      alert(`Order cancelled successfully! Refund of Rs. ${refundAmount} will be processed within 3-5 business days.`);
+
+      setShowCancelModal(false);
+      setCancelForm({ reason: "", otherReason: "", refundMethod: "original" });
+
+      // Refresh stats
+      fetchStats();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert("Failed to cancel order. Please try again.");
+    }
+  };
+
+  const canCancelOrder = (order) => userServiceHelpers.canCancelOrder(order);
 
   const renderOrderCard = (order) => (
-    <div
-      key={order.id}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
-    >
+    <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-4">
           <img
-            src={order.book.cover}
-            alt={order.book.title}
+            src={order.book?.cover || generateSafeFallbackImage(order.book?.id || 0)}
+            alt={order.book?.title || 'Book cover'}
             className="w-16 h-20 object-cover rounded"
+            onError={(e) => {
+              e.target.src = generateSafeFallbackImage(order.book?.id || 0);
+            }}
           />
+
           <div>
             <h3 className="font-semibold text-gray-900 text-lg">{order.book.title}</h3>
             <p className="text-gray-600">{order.book.author}</p>
             <p className="text-sm text-gray-500">Order #{order.id}</p>
-            <p className="text-sm text-gray-500">{order.orderDate}</p>
+            <p className="text-sm text-gray-500">{userServiceHelpers.formatDate(order.orderDate)}</p>
           </div>
         </div>
         <div className="text-right">
-          <div
-            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-              order.status
-            )}`}
-          >
+          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
             {getStatusIcon(order.status)}
             <span className="ml-1 capitalize">{order.status.replace("_", " ")}</span>
           </div>
-          {order.type === "purchase" && (
-            <p className="text-lg font-bold text-green-600 mt-2">Rs. {order.totalAmount}</p>
+          {(order.type === "purchase" || order.type === "bidding") && order.totalAmount && (
+            <p className="text-lg font-bold text-green-600 mt-2">
+              {userServiceHelpers.formatCurrency(order.totalAmount)}
+            </p>
           )}
-          {order.type === "bidding" && (
+          {order.type === "bidding" && order.winningBid && (
             <div className="mt-2 text-right">
               <div className="flex items-center justify-end mb-1">
                 <Gavel className="w-4 h-4 text-yellow-500 mr-1" />
                 <span className="text-sm text-yellow-600 font-medium">Won Auction</span>
               </div>
-              <p className="text-lg font-bold text-green-600">Rs. {order.totalAmount}</p>
-              <p className="text-xs text-gray-500">Winning Bid: Rs. {order.winningBid}</p>
+              <p className="text-xs text-gray-500">
+                Winning Bid: {userServiceHelpers.formatCurrency(order.winningBid)}
+              </p>
             </div>
           )}
         </div>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <p className="text-sm text-gray-600">
             <strong>
-              {order.type === "purchase" ? "Seller:" : 
-               order.type === "borrow" ? "Lender:" : 
-               order.type === "exchange" ? "Exchanger:" :
-               order.type === "bidding" ? "Seller:" : "Seller:"}
+              {order.type === "purchase" ? "Seller:" :
+                order.type === "borrow" ? "Lender:" :
+                  order.type === "exchange" ? "Exchanger:" :
+                    order.type === "bidding" ? "Seller:" : "Seller:"}
             </strong>{" "}
-            {(order.seller || order.lender || order.exchanger).name}
+            {(order.seller || order.lender || order.exchanger)?.name || 'N/A'}
           </p>
           <p className="text-sm text-gray-600">
             <strong>Delivery:</strong>{" "}
@@ -504,7 +367,7 @@ const OrdersPage = () => {
           )}
           {order.type === "bidding" && order.auctionEndDate && (
             <p className="text-sm text-gray-600">
-              <strong>Auction Ended:</strong> {order.auctionEndDate}
+              <strong>Auction Ended:</strong> {userServiceHelpers.formatDate(order.auctionEndDate)}
             </p>
           )}
         </div>
@@ -512,22 +375,23 @@ const OrdersPage = () => {
           {(order.type === "borrow" || order.type === "exchange") && (
             <>
               <p className="text-sm text-gray-600">
-                <strong>Return Date:</strong> {order.returnDate}
+                <strong>Return Date:</strong> {userServiceHelpers.formatDate(order.returnDate)}
               </p>
-              {order.status === "overdue" && (
+              {order.status === "overdue" && order.overdueBy > 0 && (
                 <p className="text-sm text-red-600">
                   <strong>Overdue by:</strong> {order.overdueBy} days
                 </p>
               )}
             </>
           )}
-          {order.estimatedDelivery && order.status !== "delivered" && (
+          {order.estimatedDelivery && order.status !== "delivered" && order.status !== "completed" && (
             <p className="text-sm text-gray-600">
-              <strong>Expected:</strong> {order.estimatedDelivery}
+              <strong>Expected:</strong> {userServiceHelpers.formatDate(order.estimatedDelivery)}
             </p>
           )}
         </div>
       </div>
+
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => {
@@ -539,6 +403,7 @@ const OrdersPage = () => {
           <Eye className="w-4 h-4" />
           <span>Track Order</span>
         </button>
+
         {canCancelOrder(order) && (
           <button
             onClick={() => {
@@ -551,7 +416,8 @@ const OrdersPage = () => {
             <span>Cancel Order</span>
           </button>
         )}
-        {order.status === "delivered" && (
+
+        {(order.status === "delivered" || order.status === "completed") && (
           <button
             onClick={() => {
               setSelectedOrder(order);
@@ -563,28 +429,20 @@ const OrdersPage = () => {
             <span>Write Review</span>
           </button>
         )}
-        <button
-          className="bg-transparent border-2 border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>Contact {
-            order.type === "purchase" ? "Seller" : 
-            order.type === "borrow" ? "Lender" : 
-            order.type === "exchange" ? "Exchanger" :
-            order.type === "bidding" ? "Seller" : "Seller"
-          }</span>
-        </button>
-        {order.status === "delivered" && (
-          <button
-            className="bg-transparent border-2 border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>Download Receipt</span>
-          </button>
-        )}
       </div>
     </div>
   );
+
+  if (loading && orders.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Loading your orders...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -602,105 +460,122 @@ const OrdersPage = () => {
             </button>
           </div>
         </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+              <p className="text-red-700">{error}</p>
+              <button
+                onClick={() => fetchOrders()}
+                className="ml-auto text-red-600 hover:text-red-800 font-medium"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Total Orders</p>
-                <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Total Orders</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.totalOrders || 0}</p>
+                </div>
+                <div className="p-3 rounded-full bg-gray-100">
+                  <Package className="w-6 h-6 text-gray-500" />
+                </div>
               </div>
-              <div className="p-3 rounded-full bg-gray-100">
-                <Package className="w-6 h-6 text-gray-500" />
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Currently Borrowed</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.borrowedBooks || 0}</p>
+                </div>
+                <div className="p-3 rounded-full bg-blue-100">
+                  <BookOpen className="w-6 h-6 text-blue-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Currently Exchanged</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.exchangedBooks || 0}</p>
+                </div>
+                <div className="p-3 rounded-full bg-purple-100">
+                  <RefreshCw className="w-6 h-6 text-purple-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Completed</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.completedOrders || 0}</p>
+                </div>
+                <div className="p-3 rounded-full bg-green-100">
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Overdue</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.overdueOrders || 0}</p>
+                </div>
+                <div className="p-3 rounded-full bg-red-100">
+                  <AlertCircle className="w-6 h-6 text-red-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Won Auctions</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.wonAuctions || 0}</p>
+                </div>
+                <div className="p-3 rounded-full bg-yellow-100">
+                  <Trophy className="w-6 h-6 text-yellow-500" />
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Currently Borrowed</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {orders.filter((o) => o.type === "borrow" && o.status === "active").length}
-                </p>
-              </div>
-              <div className="p-3 rounded-full bg-blue-100">
-                <BookOpen className="w-6 h-6 text-blue-500" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Currently Exchanged</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {orders.filter((o) => o.type === "exchange" && o.status === "active").length}
-                </p>
-              </div>
-              <div className="p-3 rounded-full bg-purple-100">
-                <RefreshCw className="w-6 h-6 text-purple-500" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Completed</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {orders.filter((o) => o.status === "delivered").length}
-                </p>
-              </div>
-              <div className="p-3 rounded-full bg-green-100">
-                <CheckCircle className="w-6 h-6 text-green-500" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Overdue</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {orders.filter((o) => o.status === "overdue").length}
-                </p>
-              </div>
-              <div className="p-3 rounded-full bg-red-100">
-                <AlertCircle className="w-6 h-6 text-red-500" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Won Auctions</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {orders.filter((o) => o.type === "bidding").length}
-                </p>
-              </div>
-              <div className="p-3 rounded-full bg-yellow-100">
-                <Trophy className="w-6 h-6 text-yellow-500" />
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
+
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="flex flex-wrap border-b">
             {[
-              { key: "all", label: "All Orders", count: orders.length },
-              { key: "active", label: "Active", count: orders.filter((o) => ["active", "in_transit"].includes(o.status)).length },
-              { key: "borrowed", label: "Borrowed Books", count: orders.filter((o) => o.type === "borrow").length },
-              { key: "purchased", label: "Purchased Books", count: orders.filter((o) => o.type === "purchase").length },
-              { key: "exchanged", label: "Exchanged Books", count: orders.filter((o) => o.type === "exchange").length },
-              { key: "bidding", label: "Won Auctions", count: orders.filter((o) => o.type === "bidding").length },
-              { key: "completed", label: "Completed", count: orders.filter((o) => o.status === "delivered").length },
+              { key: "all", label: "All Orders", count: stats?.totalOrders || 0 },
+              { key: "active", label: "Active", count: stats?.activeOrders || 0 },
+              { key: "borrowed", label: "Borrowed Books", count: stats?.borrowedBooks || 0 },
+              { key: "purchased", label: "Purchased Books", count: stats?.purchasedBooks || 0 },
+              { key: "exchanged", label: "Exchanged Books", count: stats?.exchangedBooks || 0 },
+              { key: "bidding", label: "Won Auctions", count: stats?.wonAuctions || 0 },
+              { key: "completed", label: "Completed", count: stats?.completedOrders || 0 },
             ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.key
-                    ? "border-yellow-500 text-yellow-600"
-                    : "border-transparent text-gray-600 hover:text-gray-800"
-                }`}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setCurrentPage(0);
+                }}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+                  ? "border-yellow-500 text-yellow-600"
+                  : "border-transparent text-gray-600 hover:text-gray-800"
+                  }`}
               >
                 {tab.label}
                 {tab.count > 0 && (
@@ -712,10 +587,43 @@ const OrdersPage = () => {
             ))}
           </div>
         </div>
+
         {/* Orders List */}
         <div className="space-y-6">
-          {filteredOrders.length > 0 ? (
-            filteredOrders.map(renderOrderCard)
+          {loading ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+              <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-gray-600">Loading orders...</p>
+            </div>
+          ) : filteredOrders.length > 0 ? (
+            <>
+              {filteredOrders.map(renderOrderCard)}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-4 bg-white rounded-xl p-6">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                    disabled={currentPage === 0}
+                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage + 1} of {totalPages} ({totalOrders} total orders)
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                    disabled={currentPage >= totalPages - 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
               <Package size={48} className="mx-auto mb-4 text-gray-400" />
@@ -725,9 +633,7 @@ const OrdersPage = () => {
                   ? "You haven't placed any orders yet."
                   : `No ${activeTab} orders found.`}
               </p>
-              <button
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto transition-colors"
-              >
+              <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto transition-colors">
                 <BookOpen className="w-5 h-5" />
                 <span>Browse Books</span>
               </button>
@@ -735,9 +641,10 @@ const OrdersPage = () => {
           )}
         </div>
       </div>
+
       {/* Order Tracking Modal */}
       {showTrackingModal && selectedOrder && (
-        <div className="fixed inset-0 bg-transparent bg-opacity-100 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
@@ -749,26 +656,27 @@ const OrdersPage = () => {
                   onClick={() => setShowTrackingModal(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  ×
+                  <X className="w-6 h-6" />
                 </button>
               </div>
+
               {/* Order Summary */}
               <div className="bg-gray-50 rounded-xl p-4 mb-6">
                 <div className="flex items-center space-x-4">
                   <img
-                    src={selectedOrder.book.cover}
-                    alt={selectedOrder.book.title}
+                    src={selectedOrder.book?.cover || generateSafeFallbackImage(selectedOrder.book?.id || 0)}
+                    alt={selectedOrder.book?.title || 'Book cover'}
                     className="w-16 h-20 object-cover rounded"
+                    onError={(e) => {
+                      e.target.src = generateSafeFallbackImage(selectedOrder.book?.id || 0);
+                    }}
                   />
+
                   <div className="flex-grow">
                     <h4 className="font-semibold text-gray-900">{selectedOrder.book.title}</h4>
                     <p className="text-gray-600">{selectedOrder.book.author}</p>
                     <div className="flex items-center mt-2 space-x-4">
-                      <div
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          selectedOrder.status
-                        )}`}
-                      >
+                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}>
                         {getStatusIcon(selectedOrder.status)}
                         <span className="ml-1 capitalize">{selectedOrder.status.replace("_", " ")}</span>
                       </div>
@@ -781,44 +689,40 @@ const OrdersPage = () => {
                   </div>
                 </div>
               </div>
+
               {/* Delivery Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h4 className="font-semibold mb-2 flex items-center text-gray-900">
                     <User className="mr-2 text-gray-600" size={16} />
-                    {selectedOrder.type === "purchase" ? "Seller" : selectedOrder.type === "borrow" ? "Lender" : "Exchanger"} Details
+                    {selectedOrder.type === "purchase" ? "Seller" :
+                      selectedOrder.type === "borrow" ? "Lender" : "Exchanger"} Details
                   </h4>
-                  <p className="text-sm">{(selectedOrder.seller || selectedOrder.lender || selectedOrder.exchanger).name}</p>
-                  <p className="text-sm text-gray-600">{(selectedOrder.seller || selectedOrder.lender || selectedOrder.exchanger).location}</p>
-                  <div className="flex items-center mt-2 space-x-2">
-                    <button
-                      className="bg-transparent border-2 border-gray-300 text-gray-600 px-3 py-1 rounded-lg text-sm font-medium flex items-center space-x-1 hover:bg-gray-100 transition-colors"
-                    >
-                      <Phone className="w-3 h-3" />
-                      <span>Call</span>
-                    </button>
-                    <button
-                      className="bg-transparent border-2 border-gray-300 text-gray-600 px-3 py-1 rounded-lg text-sm font-medium flex items-center space-x-1 hover:bg-gray-100 transition-colors"
-                    >
-                      <Mail className="w-3 h-3" />
-                      <span>Email</span>
-                    </button>
-                  </div>
+                  <p className="text-sm">
+                    {(selectedOrder.seller || selectedOrder.lender || selectedOrder.exchanger)?.name || 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {(selectedOrder.seller || selectedOrder.lender || selectedOrder.exchanger)?.location || 'N/A'}
+                  </p>
                 </div>
+
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h4 className="font-semibold mb-2 flex items-center text-gray-900">
                     <MapPin className="mr-2 text-gray-600" size={16} />
                     Delivery Information
                   </h4>
-                  <p className="text-sm">{selectedOrder.deliveryMethod === "pickup" ? "Pickup" : "Home Delivery"}</p>
-                  <p className="text-sm text-gray-600">{selectedOrder.deliveryAddress}</p>
+                  <p className="text-sm">
+                    {selectedOrder.deliveryMethod === "pickup" ? "Pickup" : "Home Delivery"}
+                  </p>
+                  <p className="text-sm text-gray-600">{selectedOrder.deliveryAddress || 'N/A'}</p>
                   {selectedOrder.estimatedDelivery && (
                     <p className="text-sm text-gray-600 mt-1">
-                      Expected: {selectedOrder.estimatedDelivery}
+                      Expected: {userServiceHelpers.formatDate(selectedOrder.estimatedDelivery)}
                     </p>
                   )}
                 </div>
               </div>
+
               {/* Tracking Timeline */}
               <div className="mb-6">
                 <h4 className="font-semibold mb-4 flex items-center text-gray-900">
@@ -826,26 +730,27 @@ const OrdersPage = () => {
                   Tracking History
                 </h4>
                 <div className="space-y-4">
-                  {selectedOrder.tracking.map((track, index) => (
-                    <div key={index} className="flex items-start space-x-4">
-                      <div
-                        className={`w-3 h-3 rounded-full mt-1 ${
-                          index === 0 ? "bg-yellow-500" : "bg-gray-300"
-                        }`}
-                      ></div>
-                      <div className="flex-grow">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-gray-900">{track.status}</p>
-                            <p className="text-sm text-gray-600">{track.description}</p>
+                  {selectedOrder.tracking && selectedOrder.tracking.length > 0 ? (
+                    selectedOrder.tracking.map((track, index) => (
+                      <div key={index} className="flex items-start space-x-4">
+                        <div className={`w-3 h-3 rounded-full mt-1 ${index === 0 ? "bg-yellow-500" : "bg-gray-300"}`}></div>
+                        <div className="flex-grow">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-gray-900">{track.status}</p>
+                              <p className="text-sm text-gray-600">{track.description}</p>
+                            </div>
+                            <span className="text-xs text-gray-500">{track.timestamp}</span>
                           </div>
-                          <span className="text-xs text-gray-500">{track.timestamp}</span>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm">No tracking information available</p>
+                  )}
                 </div>
               </div>
+
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3">
                 <button
@@ -854,13 +759,7 @@ const OrdersPage = () => {
                 >
                   Close
                 </button>
-                <button
-                  className="bg-transparent border-2 border-gray-300 text-gray-600 px-6 py-3 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  <span>Contact {selectedOrder.type === "purchase" ? "Seller" : selectedOrder.type === "borrow" ? "Lender" : "Exchanger"}</span>
-                </button>
-                {selectedOrder.status === "delivered" && (
+                {(selectedOrder.status === "delivered" || selectedOrder.status === "completed") && (
                   <button
                     onClick={() => {
                       setShowTrackingModal(false);
@@ -877,6 +776,7 @@ const OrdersPage = () => {
           </div>
         </div>
       )}
+
       {/* Cancel Order Modal */}
       {showCancelModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -904,12 +804,14 @@ const OrdersPage = () => {
                 Refund Calculation
               </h4>
               {(() => {
-                const { refundAmount, deductionReasons } = calculateRefundAmount(selectedOrder);
+                const { refundAmount, deductionReasons } = userServiceHelpers.calculateRefund(selectedOrder);
                 return (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Original Amount:</span>
-                      <span className="font-medium">Rs. {selectedOrder.totalAmount || 0}</span>
+                      <span className="font-medium">
+                        {userServiceHelpers.formatCurrency(selectedOrder.totalAmount || 0)}
+                      </span>
                     </div>
                     {deductionReasons.length > 0 && (
                       <div className="border-t pt-2">
@@ -917,14 +819,14 @@ const OrdersPage = () => {
                         {deductionReasons.map((reason, index) => (
                           <div key={index} className="flex justify-between text-sm text-red-600">
                             <span>- {reason.split(': ')[0]}:</span>
-                            <span>Rs. {reason.split(': ')[1]?.replace('Rs. ', '') || '0'}</span>
+                            <span>{reason.split(': ')[1]?.replace('Rs. ', '') || '0'}</span>
                           </div>
                         ))}
                       </div>
                     )}
                     <div className="border-t pt-2 flex justify-between font-semibold text-lg">
                       <span>Refund Amount:</span>
-                      <span className="text-green-600">Rs. {refundAmount}</span>
+                      <span className="text-green-600">{userServiceHelpers.formatCurrency(refundAmount)}</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
                       * Refund will be processed within 3-5 business days
@@ -940,7 +842,7 @@ const OrdersPage = () => {
                 Reason for Cancellation <span className="text-red-500">*</span>
               </label>
               <div className="space-y-2">
-                {getCancellationReasons(selectedOrder.type).map((reason, index) => (
+                {userServiceHelpers.getCancellationReasons(selectedOrder.type).map((reason, index) => (
                   <label key={index} className="flex items-center cursor-pointer">
                     <input
                       type="radio"
@@ -954,7 +856,7 @@ const OrdersPage = () => {
                   </label>
                 ))}
               </div>
-              
+
               {cancelForm.reason === "Other" && (
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1024,14 +926,16 @@ const OrdersPage = () => {
           </div>
         </div>
       )}
+
       {/* Review Modal */}
       {showReviewModal && selectedOrder && (
-        <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold mb-2 text-gray-900">Write a Review</h3>
               <p className="text-gray-600">{selectedOrder.book.title}</p>
             </div>
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1049,6 +953,7 @@ const OrdersPage = () => {
                   ))}
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Book Condition Rating
@@ -1065,9 +970,11 @@ const OrdersPage = () => {
                   ))}
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {selectedOrder.type === "purchase" ? "Seller" : selectedOrder.type === "borrow" ? "Lender" : "Exchanger"} Rating
+                  {selectedOrder.type === "purchase" ? "Seller" :
+                    selectedOrder.type === "borrow" ? "Lender" : "Exchanger"} Rating
                 </label>
                 <div className="flex space-x-1">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -1081,6 +988,7 @@ const OrdersPage = () => {
                   ))}
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Your Review
@@ -1094,6 +1002,7 @@ const OrdersPage = () => {
                 />
               </div>
             </div>
+
             <div className="mt-6 flex space-x-3">
               <button
                 onClick={() => {
@@ -1107,7 +1016,7 @@ const OrdersPage = () => {
               <button
                 onClick={handleReviewSubmit}
                 disabled={!reviewForm.comment.trim()}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors"
+                className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors disabled:cursor-not-allowed"
               >
                 <span>Submit Review</span>
               </button>

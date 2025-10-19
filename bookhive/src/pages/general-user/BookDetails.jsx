@@ -7,11 +7,82 @@ import {
   ShoppingCart, Repeat, CheckCircle, XCircle, AlertCircle
 } from "lucide-react";
 import Button from "../../components/shared/Button";
+import LazyImage from "../../components/LazyImage";
+import imageCache from "../../utils/imageCache";
+
+// UserAvatar component for consistent user image handling
+const UserAvatar = ({ user, size = "md", className = "" }) => {
+  const baseUrl = 'http://localhost:9090';
+  
+  // Size configurations
+  const sizes = {
+    sm: "w-4 h-4",
+    md: "w-10 h-10", 
+    lg: "w-12 h-12"
+  };
+  
+  // Generate colored avatar based on user name for visual distinction
+  const getDefaultUserAvatar = (userName) => {
+    const colors = [
+      ['%237C3AED', '%234C1D95'], // Purple
+      ['%2306B6D4', '%230891B2'], // Cyan
+      ['%2310B981', '%23059669'], // Emerald
+      ['%23F59E0B', '%23D97706'], // Amber
+      ['%23EF4444', '%23DC2626'], // Red
+      ['%238B5CF6', '%237C3AED'], // Violet
+    ];
+    
+    // Simple hash function to get consistent color for user
+    const hash = (userName || 'User').split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    const colorIndex = Math.abs(hash) % colors.length;
+    const [color1, color2] = colors[colorIndex];
+    
+    return `data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cradialGradient id='bg' cx='50%25' cy='30%25'%3e%3cstop offset='0%25' stop-color='${color1}'/%3e%3cstop offset='100%25' stop-color='${color2}'/%3e%3c/radialGradient%3e%3c/defs%3e%3ccircle cx='50' cy='50' r='50' fill='url(%23bg)'/%3e%3ccircle cx='50' cy='37' r='18' fill='%23FFFFFF' opacity='0.9'/%3e%3cpath d='M50 60c-15 0-28 10-30 22 0 3 2 5 5 5h50c3 0 5-2 5-5-2-12-15-22-30-22z' fill='%23FFFFFF' opacity='0.9'/%3e%3c/svg%3e`;
+  };
+
+  // If user has a profile image from backend, try to load it
+  const getUserImageSrc = () => {
+    if (user?.profileImage) {
+      // Try backend endpoint for user profile images
+      console.log(`👤 Loading user profile image: ${user.profileImage}`);
+      return `${baseUrl}/getFileAsBase64?fileName=${user.profileImage}&folderName=userProfiles`;
+    }
+    if (user?.avatar && user.avatar !== "https://via.placeholder.com/50" && user.avatar !== null) {
+      // Use provided avatar URL if it's not a placeholder
+      console.log(`👤 Using provided avatar URL for: ${user.name}`);
+      return user.avatar;
+    }
+    // Use default vector avatar
+    console.log(`👤 Using default avatar for: ${user?.name || 'Unknown'}`);
+    return getDefaultUserAvatar(user?.name);
+  };
+
+  return (
+    <img
+      src={getUserImageSrc()}
+      alt={user?.name || "User"}
+      className={`${sizes[size]} rounded-full object-cover ${className}`}
+      onError={(e) => {
+        // Fallback to default avatar if loading fails
+        e.target.src = getDefaultUserAvatar(user?.name);
+      }}
+    />
+  );
+};
 
 const BookDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const baseUrl = 'http://localhost:9090';
+  
+  // Placeholder for images (same as other pages)
+  const placeholder = "data:image/svg+xml,%3csvg width='150' height='200' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='150' height='200' fill='%236B7280'/%3e%3ctext x='75' y='100' text-anchor='middle' fill='%23FFFFFF' font-size='14'%3eNo Image%3c/text%3e%3c/svg%3e";
+  
   const [book, setBook] = useState(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -126,11 +197,40 @@ const BookDetailsPage = () => {
       };
       setBook(enhancedBook);
       setLoading(false);
+      
+      // Debug: Log book data to verify image field
+      console.log("📚 BookDetails received book data:", {
+        title: enhancedBook.title,
+        bookImage: enhancedBook.bookImage,
+        hasImage: !!enhancedBook.bookImage
+      });
     } else {
       // If no book data is passed, redirect back to browse
       navigate("/user/browse-books");
     }
   }, [id, location.state, navigate]);
+
+  // Preload book image when book data is available
+  useEffect(() => {
+    const preloadBookImage = async () => {
+      if (book?.bookImage) {
+        const cachedImage = imageCache.get(book.bookImage, 'userBooks');
+        if (!cachedImage) {
+          try {
+            const response = await fetch(`${baseUrl}/getFileAsBase64?fileName=${book.bookImage}&folderName=userBooks`);
+            if (response.ok) {
+              const imageData = await response.text();
+              imageCache.set(book.bookImage, 'userBooks', imageData);
+            }
+          } catch (error) {
+            console.error(`Failed to preload image for ${book.title}:`, error);
+          }
+        }
+      }
+    };
+
+    preloadBookImage();
+  }, [book]);
 
   // Navigation handlers for separate pages
   const handleBidClick = () => {
@@ -247,7 +347,8 @@ const BookDetailsPage = () => {
       title: "The Great Gatsby",
       author: "F. Scott Fitzgerald",
       condition: "Good",
-      cover: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
+      cover: placeholder,
+      bookImage: null, // No image for mock exchange book
     };
     setExchangeBook(mockExchangeBook);
     setShowExchangeBookModal(true);
@@ -382,11 +483,24 @@ const BookDetailsPage = () => {
             {/* Left Column - Book Image */}
             <div className="w-full lg:w-1/3">
               <div className="relative h-64 md:h-80 overflow-hidden rounded-xl">
-                <img 
-                  src={book.cover || "https://via.placeholder.com/150"} 
-                  alt={book.title} 
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
-                />
+                {book.bookImage ? (
+                  <LazyImage
+                    src={book.cover || placeholder}
+                    alt={book.title}
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    fileName={book.bookImage}
+                    folderName="userBooks"
+                    baseUrl={baseUrl}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <BookOpen className="w-12 h-12 mx-auto mb-2" />
+                      <div className="text-sm">No Image</div>
+                      <div className="text-xs">{book.title}</div>
+                    </div>
+                  </div>
+                )}
                 {isDisabled && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className="text-white text-center">
@@ -448,10 +562,7 @@ const BookDetailsPage = () => {
                   <span className="text-gray-600">Views</span>
                   <span className="font-medium">{book.views || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Wishlisted</span>
-                  <span className="font-medium">{book.wishlistedCount || 0} times</span>
-                </div>
+                
                 {book.language && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Language</span>
@@ -470,10 +581,10 @@ const BookDetailsPage = () => {
               <div className="mt-6 bg-gray-50 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-900 mb-4">Book Owner</h3>
                 <div className="flex items-center mb-4">
-                  <img 
-                    src={book.owner.avatar || "https://via.placeholder.com/50"} 
-                    alt={book.owner.name} 
-                    className="h-10 w-10 rounded-full object-cover mr-3" 
+                  <UserAvatar 
+                    user={book.owner} 
+                    size="md" 
+                    className="mr-3" 
                   />
                   <div>
                     <div className="flex items-center space-x-2">
@@ -483,20 +594,10 @@ const BookDetailsPage = () => {
                         {book.owner.trustScore}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {book.owner.responseTime || 'Usually responds within 2 hours'}
-                    </p>
                   </div>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  className="w-full border-gray-200 text-gray-600 hover:bg-gray-100 text-sm"
-                  onClick={() => setShowContactModal(true)}
-                  icon={<MessageSquare className="w-4 h-4" />}
-                >
-                  Contact Owner
-                </Button>
+                
               </div>
             </div>
 
@@ -684,10 +785,10 @@ const BookDetailsPage = () => {
                     {book.reviews.map((review) => (
                       <div key={review.id} className="border-b border-gray-100 pb-6 last:border-b-0">
                         <div className="flex items-start gap-4">
-                          <img 
-                            src={review.user.avatar || "https://via.placeholder.com/50"} 
-                            alt={review.user.name} 
-                            className="w-12 h-12 rounded-full object-cover flex-shrink-0" 
+                          <UserAvatar 
+                            user={review.user} 
+                            size="lg" 
+                            className="flex-shrink-0" 
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
@@ -1018,11 +1119,20 @@ const BookDetailsPage = () => {
                   The owner has offered this book for exchange:
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4 flex items-center space-x-3">
-                  <img
-                    src={exchangeBook?.cover || "https://via.placeholder.com/80"}
-                    alt={exchangeBook?.title}
-                    className="w-16 h-20 object-cover rounded"
-                  />
+                  {exchangeBook?.bookImage ? (
+                    <LazyImage
+                      src={exchangeBook?.cover || placeholder}
+                      alt={exchangeBook?.title}
+                      className="w-16 h-20 object-cover rounded"
+                      fileName={exchangeBook.bookImage}
+                      folderName="userBooks"
+                      baseUrl={baseUrl}
+                    />
+                  ) : (
+                    <div className="w-16 h-20 bg-gray-200 flex items-center justify-center rounded">
+                      <BookOpen className="w-4 h-4 text-gray-400" />
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-semibold">{exchangeBook?.title}</h4>
                     <p className="text-sm text-gray-600">{exchangeBook?.author}</p>
