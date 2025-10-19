@@ -663,7 +663,7 @@ const BookDetailsPage = () => {
                     Buy Now
                   </Button>
                 )}
-                {(book.forBidding || book.forSale) && (
+                {book.forBidding && (
                   <Button
                     variant="primary"
                     className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
@@ -717,7 +717,7 @@ const BookDetailsPage = () => {
               )}
 
               {/* Recent Bids */}
-              {(book.forBidding || book.forSale) && book.recentBids && book.recentBids.length > 0 && (
+              {book.forBidding && book.recentBids && book.recentBids.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Recent Bids</h3>
                   <div className="bg-gray-50 rounded-lg p-4">

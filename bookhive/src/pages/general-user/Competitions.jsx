@@ -107,7 +107,7 @@ const mockData = {
 };
 
 const Competitions = () => {
-  const [activeTab, setActiveTab] = useState("yourSubmissions");
+  const [activeTab, setActiveTab] = useState("newCompetitions"); // Changed default to newCompetitions
   const [competitions, setCompetitions] = useState([]);
   const [userParticipatedCompetitions, setUserParticipatedCompetitions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,59 +115,81 @@ const Competitions = () => {
   const [selectedCompetition, setSelectedCompetition] = useState(null);
   const [votes, setVotes] = useState({});
   const baseUrl = "http://localhost:9090";
+  const userEmail = "user@example.com"; // Replace with authenticated user's email
 
   const formatDateForDisplay = (dateStr) => {
     if (!dateStr) return "Not set";
     const date = new Date(dateStr);
+    date.setHours(date.getHours() + 5);
+    date.setMinutes(date.getMinutes() + 30);
     return isNaN(date.getTime()) ? "Not set" : date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   };
 
+  const fetchCompetitions = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await axios.get(`${baseUrl}/api/getAllCompetitions`);
+      const fetchedCompetitions = response.data.map((comp) => ({
+        id: comp.competitionid,
+        title: comp.title || "Untitled",
+        category: comp.theme || "Writing",
+        description: comp.description || "No description",
+        prize: comp.prizetrustscore ? comp.prizetrustscore : "Not specified",
+        featured: comp.activestatus || false,
+        currentparticipants: comp.currentparticipants ?? 0, // Correct field name
+        maxParticipants: comp.maxparticipants || 100,
+        organizer: {
+          name: comp.createdby || "Unknown Organizer",
+          avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
+        },
+        rules: comp.rules ? JSON.parse(comp.rules) : [],
+        judgesCriteria: comp.judgingcriteria ? JSON.parse(comp.judgingcriteria) : [],
+        submissions: comp.competitionid === "b7e1d4d1" ? mockData.mockSubmissions : [],
+        leaderboard: comp.competitionid === "b7e1d4d1" ? mockData.mockLeaderboard : [],
+        startDatetime: comp.startdatetime,
+        endDatetime: comp.enddatetime,
+        votingEndDatetime: comp.votingenddatetime,
+        deadline: formatDateForDisplay(comp.votingenddatetime),
+        trustScoreRequirement: comp.entrytrustscore ?? 0,
+      }));
+      setCompetitions(fetchedCompetitions);
+    } catch (err) {
+      const errorMessage = "Failed to fetch competitions: " + (err.response?.data?.message || err.message);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchUserParticipatedCompetitions = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/participating/${userEmail}`);
+      setUserParticipatedCompetitions(response.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to fetch user competitions");
+    }
+  };
+
   useEffect(() => {
-    const fetchCompetitions = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await axios.get(`${baseUrl}/api/getAllCompetitions`);
-        const fetchedCompetitions = response.data.map((comp) => ({
-          id: comp.competitionid,
-          title: comp.title || "Untitled",
-          category: comp.theme || "Writing",
-          description: comp.description || "No description",
-          prize: comp.prizetrustscore ? `Trustscore Increment: ${comp.prizetrustscore}` : "Trustscore Increment",
-          deadline: formatDateForDisplay(comp.votingenddatetime),
-          featured: comp.activestatus || false,
-          participants: comp.currentparticipants || 0,
-          maxParticipants: comp.maxparticipants || 100,
-          trustScoreRequirement: comp.trustScoreRequirement || 0,
-          organizer: {
-            name: comp.createdby || "Unknown Organizer",
-            avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-          },
-          rules: comp.rules ? JSON.parse(comp.rules) : [],
-          judgesCriteria: comp.judgingcriteria ? JSON.parse(comp.judgingcriteria) : [],
-          submissions: comp.competitionid === "b7e1d4d1" ? mockData.mockSubmissions : [],
-          leaderboard: comp.competitionid === "b7e1d4d1" ? mockData.mockLeaderboard : [],
-        }));
-        setCompetitions(fetchedCompetitions);
-      } catch (err) {
-        const errorMessage = "Failed to fetch competitions: " + (err.response?.data?.message || err.message);
-        setError(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const fetchUserParticipatedCompetitions = async () => {
-      setUserParticipatedCompetitions(["b7e1d4d1", "34394c1e"]); // Mocked data
-    };
-
     fetchCompetitions();
     fetchUserParticipatedCompetitions();
   }, []);
 
+  const handleJoinSuccess = (id) => {
+    setUserParticipatedCompetitions((prev) => {
+      if (!prev.includes(id)) {
+        return [...prev, id];
+      }
+      return prev.filter((compId) => compId !== id); // Update for leave action
+    });
+    // Refetch competitions to update currentparticipants
+    fetchCompetitions();
+  };
+
   const isDeadlinePassed = (deadline) => {
     const deadlineDate = new Date(deadline);
-    const currentDate = new Date("2025-09-03");
+    const currentDate = new Date();
     return deadlineDate < currentDate;
   };
 
@@ -282,7 +304,7 @@ const Competitions = () => {
               <p className="text-blue-100">Cast your votes and view the leaderboard</p>
             </div>
             <div className="grid grid-cols-1 gap-6">
-              {competitions.filter((c) => isDeadlinePassed(c.deadline)).map((competition) => (
+              {competitions.filter((c) => isDeadlinePassed(c.votingEndDatetime)).map((competition) => (
                 <div key={competition.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-3">
@@ -386,6 +408,7 @@ const Competitions = () => {
             openSubmissionModal={openSubmissionModal}
             isDeadlinePassed={isDeadlinePassed}
             userParticipatedCompetitions={userParticipatedCompetitions}
+            onJoinSuccess={handleJoinSuccess}
           />
         )}
 
@@ -441,7 +464,7 @@ const Competitions = () => {
                       onClick={() => handleVote(selectedCompetition.competitionId, selectedCompetition.id)}
                       icon={<Star size={16} />}
                     >
-                      {(votes[`${selectedCompetition.competitionId}-${selectedSubmission.id}`] || 0) > 0 ? "Remove Vote" : "Vote"}
+                      {(votes[`${selectedCompetition.competitionId}-${selectedCompetition.id}`] || 0) > 0 ? "Remove Vote" : "Vote"}
                     </NewButton>
                   )}
                 </div>

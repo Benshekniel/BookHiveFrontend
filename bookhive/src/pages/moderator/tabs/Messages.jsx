@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageCircle, Send, Search, RefreshCw, Radio, Wifi, WifiOff } from 'lucide-react';
-import { useAuth } from '../../components/AuthContext';
-import messageService from '../../services/messageService';
-import socketService from '../../services/socketService';
+import { useAuth } from '../../../components/AuthContext';
+import messageService from '../../../services/messageService';
+import socketService from '../../../services/socketService';
 
 const Messages = () => {
   const { user } = useAuth();
