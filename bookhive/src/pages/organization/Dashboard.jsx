@@ -234,7 +234,7 @@ const Dashboard = () => {
         navigate('/organization/received');
         break;
       case 'view-all-requests':
-        navigate('/request'); // Adjust route as needed
+        navigate('/organization/received'); // Adjust route as needed
         break;
       
       default:
