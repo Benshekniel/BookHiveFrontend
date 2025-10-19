@@ -195,6 +195,8 @@ const BooksPage = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [disabledBooks, setDisabledBooks] = useState(new Set());
+  const [userLocation, setUserLocation] = useState(null); // User's actual location
+
   const [myRequests, setMyRequests] = useState([
     // Pre-approved borrow request (mock, map to real book if exists)
     {
@@ -267,17 +269,17 @@ const BooksPage = () => {
     new Set((books || []).map((book) => book.condition))
   );
 
-  // Mock coordinates for book locations based on filtered books
+  // Book locations with real geocoded coordinates
   const bookLocations = filteredBooks.map((book) => ({
     id: book.id,
     title: book.title,
     location: book.location,
-    lat: 6.9271 + (Math.random() - 0.5) * 0.05,
-    lng: 79.8612 + (Math.random() - 0.5) * 0.05,
+    lat: book.lat || (6.9271 + (Math.random() - 0.5) * 0.05),
+    lng: book.lng || (79.8612 + (Math.random() - 0.5) * 0.05),
   }));
 
-  // User's location (mocked as Colombo)
-  const userPosition = [6.9271, 79.8612];
+  // User's actual location or default to Colombo
+  const userPosition = userLocation ? [userLocation.lat, userLocation.lng] : [6.9271, 79.8612];
 
   // Show toast function
   const showToast = (message, type = "info") => {
@@ -297,6 +299,44 @@ const BooksPage = () => {
   };
 
   // Fetch books from backend
+  // Geocoding function to convert address to coordinates
+  const geocodeAddress = useCallback(async (address) => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}, Sri Lanka&limit=1`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    }
+    // Return Colombo as fallback
+    return { lat: 6.9271, lng: 79.8612 };
+  }, []);
+
+  // Fetch user location from backend
+  const fetchUserLocation = useCallback(async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/getLoginedUser`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData.address) {
+          const coords = await geocodeAddress(userData.address);
+          setUserLocation(coords);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user location:', error);
+    }
+  }, [geocodeAddress]);
+
   const fetchBooks = useCallback(async () => {
     try {
       setLoading(true);
@@ -353,9 +393,28 @@ const BooksPage = () => {
       // Filter out inactive books
       const activeBooks = mappedBooks.filter(book => book.status === 'active');
       
-      setBooks(activeBooks);
-      setFilteredBooks(activeBooks);
-      console.log(`✅ Successfully fetched ${activeBooks.length} books`);
+      // Geocode book locations
+      const geocodedBooks = await Promise.all(
+        activeBooks.map(async (book) => {
+          if (book.location) {
+            const coords = await geocodeAddress(book.location);
+            return {
+              ...book,
+              lat: coords.lat,
+              lng: coords.lng
+            };
+          }
+          return {
+            ...book,
+            lat: 6.9271 + (Math.random() - 0.5) * 0.1,
+            lng: 79.8612 + (Math.random() - 0.5) * 0.1
+          };
+        })
+      );
+      
+      setBooks(geocodedBooks);
+      setFilteredBooks(geocodedBooks);
+      console.log(`✅ Successfully fetched ${geocodedBooks.length} books with locations`);
       
       // Preload images after a short delay (same as BookListing)
       setTimeout(() => {
@@ -367,11 +426,12 @@ const BooksPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [preloadImages]);
+  }, [preloadImages, geocodeAddress]);
 
   useEffect(() => {
     fetchBooks();
-  }, [fetchBooks]);
+    fetchUserLocation();
+  }, [fetchBooks, fetchUserLocation]);
 
   // Clear cache when user logs out (same as BookListing)
   useEffect(() => {
@@ -824,13 +884,7 @@ const BooksPage = () => {
                     >
                       Browse Books
                     </h2>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/book-circles")}
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm"
-                    >
-                      Go to Book Circles
-                    </Button>
+                    
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="relative flex-1">
@@ -1046,14 +1100,14 @@ const BooksPage = () => {
                     <div className="lg:col-span-2">
                       {/* Books List */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                        <h2
+                        {/* <h2
                           className="text-lg sm:text-xl font-semibold text-gray-900"
                           style={{
                             fontFamily: "'Poppins', system-ui, sans-serif",
                           }}
                         >
                           {filteredBooks.length} Books Found
-                        </h2>
+                        </h2> */}
                         {nearbyOnly && (
                           <div className="flex items-center text-sm text-gray-600 mt-2 sm:mt-0">
                             <MapPin className="w-4 h-4 mr-1" />
