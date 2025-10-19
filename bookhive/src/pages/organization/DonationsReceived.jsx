@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Gift, Truck, CheckCircle, Clock, User, MapPin, Package, AlertCircle, RefreshCw, Eye, MessageCircle } from 'lucide-react';
+import { Gift, Truck, CheckCircle, Clock, User, MapPin, Package, AlertCircle, RefreshCw, Eye, MessageCircle, X, Calendar } from 'lucide-react';
 import { useAuth } from '../../components/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = 'http://localhost:9090/api';
 
 const DonationsReceived = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Check if user is authenticated
   if (!user) {
@@ -27,6 +29,11 @@ const DonationsReceived = () => {
     condition: '',
     notes: '',
   });
+
+  // NEW: Details Modal State
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [donationDetails, setDonationDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   // Stats state
   const [stats, setStats] = useState({
@@ -117,7 +124,7 @@ const DonationsReceived = () => {
 
   useEffect(() => {
     loadDonations();
-  }, [orgId]); // Added orgId to dependency array
+  }, [orgId]);
 
   const loadDonations = async () => {
     if (!orgId) {
@@ -129,7 +136,7 @@ const DonationsReceived = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getDonationsByOrganization(orgId); // Use orgId
+      const data = await getDonationsByOrganization(orgId);
       const donationList = Array.isArray(data) ? data : [];
       setDonations(donationList);
 
@@ -250,6 +257,22 @@ const DonationsReceived = () => {
     }
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'No date';
+    try {
+      return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   const formatStatus = (status) => {
     if (!status) return 'Unknown';
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -279,7 +302,7 @@ const DonationsReceived = () => {
 
     try {
       await markDonationAsReceived(donationId, {
-        organizationId: orgId, // Use orgId
+        organizationId: orgId,
         receivedDate: confirmationData.receivedDate,
         condition: confirmationData.condition,
         notes: confirmationData.notes.trim(),
@@ -302,22 +325,39 @@ const DonationsReceived = () => {
     await loadDonations();
   };
 
+  // FIXED: View Details Function
   const handleViewDetails = async (donationId) => {
+    setDetailsLoading(true);
+    setShowDetailsModal(true);
+    setError(null);
+
     try {
-      const donationDetails = await getDonationById(donationId);
-      console.log('Donation details:', donationDetails);
-      // You can implement a modal or navigation to show details
-      // For now, just logging to console
+      const details = await getDonationById(donationId);
+      setDonationDetails(details);
     } catch (err) {
       setError('Failed to load donation details');
       console.error('View details error:', err);
+      setShowDetailsModal(false);
+    } finally {
+      setDetailsLoading(false);
     }
   };
 
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setDonationDetails(null);
+  };
+
+  // FIXED: Navigate to feedback page with donation data
   const handleGiveFeedback = (donation) => {
-    // You can implement feedback functionality here
     console.log('Give feedback for donation:', donation.id);
-    // This could open a modal or navigate to a feedback page
+    navigate('/organization/feedback', {
+      state: {
+        donationId: donation.id,
+        donationTitle: donation.bookTitle || donation.title,
+        donorName: donation.donorName,
+      },
+    });
   };
 
   // Auto-hide success and error messages after 5 seconds
@@ -665,6 +705,272 @@ const DonationsReceived = () => {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Details Modal */}
+      {showDetailsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-3xl w-full p-6 my-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-heading font-semibold text-textPrimary">Donation Details</h3>
+              <button
+                onClick={closeDetailsModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {detailsLoading ? (
+              <div className="flex flex-col justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                <p className="text-gray-600">Loading details...</p>
+              </div>
+            ) : donationDetails ? (
+              <div className="space-y-6">
+                {/* Main Info */}
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-4 bg-primary/10 rounded-lg">
+                      <Gift className="h-8 w-8 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-xl font-semibold text-textPrimary mb-2">
+                        {donationDetails.bookTitle || donationDetails.title || 'Book Donation'}
+                      </h4>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(donationDetails.status)}`}>
+                          {formatStatus(donationDetails.status)}
+                        </span>
+                        {donationDetails.condition && (
+                          <span className={`text-sm font-medium ${getConditionColor(donationDetails.condition)}`}>
+                            Condition: {formatCondition(donationDetails.condition)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Donor Information */}
+                <div>
+                  <h5 className="text-lg font-semibold text-textPrimary mb-3 flex items-center">
+                    <User className="h-5 w-5 mr-2" />
+                    Donor Information
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Name</p>
+                      <p className="font-medium text-textPrimary">{donationDetails.donorName || 'Anonymous'}</p>
+                    </div>
+                    {donationDetails.donorEmail && (
+                      <div>
+                        <p className="text-sm text-gray-600">Email</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.donorEmail}</p>
+                      </div>
+                    )}
+                    {donationDetails.donorPhone && (
+                      <div>
+                        <p className="text-sm text-gray-600">Phone</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.donorPhone}</p>
+                      </div>
+                    )}
+                    {donationDetails.donorLocation && (
+                      <div>
+                        <p className="text-sm text-gray-600">Location</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.donorLocation}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Donation Details */}
+                <div>
+                  <h5 className="text-lg font-semibold text-textPrimary mb-3 flex items-center">
+                    <Package className="h-5 w-5 mr-2" />
+                    Donation Details
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Quantity</p>
+                      <p className="font-medium text-textPrimary">{donationDetails.quantity || 0} books</p>
+                    </div>
+                    {donationDetails.bookCategory && (
+                      <div>
+                        <p className="text-sm text-gray-600">Category</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.bookCategory}</p>
+                      </div>
+                    )}
+                    {donationDetails.isbn && (
+                      <div>
+                        <p className="text-sm text-gray-600">ISBN</p>
+                        <p className="font-medium text-textPrimary font-mono">{donationDetails.isbn}</p>
+                      </div>
+                    )}
+                    {donationDetails.author && (
+                      <div>
+                        <p className="text-sm text-gray-600">Author</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.author}</p>
+                      </div>
+                    )}
+                    {donationDetails.publisher && (
+                      <div>
+                        <p className="text-sm text-gray-600">Publisher</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.publisher}</p>
+                      </div>
+                    )}
+                    {donationDetails.publicationYear && (
+                      <div>
+                        <p className="text-sm text-gray-600">Publication Year</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.publicationYear}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Shipping Information */}
+                <div>
+                  <h5 className="text-lg font-semibold text-textPrimary mb-3 flex items-center">
+                    <Truck className="h-5 w-5 mr-2" />
+                    Shipping Information
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
+                    {donationDetails.trackingNumber && (
+                      <div>
+                        <p className="text-sm text-gray-600">Tracking Number</p>
+                        <p className="font-medium text-accent font-mono">{donationDetails.trackingNumber}</p>
+                      </div>
+                    )}
+                    {donationDetails.shippingMethod && (
+                      <div>
+                        <p className="text-sm text-gray-600">Shipping Method</p>
+                        <p className="font-medium text-textPrimary">{donationDetails.shippingMethod}</p>
+                      </div>
+                    )}
+                    {donationDetails.dateShipped && (
+                      <div>
+                        <p className="text-sm text-gray-600">Date Shipped</p>
+                        <p className="font-medium text-textPrimary">{formatDate(donationDetails.dateShipped)}</p>
+                      </div>
+                    )}
+                    {donationDetails.estimatedDelivery && (
+                      <div>
+                        <p className="text-sm text-gray-600">Estimated Delivery</p>
+                        <p className="font-medium text-textPrimary">{formatDate(donationDetails.estimatedDelivery)}</p>
+                      </div>
+                    )}
+                    {donationDetails.dateReceived && (
+                      <div>
+                        <p className="text-sm text-gray-600">Date Received</p>
+                        <p className="font-medium text-success">{formatDate(donationDetails.dateReceived)}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div>
+                  <h5 className="text-lg font-semibold text-textPrimary mb-3 flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Timeline
+                  </h5>
+                  <div className="space-y-3 bg-gray-50 rounded-lg p-4">
+                    {donationDetails.donationDate && (
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <div>
+                          <p className="text-sm font-medium text-textPrimary">Donation Created</p>
+                          <p className="text-xs text-gray-600">{formatDateTime(donationDetails.donationDate)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {donationDetails.approvedDate && (
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-secondary rounded-full"></div>
+                        <div>
+                          <p className="text-sm font-medium text-textPrimary">Approved</p>
+                          <p className="text-xs text-gray-600">{formatDateTime(donationDetails.approvedDate)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {donationDetails.dateShipped && (
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-accent rounded-full"></div>
+                        <div>
+                          <p className="text-sm font-medium text-textPrimary">Shipped</p>
+                          <p className="text-xs text-gray-600">{formatDateTime(donationDetails.dateShipped)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {donationDetails.dateReceived && (
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-success rounded-full"></div>
+                        <div>
+                          <p className="text-sm font-medium text-textPrimary">Received</p>
+                          <p className="text-xs text-gray-600">{formatDateTime(donationDetails.dateReceived)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {(donationDetails.notes || donationDetails.description || donationDetails.donorMessage) && (
+                  <div>
+                    <h5 className="text-lg font-semibold text-textPrimary mb-3">Notes & Messages</h5>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      {donationDetails.donorMessage && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 mb-1">Message from Donor:</p>
+                          <p className="text-sm text-gray-700 italic">"{donationDetails.donorMessage}"</p>
+                        </div>
+                      )}
+                      {donationDetails.description && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 mb-1">Description:</p>
+                          <p className="text-sm text-gray-700">{donationDetails.description}</p>
+                        </div>
+                      )}
+                      {donationDetails.notes && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 mb-1">Internal Notes:</p>
+                          <p className="text-sm text-gray-700">{donationDetails.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center space-x-3 pt-4 border-t">
+                  {(donationDetails.status?.toLowerCase() === 'delivered' || donationDetails.status?.toLowerCase() === 'received') && (
+                    <button
+                      onClick={() => {
+                        closeDetailsModal();
+                        handleGiveFeedback(donationDetails);
+                      }}
+                      className="bg-accent text-white px-6 py-2 rounded-lg hover:bg-accent/90 transition-colors"
+                    >
+                      <MessageCircle className="inline h-4 w-4 mr-2" />
+                      Give Feedback
+                    </button>
+                  )}
+                  <button
+                    onClick={closeDetailsModal}
+                    className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-600">Failed to load donation details</p>
+              </div>
+            )}
           </div>
         </div>
       )}
