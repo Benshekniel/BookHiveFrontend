@@ -7,11 +7,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
 
 import { InventorySchema, InventoryFormFields } from "../Schemas/InventorySchema";
+import { useAuth } from "../../AuthContext";
 import LoadingSpinner from "../CommonStuff/LoadingSpinner";
 
 const NewInventoryItem = () => {
-  // const {user} = useAuth();
-  const user = { userId: 603 }; // hard-coded userId until login completed
+  const {user} = useAuth();
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);
