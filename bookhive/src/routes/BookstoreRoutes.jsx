@@ -8,6 +8,7 @@ import Listings from "../pages/bookstore/Listings";
 import Transactions from "../pages/bookstore/Transactions";
 import Finances from "../pages/bookstore/Finances";
 import Support from "../pages/bookstore/Support";
+import ProfileSettings from '../pages/bookstore/ProfileSettings';
 
 const BookstoreRoutes = () => (
   <DashboardLayout>
@@ -19,6 +20,7 @@ const BookstoreRoutes = () => (
       <Route path="transactions" element={<Transactions />} />
       <Route path="finances" element={<Finances />} />
       <Route path="support" element={<Support />} />
+      <Route path="profile-settings" element={<ProfileSettings />} />
     </Routes>
   </DashboardLayout>
 );
