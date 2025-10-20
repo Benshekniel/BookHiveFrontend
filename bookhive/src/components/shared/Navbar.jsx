@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Search, Bell, MessageSquare, User } from 'lucide-react';
+import { Menu, X, Search, MessageSquare, User } from 'lucide-react';
 import Logo from './Logo';
 import Button from './Button';
 
@@ -43,15 +43,6 @@ const Navbar = () => {
                   onMouseOver={(e) => (e.target.style.color = '#1E40AF')}
                   onMouseOut={(e) => (e.target.style.color = '#3B82F6')}
                 >Book Circles</Link>
-                <Link to="/notifications">
-                  <div className="relative">
-                    <Bell size={20} className="text-blue hover:text-blue-dark transition-colors" style={{ color: '#3B82F6' }}
-                      onMouseOver={(e) => (e.target.style.color = '#1E40AF')}
-                      onMouseOut={(e) => (e.target.style.color = '#3B82F6')}
-                    />
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
-                  </div>
-                </Link>
                 <Link to="/messages">
                   <div className="relative">
                     <MessageSquare size={20} className="text-blue hover:text-blue-dark transition-colors" style={{ color: '#3B82F6' }}
@@ -126,16 +117,6 @@ const Navbar = () => {
               </li>
               {isLoggedIn ? (
                 <>
-                  <li>
-                    <Link to="/notifications" className="flex items-center text-blue hover:text-blue-dark transition-colors" style={{ color: '#3B82F6' }}
-                      onMouseOver={(e) => (e.target.style.color = '#1E40AF')}
-                      onMouseOut={(e) => (e.target.style.color = '#3B82F6')}
-                    >
-                      <Bell size={18} className="mr-2" />
-                      Notifications
-                      <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
-                    </Link>
-                  </li>
                   <li>
                     <Link to="/messages" className="flex items-center text-blue hover:text-blue-dark transition-colors" style={{ color: '#3B82F6' }}
                       onMouseOver={(e) => (e.target.style.color = '#1E40AF')}
