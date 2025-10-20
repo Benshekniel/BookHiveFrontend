@@ -106,6 +106,8 @@ const NewBook = () => {
     mutationFn: (data: BookFormFields) => createBook(data, coverImage as File),
     onSuccess: () => {
       toast.success("Book record created successfully!");
+      queryClient.invalidateQueries({ queryKey: ["lendOnlyList", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["sellAlsoList", user?.userId] });
       setShowForm(false);
     },
     onError: () => {

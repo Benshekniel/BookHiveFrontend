@@ -159,7 +159,8 @@ const EditBook = ({ bookId }: { bookId: number }) => {
     mutationFn: (data: BookFormFields) => editInventory(data, coverImage as File),
     onSuccess: () => {
       toast.success("Book details edited successfully!");
-      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["lendOnlyList", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["sellAlsoList", user?.userId] });
       setShowForm(false);
     },
     onError: () => {

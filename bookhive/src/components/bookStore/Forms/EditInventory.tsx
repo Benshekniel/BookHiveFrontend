@@ -120,6 +120,7 @@ const EditInventory = ({inventoryId}: {inventoryId: number}) => {
     onSuccess: () => {
       toast.success("Inventory details edited successfully!");
       queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["donationInventory", user?.userId] });
       setShowForm(false);
     },
     onError: () => {

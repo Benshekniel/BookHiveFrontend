@@ -80,6 +80,8 @@ const NewInventoryItem = () => {
     mutationFn: (data: InventoryFormFields) => createInventory(data, coverImage as File),
     onSuccess: () => {
       toast.success("Inventory record created successfully!");
+      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] })
+      queryClient.invalidateQueries({ queryKey: ["donationInventory", user?.userId] })
       setShowForm(false);
     },
     onError: () => {

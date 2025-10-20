@@ -45,8 +45,9 @@ const InventoryStockAdjuster = ({ inventoryId, invType }: { inventoryId: number,
   const adjustMutation = useMutation({
     mutationFn: updateStockItem,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
       toast.success("Stock updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["donationInventory", user?.userId] });
       setShowForm(false);
     },
     onError: () => {
