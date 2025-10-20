@@ -86,4 +86,33 @@ export const bookApi = {
   deleteBook: (bookId) => apiClient.delete(`/books/${bookId}`),
 };
 
+// Exchange API Service
+export const exchangeApi = {
+  // POST /api/createExchange
+  createExchange: (exchangeData) => apiClient.post('/createExchange', exchangeData),
+
+  // GET /api/exchangeGetBooks/{email}
+  getBooksByEmail: (email) => apiClient.get(`/exchangeGetBooks/${email}`),
+
+  // GET /api/exchangeCheck/{userId}/{bookId}
+  checkExchangeExists: (userId, bookId) => apiClient.get(`/exchangeCheck/${userId}/${bookId}`),
+
+  // GET /api/outgoingExchange/{userId}
+  getOutgoingExchanges: (userId) => apiClient.get(`/outgoingExchange/${userId}`),
+
+  // GET /api/incomingExchange/{userId}
+  getIncomingExchanges: (userId) => apiClient.get(`/incomingExchange/${userId}`),
+
+  // GET /api/getBookExchangeById/{bookId}
+  getBookById: (bookId) => apiClient.get(`/getBookExchangeById/${bookId}`),
+
+  // PUT /api/approveExchange/{exchangeId}
+  approveExchange: (exchangeId, deliveryFee, handlingFee) =>
+    apiClient.put(`/approveExchange/${exchangeId}?deliveryFee=${deliveryFee}&handlingFee=${handlingFee}`),
+
+  // PUT /api/rejectExchange/{exchangeId}
+  rejectExchange: (exchangeId, reason) =>
+    apiClient.put(`/rejectExchange/${exchangeId}?reason=${encodeURIComponent(reason)}`),
+};
+
 export default apiClient;
