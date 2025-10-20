@@ -8,7 +8,6 @@ const ModeratorManagement = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedModerator, setSelectedModerator] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -91,17 +90,14 @@ const ModeratorManagement = () => {
   };
 
   /**
-   * Filter moderators based on search term and status
+   * Filter moderators based on search term
    */
   const filteredModerators = moderators.filter(moderator => {
     const matchesSearch = !searchTerm ||
       moderator.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       moderator.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Note: Backend doesn't have status field in ModeratorDto, so we'll show all for now
-    const matchesFilter = filterStatus === 'all' || moderator.status === filterStatus;
-
-    return matchesSearch && matchesFilter;
+    return matchesSearch;
   });
 
   /**
@@ -418,7 +414,7 @@ const ModeratorManagement = () => {
         </div>
       )}
 
-      {/* Search and Filter */}
+      {/* Search */}
       <div className="bg-white shadow rounded-lg mb-6 border border-slate-200">
         <div className="px-4 py-5 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
@@ -445,28 +441,6 @@ const ModeratorManagement = () => {
                     <X className="h-4 w-4" />
                   </button>
                 )}
-              </div>
-            </div>
-
-            {/* Filter by Status */}
-            <div className="sm:w-48">
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Filter by Status</label>
-              <div className="relative">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="appearance-none w-full py-2.5 pl-3 pr-8 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 sm:text-base"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="suspended">Suspended</option>
-                </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
               </div>
             </div>
           </div>
