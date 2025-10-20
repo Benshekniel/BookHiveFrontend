@@ -7,6 +7,7 @@ import { BookOpen } from 'lucide-react';
 import Button from '../../components/shared/Button';
 import axios from "axios";
 import { showMessageCard } from './MessageCard';
+import { sriLankaLocations } from '../../utils/sriLankaLocations';
 
 const signupSchemaStep1 = z.object({
   firstName: z.string().min(2, 'First Name must be at least 2 characters'),
@@ -89,10 +90,35 @@ const SignupPage = () => {
     return signupSchemaStep1;
   };
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm({
     resolver: zodResolver(getSchemaForStep()),
   });
   const [error, setError] = useState('');
+
+  // Auto-fill city, state, zipCode when address is selected from dropdown
+  const handleAddressChange = (e) => {
+    const selectedAddress = e.target.value.toLowerCase().trim();
+
+    // Check if the selected address exists in our Sri Lankan locations database
+    if (sriLankaLocations[selectedAddress]) {
+      const locationData = sriLankaLocations[selectedAddress];
+
+      // Auto-fill city (capitalize first letter of each word)
+      const cityName = selectedAddress
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      setValue('city', cityName);
+
+      // Auto-fill state/province
+      setValue('state', locationData.province || '');
+
+      // Auto-fill postal code if available
+      if (locationData.postalCode) {
+        setValue('zipCode', locationData.postalCode);
+      }
+    }
+  };
 
   const onSubmitStep1 = (data) => {
     setFormData({ ...formData, ...data });
@@ -583,15 +609,27 @@ const SignupPage = () => {
                       id="address"
                       type="text"
                       {...register('address')}
+                      onChange={handleAddressChange}
+                      list="sri-lanka-locations"
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                       style={{ borderColor: '#D1D5DB' }}
                       onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                       onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="123 Main Street"
+                      placeholder="Start typing... (e.g., Colombo, Kandy, Galle)"
                     />
+                    <datalist id="sri-lanka-locations">
+                      {Object.keys(sriLankaLocations).map((location) => (
+                        <option key={location} value={location}>
+                          {location} - {sriLankaLocations[location].district}, {sriLankaLocations[location].province}
+                        </option>
+                      ))}
+                    </datalist>
                     {errors.address && (
                       <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
                     )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      💡 Tip: Select from dropdown to auto-fill City, State, and Zip Code
+                    </p>
                   </div>
                 </div>
 
@@ -609,7 +647,7 @@ const SignupPage = () => {
                         style={{ borderColor: '#D1D5DB' }}
                         onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                         onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                        placeholder="New York"
+                        placeholder="Colombo"
                       />
                       {errors.city && (
                         <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
@@ -629,7 +667,7 @@ const SignupPage = () => {
                         style={{ borderColor: '#D1D5DB' }}
                         onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                         onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                        placeholder="NY"
+                        placeholder="Western Province"
                       />
                       {errors.state && (
                         <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>

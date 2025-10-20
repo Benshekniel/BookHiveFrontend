@@ -1,6 +1,6 @@
-import { 
-  Plus, Edit, Trash2, Search, BookOpen, X, Star, MapPin, 
-  Clock, Heart, Share2, MessageCircle, Filter, Grid, List,
+import {
+  Plus, Edit, Trash2, Search, BookOpen, X, MapPin,
+  Clock, Heart, Filter, Grid, List,
   Users, Award, Calendar, TrendingUp, Eye, ShoppingCart,
   Menu, Home, Settings, Bell, User, ChevronLeft, ChevronRight,
   Download, Upload, BarChart3, Target, Bookmark, Gift
@@ -25,6 +25,8 @@ const BookListingManagementPage = () => {
   const [filterCondition, setFilterCondition] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState("grid");
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
 
   // Preload images for better performance
   const preloadImages = useCallback(async (books) => {
@@ -576,6 +578,11 @@ const BookListingManagementPage = () => {
     }
   };
 
+  const handleViewDetails = (book) => {
+    setSelectedBook(book);
+    setShowDetailsModal(true);
+  };
+
   const filteredListings = listings.filter((book) => {
   // Only show books owned by the logged-in user
   const isOwner = user && book.userEmail === user.email;
@@ -600,8 +607,9 @@ const BookListingManagementPage = () => {
 
   const BookCard = ({ book }) => {
     return (
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
-        <div className="relative h-48 mb-4 overflow-hidden rounded-xl">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-100 hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
+        {/* Fixed height image section */}
+        <div className="relative h-48 overflow-hidden rounded-t-2xl flex-shrink-0">
           {book.bookImage ? (
             <LazyImage
               src={book.cover}
@@ -615,106 +623,96 @@ const BookListingManagementPage = () => {
             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
               <div className="text-center text-gray-500">
                 <div className="text-xs">No Image</div>
-                <div className="text-xs">{book.title}</div>
+                <div className="text-xs truncate px-2">{book.title}</div>
               </div>
             </div>
           )}
-        <button
-          className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm z-10"
-          title="Wishlist"
-        >
-          <Heart className="w-4 h-4" />
-        </button>
-        {(book.forSale || book.forLend || book.forExchange || book.forBidding) && (
-          <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10">
-            {book.forSale && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">For Sale</span>}
-            {book.forLend && <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium">For Lending</span>}
-            {book.forExchange && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">For Exchange</span>}
-            {book.forBidding && <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">For Bidding</span>}
-          </div>
-        )}
-        </div>
-        
-        <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-semibold text-gray-900 text-lg group-hover:text-blue-600 transition-colors line-clamp-1">{book.title}</h3>
-            {book.trustScore >= 90 && <Award className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
-          </div>
-          <p className="text-gray-600 text-sm mb-2">by {book.authors.join(', ')}</p>
-          <div className="flex items-center gap-1 mb-3">
-            <div className="flex">{[...Array(5)].map((_, i) => (
-              <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
-            ))}</div>
-            <span className="text-sm text-gray-600 ml-1">{book.rating || 0}</span>
-            <span className="text-xs text-gray-400">({book.reviews || 0} reviews)</span>
-          </div>
-        </div>
-        <div className="flex gap-2 ml-4">
-          <button onClick={() => handleEditBook(book)} className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Book">
-            <Edit className="w-4 h-4" />
+          <button
+            className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm z-10"
+            title="Wishlist"
+          >
+            <Heart className="w-4 h-4" />
           </button>
-          <button onClick={() => handleDeleteBook(book.bookId)} className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Delete Book">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-1">
-          {book.genres.slice(0, 3).map((g, idx) => (
-            <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{g}</span>
-          ))}
-          {book.genres.length > 3 && <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+{book.genres.length - 3}</span>}
-        </div>
-        <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed">{book.description}</p>
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            <span className="truncate">{book.location}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              <span>{book.views || 0}</span>
+          {(book.forSale || book.forLend || book.forExchange || book.forBidding) && (
+            <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10">
+              {book.forSale && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">For Sale</span>}
+              {book.forLend && <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium">For Lending</span>}
+              {book.forExchange && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">For Exchange</span>}
+              {book.forBidding && <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">For Bidding</span>}
             </div>
-            <div className="flex items-center gap-1">
-              <Heart className="w-3 h-3" />
-              <span>{book.wishlistedBy || 0}</span>
-            </div>
-          </div>
+          )}
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.condition === 'New' ? "bg-green-100 text-green-800" : book.condition === 'Like New' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`}>{book.condition}</span>
-          </div>
-          {book.forSale && book.price && <div className="text-right"><p className="text-lg font-bold text-green-600">Rs. {book.price}</p></div>}
-          {book.forBidding && book.initialBidPrice && <div className="text-right"><p className="text-lg font-bold text-orange-600">Start: Rs. {book.initialBidPrice}</p></div>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forSale ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}`}>{book.forSale ? "For Sale" : "Not for Sale"}</span>
-          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forLend ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>{book.forLend ? "For Lending" : "Not for Lending"}</span>
-          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forExchange ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-600"}`}>{book.forExchange ? "For Exchange" : "Not for Exchange"}</span>
-          <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.forBidding ? "bg-orange-100 text-orange-800" : "bg-gray-100 text-gray-600"}`}>{book.forBidding ? "For Bidding" : "Not for Bidding"}</span>
-        </div>
-        {(book.forLend || book.forExchange || book.forBidding) && (
-          <div className="bg-gray-50 rounded-lg p-3 text-xs">
-            {book.forLend && book.lendingAmount && <div className="mb-1"><span className="font-medium text-gray-700">Lending Fee:</span> Rs. {book.lendingAmount}</div>}
-            {book.forLend && book.lendingPeriod && <div className="mb-1"><span className="font-medium text-gray-700">Lending Period:</span> {book.lendingPeriod} days</div>}
-            {book.forExchange && book.exchangePeriod && <div className="mb-1"><span className="font-medium text-gray-700">Exchange Period:</span> {book.exchangePeriod} days</div>}
-            {book.forBidding && (
-              <div className="space-y-1">
-                {book.initialBidPrice && <div><span className="font-medium text-gray-700">Starting Bid:</span> Rs. {book.initialBidPrice}</div>}
-                {book.biddingStartDate && <div><span className="font-medium text-gray-700">Auction Start:</span> {new Date(book.biddingStartDate).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
-                {book.biddingEndDate && <div><span className="font-medium text-gray-700">Auction End:</span> {new Date(book.biddingEndDate).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
+
+        {/* Content section - flex-grow to fill available space */}
+        <div className="p-6 flex flex-col flex-grow">
+          {/* Header with title and action buttons - fixed height */}
+          <div className="flex justify-between items-start mb-3 min-h-[60px]">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-gray-900 text-base group-hover:text-blue-600 transition-colors line-clamp-2">{book.title}</h3>
+                {book.trustScore >= 90 && <Award className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
               </div>
-            )}
+              <p className="text-gray-600 text-sm line-clamp-1">by {book.authors.join(', ')}</p>
+            </div>
+            <div className="flex gap-1 ml-2">
+              <button onClick={() => handleEditBook(book)} className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Book">
+                <Edit className="w-4 h-4" />
+              </button>
+              <button onClick={() => handleDeleteBook(book.bookId)} className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Delete Book">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        )}
-        <div className="flex gap-2 pt-2 border-t border-gray-200">
-          <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">View Details</button>
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Share"><Share2 className="w-4 h-4 text-gray-600" /></button>
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Message"><MessageCircle className="w-4 h-4 text-gray-600" /></button>
-        </div>
+
+          {/* Genres - fixed height */}
+          <div className="flex flex-wrap gap-1 mb-3 min-h-[28px]">
+            {book.genres.slice(0, 3).map((g, idx) => (
+              <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full h-fit">{g}</span>
+            ))}
+            {book.genres.length > 3 && <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full h-fit">+{book.genres.length - 3}</span>}
+          </div>
+
+          {/* Description - fixed height with line clamp */}
+          <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed mb-3 min-h-[40px]">{book.description}</p>
+
+          {/* Location and stats - fixed height */}
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-3 min-h-[20px]">
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{book.location}</span>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+              <div className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                <span>{book.views || 0}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Heart className="w-3 h-3" />
+                <span>{book.wishlistedBy || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Condition and Price - fixed height */}
+          <div className="flex items-center justify-between mb-3 min-h-[32px]">
+            <span className={`px-3 py-1 text-xs rounded-full font-medium ${book.condition === 'New' ? "bg-green-100 text-green-800" : book.condition === 'Like New' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`}>{book.condition}</span>
+            {book.forSale && book.price && <p className="text-lg font-bold text-green-600">Rs. {book.price}</p>}
+            {!book.forSale && book.forBidding && book.initialBidPrice && <p className="text-sm font-bold text-orange-600">Start: Rs. {book.initialBidPrice}</p>}
+          </div>
+
+          {/* Spacer to push button to bottom */}
+          <div className="flex-grow"></div>
+
+          {/* View Details button - always at bottom */}
+          <div className="pt-3 border-t border-gray-200 mt-auto">
+            <button
+              onClick={() => handleViewDetails(book)}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Eye className="w-4 h-4" />
+              View Details
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1216,6 +1214,199 @@ const BookListingManagementPage = () => {
                   <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl transition-colors font-medium">{editBook ? "Update Book Listing" : "Add Book to Library"}</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Book Details Modal */}
+        {showDetailsModal && selectedBook && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-2xl">
+                <h2 className="text-2xl font-bold text-gray-900">Book Details</h2>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  {/* Book Image */}
+                  <div className="md:col-span-1">
+                    <div className="relative h-80 rounded-xl overflow-hidden shadow-lg">
+                      {selectedBook.bookImage ? (
+                        <LazyImage
+                          src={selectedBook.cover}
+                          alt={selectedBook.title}
+                          className="w-full h-full object-cover"
+                          fileName={selectedBook.bookImage}
+                          folderName="userBooks"
+                          baseUrl={baseUrl}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <BookOpen className="w-16 h-16 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Availability badges */}
+                    <div className="mt-4 space-y-2">
+                      {selectedBook.forSale && (
+                        <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                          <span className="text-sm font-medium text-blue-800">For Sale</span>
+                          <span className="text-lg font-bold text-blue-600">Rs. {selectedBook.price}</span>
+                        </div>
+                      )}
+                      {selectedBook.forLend && (
+                        <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
+                          <span className="text-sm font-medium text-green-800">For Lending</span>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-green-600">Rs. {selectedBook.lendingAmount}</div>
+                            <div className="text-xs text-green-600">{selectedBook.lendingPeriod} days</div>
+                          </div>
+                        </div>
+                      )}
+                      {selectedBook.forExchange && (
+                        <div className="bg-purple-50 p-3 rounded-lg">
+                          <span className="text-sm font-medium text-purple-800">Available for Exchange</span>
+                          {selectedBook.exchangePeriod && (
+                            <div className="text-xs text-purple-600 mt-1">{selectedBook.exchangePeriod} days</div>
+                          )}
+                        </div>
+                      )}
+                      {selectedBook.forBidding && (
+                        <div className="bg-orange-50 p-3 rounded-lg">
+                          <span className="text-sm font-medium text-orange-800">Auction</span>
+                          <div className="text-sm font-bold text-orange-600 mt-1">Start: Rs. {selectedBook.initialBidPrice}</div>
+                          {selectedBook.biddingEndDate && (
+                            <div className="text-xs text-orange-600 mt-1">
+                              Ends: {new Date(selectedBook.biddingEndDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Book Details */}
+                  <div className="md:col-span-2">
+                    <h3 className="text-3xl font-bold text-gray-900 mb-2">{selectedBook.title}</h3>
+                    <p className="text-lg text-gray-600 mb-4">by {selectedBook.authors.join(', ')}</p>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500">Condition</p>
+                        <p className="text-lg font-semibold text-gray-900">{selectedBook.condition}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500">Language</p>
+                        <p className="text-lg font-semibold text-gray-900">{selectedBook.language}</p>
+                      </div>
+                      {selectedBook.publishYear && (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p className="text-sm text-gray-500">Publish Year</p>
+                          <p className="text-lg font-semibold text-gray-900">{selectedBook.publishYear}</p>
+                        </div>
+                      )}
+                      {selectedBook.isbn && (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p className="text-sm text-gray-500">ISBN</p>
+                          <p className="text-lg font-semibold text-gray-900">{selectedBook.isbn}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3">Genres</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedBook.genres.map((genre, idx) => (
+                          <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
+                            {genre}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3">Description</h4>
+                      <p className="text-gray-700 leading-relaxed">{selectedBook.description || 'No description available'}</p>
+                    </div>
+
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3">Location</h4>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <MapPin className="w-5 h-5 text-gray-500" />
+                        <span>{selectedBook.location}</span>
+                      </div>
+                    </div>
+
+                    {selectedBook.hashtags && selectedBook.hashtags.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">Hashtags</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedBook.hashtags.map((tag, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
+                          <Eye className="w-4 h-4" />
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{selectedBook.views || 0}</p>
+                        <p className="text-xs text-gray-500">Views</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
+                          <Heart className="w-4 h-4" />
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{selectedBook.wishlistedBy || 0}</p>
+                        <p className="text-xs text-gray-500">Wishlisted</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-900">
+                          {new Date(selectedBook.createdAt).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-gray-500">Listed</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleEditBook(selectedBook);
+                    }}
+                    className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-5 h-5" />
+                    Edit Book
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleDeleteBook(selectedBook.bookId);
+                    }}
+                    className="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    Delete Book
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
