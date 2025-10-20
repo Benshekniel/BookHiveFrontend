@@ -13,8 +13,7 @@ import EditInventory from '../Forms/EditInventory';
 import DeleteInventory from '../Buttons/DeleteInventory';
 
 const DonationInventory = () => {
-  //   const { user } = useAuth();
-  const user = { userId: 603 }; // hard-coded userId until login completed
+    const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchISBN, setSearchISBN] = useState("");

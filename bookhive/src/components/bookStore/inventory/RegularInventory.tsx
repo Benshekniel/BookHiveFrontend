@@ -14,9 +14,8 @@ import EditInventory from '../Forms/EditInventory';
 import DeleteInventory from '../Buttons/DeleteInventory';
 
 const RegularInventory = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  //   const { user } = useAuth();
-  const user = { userId: 603 }; // hard-coded userId until login completed
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchISBN, setSearchISBN] = useState("");

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, Gift, Calendar, TrendingUp, Users, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../components/AuthContext';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const API_BASE_URL = 'http://localhost:9090/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   // Check if user is authenticated
   if (!user) {
@@ -41,7 +43,6 @@ const Dashboard = () => {
 
     try {
       console.log(`API Request: ${config.method || 'GET'} ${url}`);
-
       const response = await fetch(url, config);
 
       if (!response.ok) {
@@ -220,21 +221,24 @@ const Dashboard = () => {
     }
   };
 
-  const handleQuickAction = async (action) => {
-    // These would typically navigate to other pages or open modals
-    console.log(`Quick action: ${action}`);
-    // You can implement navigation logic here
+  const handleQuickAction = (action) => {
+    // Implement navigation for quick actions
     switch (action) {
       case 'request-books':
-        // Navigate to book request page
+        navigate('/organization/request');
         break;
       case 'create-event':
-        // Navigate to event creation page
+        navigate('/create-event');
         break;
       case 'view-donors':
-        // Navigate to donors page
+        navigate('/organization/received');
         break;
+      case 'view-all-requests':
+        navigate('/organization/received'); // Adjust route as needed
+        break;
+      
       default:
+        console.log(`Quick action: ${action}`);
         break;
     }
   };
@@ -398,13 +402,7 @@ const Dashboard = () => {
             <BookOpen className="h-5 w-5" />
             <span>Request Books</span>
           </button>
-          <button
-            className="flex items-center justify-center space-x-2 p-4 bg-secondary text-primary rounded-lg hover:bg-secondary/90 transition-colors"
-            onClick={() => handleQuickAction('create-event')}
-          >
-            <Calendar className="h-5 w-5" />
-            <span>Create Event</span>
-          </button>
+         
           <button
             className="flex items-center justify-center space-x-2 p-4 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
             onClick={() => handleQuickAction('view-donors')}
