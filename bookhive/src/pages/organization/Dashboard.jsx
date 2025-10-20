@@ -762,11 +762,10 @@ const Dashboard = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-3">
-               
+              <div className="flex justify-center">
                 <button
                   onClick={closeCompetitionModal}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
                 >
                   Close
                 </button>
