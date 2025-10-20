@@ -165,6 +165,7 @@ const NewInventoryItem = () => {
                 <TextInput itemName="authors" label="Authors (comma separated) *" />
                 <TextInput itemName="genres" label="Genres (comma separated) *" full={true}  />
                 <TextInput itemName="tags" label="Tags (comma separated) *" full={true}  />
+                <TextInput itemName="category" label="Category *" full={true} />
 
                 <div className="col-span-2">
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">

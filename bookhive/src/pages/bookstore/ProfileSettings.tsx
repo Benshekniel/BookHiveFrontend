@@ -14,9 +14,9 @@ const ProfileSettings = () => {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  const [storeImage, setStoreImage] = useState <File | null> (null);
-  const [storePreviewUrl, setStorePreviewUrl] = useState <string | null> (null);
-  const [storeImageChanged, setStoreImageChanged] = useState(false);
+  // const [storeImage, setStoreImage] = useState <File | null> (null);
+  // const [storePreviewUrl, setStorePreviewUrl] = useState <string | null> (null);
+  // const [storeImageChanged, setStoreImageChanged] = useState(false);
 
   const [storeLogoImage, setStoreLogoImage] = useState <File | null> (null);
   const [storeLogoPreviewUrl, setStoreLogoPreviewUrl] = useState <string | null> (null);
@@ -29,12 +29,12 @@ const ProfileSettings = () => {
       console.log(response.data);
 
       // Store image
-      if (item.storeImage) {
-        const storeImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
-          params: { fileName: item.storeImage, folderName: "???" }
-        });
-        setStorePreviewUrl(storeImageRes.data);
-      }
+      // if (item.storeImage) {
+      //   const storeImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
+      //     params: { fileName: item.storeImage, folderName: "???" }
+      //   });
+      //   setStorePreviewUrl(storeImageRes.data);
+      // }
       // Store logo image
       if (item.storeLogoImage) {
         const storeLogoImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
@@ -218,7 +218,7 @@ const ProfileSettings = () => {
 
             {/* Profile Photo Section */}
             <div className="flex mb-2 justify-around">
-            <div className="flex items-center mb-6">
+            {/* <div className="flex items-center mb-6">
               <div className="relative">
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   PB
@@ -233,7 +233,7 @@ const ProfileSettings = () => {
                 <p className="text-sm text-gray-600">Change Store Logo</p>
                 <p className="text-xs text-gray-500">JPG, PNG or GIF. Max size 2MB</p>
               </div>
-            </div>
+            </div> */}
 
             <div className="flex items-center mb-6">
               <div className="relative">
