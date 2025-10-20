@@ -1,5 +1,4 @@
-// src/pages/common/LoginPage.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import Button from '../../components/shared/Button';
@@ -9,6 +8,7 @@ import { useAuth } from '../../components/AuthContext';
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [popup, setPopup] = useState({ show: false, message: '' });
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -22,23 +22,72 @@ const LoginPage = () => {
 
       console.log(res.data);
 
-      if (res.data.message === "Email not exits") {
-        alert("Email not exits");
-      } else if (res.data.message === "Login Success") {
+      if (res.data.status) {
         if (res.data.token) {
           login(res.data.token); // Decode and store email, userId, role
         }
-        navigate('/' + (res.data.role || 'default'));
+        navigate('/' + (res.data.role || 'login'));
       } else {
-        alert("Incorrect Email and Password not match");
+        setPopup({ show: true, message: res.data.message });
+        setTimeout(() => setPopup({ show: false, message: '' }), 5000); // Auto-close after 5 seconds
       }
     } catch (err) {
-      alert(err);
+      setPopup({ show: true, message: "An error occurred: " + err.message });
+      setTimeout(() => setPopup({ show: false, message: '' }), 5000);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"></div>
+        <div
+          className="absolute top-0 -left-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"
+          style={{ animation: 'blob 7s infinite' }}
+        ></div>
+        <div
+          className="absolute top-0 -right-4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"
+          style={{ animation: 'blob 7s infinite 2s' }}
+        ></div>
+        <div
+          className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"
+          style={{ animation: 'blob 7s infinite 4s' }}
+        ></div>
+        <div
+          className="absolute bottom-0 right-20 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-6000"
+          style={{ animation: 'blob 7s infinite 6s' }}
+        ></div>
+      </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+      `}</style>
+
+      {popup.show && (
+        <div className="fixed top-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md max-w-sm z-50 animate-fade-in">
+          <p>{popup.message}</p>
+          <button
+            className="mt-2 text-sm text-red-700 underline"
+            onClick={() => setPopup({ show: false, message: '' })}
+          >
+            Close
+          </button>
+        </div>
+      )}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="flex items-center text-3xl font-bold" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
@@ -51,7 +100,10 @@ const LoginPage = () => {
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to="/signup" className="font-medium" style={{ color: '#407aff' }}
+          <Link
+            to="/signup"
+            className="font-medium"
+            style={{ color: '#407aff' }}
             onMouseOver={(e) => (e.target.style.color = '#1A3AFF')}
             onMouseOut={(e) => (e.target.style.color = '#407aff')}
           >
@@ -60,8 +112,8 @@ const LoginPage = () => {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-md rounded-lg sm:px-10 transition-all duration-200">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-white/95 backdrop-blur-sm py-8 px-4 shadow-2xl rounded-2xl sm:px-10 transition-all duration-200 border border-white/20">
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -157,63 +209,44 @@ const LoginPage = () => {
 
 export default LoginPage;
 
-// import React, { useState } from 'react';
+// // src/pages/common/LoginPage.jsx
+// import React, { useState, useContext } from 'react';
 // import { Link, useNavigate } from 'react-router-dom';
-// import { useForm } from 'react-hook-form';
-// import { zodResolver } from '@hookform/resolvers/zod';
-// import { z } from 'zod';
 // import { BookOpen } from 'lucide-react';
 // import Button from '../../components/shared/Button';
-// import axios from "axios";
-
-// const loginSchema = z.object({
-//   email: z.string().email('Please enter a valid email'),
-//   password: z.string().min(8, 'Password must be at least 8 characters'),
-//   rememberMe: z.boolean().optional()
-// });
+// import axios from 'axios';
+// import { useAuth } from '../../components/AuthContext';
 
 // const LoginPage = () => {
-
 //   const [email, setEmail] = useState("");
 //   const [password, setPassword] = useState("");
 //   const navigate = useNavigate();
+//   const { login } = useAuth();
 
-
-//   // const navigate = useNavigate();
-//   // const { register, handleSubmit, formState: { errors } } = useForm({
-//   //   resolver: zodResolver(loginSchema)
-//   // });
-
-//   // const onSubmit = (data) => {
-//   //   console.log('Login data:', data);
-//   //   navigate('/');
-//   // };
-
-//     async function login(event) {
+//   async function handleLogin(event) {
 //     event.preventDefault();
 //     try {
-//       await axios.post("http://localhost:9090/api/login", {
+//       const res = await axios.post("http://localhost:9090/api/login", {
 //         email: email,
 //         password: password,
-//       }).then((res) => {
-//         console.log(res.data);
-
-//         if (res.data.message == "Email not exits") {
-//           alert("Email not exits");
-//         } else if (res.data.message == "Login Success") {
-//             navigate('/' + res.data.role);
-//         } else {
-//           alert("Incorrect Email and Password not match"); //navigate(`/${res.data.role || 'default'}`);
-//         }
-
-//       }, fail => {
-//         console.error(fail); // Error!
 //       });
+
+//       console.log(res.data);
+
+//       if (res.data.message === "Email not exits") {
+//         alert("Email not exits");
+//       } else if (res.data.message === "Login Success") {
+//         if (res.data.token) {
+//           login(res.data.token); // Decode and store email, userId, role
+//         }
+//         navigate('/' + (res.data.role || 'default'));
+//       } else {
+//         alert("Incorrect Email and Password not match");
+//       }
 //     } catch (err) {
 //       alert(err);
 //     }
 //   }
-
 
 //   return (
 //     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
@@ -240,7 +273,7 @@ export default LoginPage;
 
 //       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
 //         <div className="bg-white py-8 px-4 shadow-md rounded-lg sm:px-10 transition-all duration-200">
-//           <form className="space-y-6" >
+//           <form className="space-y-6" onSubmit={handleLogin}>
 //             <div>
 //               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
 //                 Email address
@@ -250,21 +283,13 @@ export default LoginPage;
 //                   id="email"
 //                   type="email"
 //                   value={email}
-//                   onChange={(event) => {
-//                     setEmail(event.target.value);
-//                   }}
-                  
+//                   onChange={(event) => setEmail(event.target.value)}
 //                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-//                   style={{
-//                     borderColor: '#D1D5DB'
-//                   }}
+//                   style={{ borderColor: '#D1D5DB' }}
 //                   onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
 //                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
 //                   placeholder="you@example.com"
 //                 />
-//                 {/* {errors.email && (
-//                   <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-//                 )} */}
 //               </div>
 //             </div>
 
@@ -277,21 +302,13 @@ export default LoginPage;
 //                   id="password"
 //                   type="password"
 //                   value={password}
-//                   onChange={(event) => {
-//                     setPassword(event.target.value);
-//                   }}
-                  
+//                   onChange={(event) => setPassword(event.target.value)}
 //                   className="w-full px-3 py-2 border rounded-lg focus:outline-none"
-//                   style={{
-//                     borderColor: '#D1D5DB'
-//                   }}
+//                   style={{ borderColor: '#D1D5DB' }}
 //                   onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
 //                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
 //                   placeholder="••••••••"
 //                 />
-//                 {/* {errors.password && (
-//                   <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-//                 )} */}
 //               </div>
 //             </div>
 
@@ -300,11 +317,8 @@ export default LoginPage;
 //                 <input
 //                   id="remember-me"
 //                   type="checkbox"
-//                   // {...register('rememberMe')}
 //                   className="h-4 w-4 border-gray-300 rounded focus:ring-2 focus:ring-yellow-500"
-//                   style={{
-//                     borderColor: '#D1D5DB',
-//                   }}
+//                   style={{ borderColor: '#D1D5DB' }}
 //                   onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
 //                   onBlur={(e) => (e.target.style.boxShadow = 'none')}
 //                 />
@@ -321,11 +335,11 @@ export default LoginPage;
 //             </div>
 
 //             <div>
-//               <Button 
-//                 onClick={login}
-//               type="submit" 
-//               variant="primary" 
-//               fullWidth>
+//               <Button
+//                 type="submit"
+//                 variant="primary"
+//                 fullWidth
+//               >
 //                 Sign in
 //               </Button>
 //             </div>
@@ -345,9 +359,6 @@ export default LoginPage;
 //               <button className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
 //                 Google
 //               </button>
-//               {/* <button className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-//                 Facebook
-//               </button> */}
 //             </div>
 //           </div>
 //         </div>

@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
-import { Search, User, Menu } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, Search, User, Menu } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import Sidebar from './Sidebar';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 
 const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollapsed, onLogout }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasShownExpiredModal, setHasShownExpiredModal] = useState(false);
 
-  console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
+  // console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
 
   const pathLabels = {
     '/admin': 'Dashboard',
     '/admin/moderator': 'Moderators',
+    '/admin/organizations': 'Organizations',
     '/admin/content': 'Contents',
     '/admin/analytics': 'Analytics',
     '/admin/notification': 'Notification',
@@ -23,6 +27,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/moderator/bookcircle': 'BookCircle',
     '/moderator/competitions': 'Competitions',
     '/moderator/users': 'Users',
+    '/moderator/bookstores': 'BookStores',
     '/moderator/hub': 'Hub',
     '/moderator/compliance': 'Compliance',
     '/moderator/support': 'Support',
@@ -72,10 +77,102 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/user/profile-settings': 'Profile Settings',
   };
 
-const { user } = useAuth();
+  const { user } = useAuth();
 
+  // Mark initial load as complete after first render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 500); // Wait 500ms for auth to load
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle session expiration - redirect to login with message
+  useEffect(() => {
+    // Only show modal if:
+    // 1. Not on initial load/refresh
+    // 2. User is null (session expired)
+    // 3. Haven't already shown the modal
+    if (!isInitialLoad && !user && !hasShownExpiredModal) {
+      setHasShownExpiredModal(true);
+
+      // Show session expired message
+      const sessionExpiredMsg = document.createElement('div');
+      sessionExpiredMsg.innerHTML = `
+        <div style="
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 2rem;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+          z-index: 9999;
+          text-align: center;
+          max-width: 400px;
+        ">
+          <div style="
+            width: 60px;
+            height: 60px;
+            background: #FEE2E2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+          ">
+            <svg width="30" height="30" fill="#DC2626" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+          </div>
+          <h2 style="
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0F172A;
+            margin-bottom: 0.5rem;
+          ">Session Expired</h2>
+          <p style="
+            color: #64748B;
+            margin-bottom: 1.5rem;
+          ">Your session has expired. Please log in again to continue.</p>
+          <div style="
+            background: #F1F5F9;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: #475569;
+          ">
+            Redirecting to login page...
+          </div>
+        </div>
+      `;
+
+      // Add backdrop
+      const backdrop = document.createElement('div');
+      backdrop.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+      `;
+
+      document.body.appendChild(backdrop);
+      document.body.appendChild(sessionExpiredMsg);
+
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        document.body.removeChild(backdrop);
+        document.body.removeChild(sessionExpiredMsg);
+        navigate('/login');
+      }, 2000);
+    }
+  }, [user, navigate, isInitialLoad, hasShownExpiredModal]);
+
+  // If no user, show nothing (the useEffect will handle redirection)
   if (!user) {
-    return <p>Please log in.</p>;
+    return null;
   }
 
 
@@ -102,7 +199,7 @@ const { user } = useAuth();
         name: user.name || 'Rohan',
         email: user.email,
         role: user.role,
-        image: user.profileImage || 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
+        image: user.profileImage || 'https://www.southernliving.com/thmb/DiILPN4-PmulZZ1zFbP7xANxbr8=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/15-WilliamChrisantandSonsOldFloridaBookShop-photobyWilliamChrisant-7077d9a8033a4ac692689380e2dad7bc.jpg',
       };
     } else if (path.startsWith('/manager')) {
       return {
@@ -290,9 +387,10 @@ const { user } = useAuth();
 
 export default Header;
 
+
 // import React, { useState } from 'react';
 // import { Bell, Search, User, Menu } from 'lucide-react';
-// import { useAuth } from '../../App';
+// import { useAuth } from '../AuthContext';
 // import Sidebar from './Sidebar';
 // import { useLocation, Link } from 'react-router-dom';
 
@@ -358,62 +456,77 @@ export default Header;
 //     '/user/profile-settings': 'Profile Settings',
 //   };
 
-
 //   const { user } = useAuth();
 //   if (!user) {
 //     return <p>Please log in.</p>;
 //   }
 
-//   // Sri Lankan dummy data based on route
+//   // Sri Lankan dummy data based on route, prioritizing user data from JWT
 //   const getDummyUserData = () => {
 //     const path = location.pathname.toLowerCase();
-    
+
 //     if (path.startsWith('/admin')) {
 //       return {
-//         name: 'Kasun',
-//         image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg'
+//         name: user.name || 'Kasun',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
 //       };
 //     } else if (path.startsWith('/moderator')) {
 //       return {
-//         name: user.name,
-//         email: user.email,
-//         role:  user.role,
-//         image: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg'
+//         name: user.name || ' nope', // Use JWT name if available
+//         email: user.email || 'nope@gmail.com', // Use JWT email
+//         role: user.role || 'nope', // Use JWT role
+//         image: user.profileImage || 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg',
 //       };
 //     } else if (path.startsWith('/bookstore')) {
 //       return {
-//         name: 'Rohan',
-//         image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg'
+//         name: user.name || 'Rohan',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
 //       };
 //     } else if (path.startsWith('/manager')) {
 //       return {
-//         name: 'Priya',
-//         image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239292.jpeg'
+//         name: user.name || 'Priya',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1239291/pexels-photo-1239292.jpeg',
 //       };
 //     } else if (path.startsWith('/agent')) {
 //       return {
-//         name: 'Chaminda',
-//         image: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg'
+//         name: user.name || 'Chaminda',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg',
 //       };
 //     } else if (path.startsWith('/hubmanager')) {
 //       return {
-//         name: 'Sanduni',
-//         image: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg'
+//         name: user.name || 'Sanduni',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg',
 //       };
 //     } else if (path.startsWith('/organization')) {
 //       return {
-//         name: 'Mahesh',
-//         image: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg'
+//         name: user.name || 'Mahesh',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg',
 //       };
 //     } else if (path.startsWith('/user')) {
 //       return {
-//         name: 'Tharushi',
-//         image: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg'
+//         name: user.name || 'Tharushi',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg',
 //       };
 //     } else {
 //       return {
-//         name: 'Amal',
-//         image: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg'
+//         name: user.name || 'Amal',
+//         email: user.email,
+//         role: user.role,
+//         image: user.profileImage || 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg',
 //       };
 //     }
 //   };
@@ -534,9 +647,8 @@ export default Header;
 //                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
 //                       <div className="px-4 py-2 border-b border-gray-100">
 //                         <p className="text-sm font-medium text-gray-900">{displayName}</p>
-//                         <p className="text-xs text-gray-500 capitalize">
-//                           {location.pathname.split('/')[1] || 'User'}
-//                         </p>
+//                         <p className="text-xs text-gray-500">{dummyData.email}</p> {/* Display email */}
+//                         <p className="text-xs text-gray-500 capitalize">{dummyData.role}</p> {/* Display role */}
 //                       </div>
 //                       <Link
 //                         to="profile-settings"
