@@ -180,6 +180,9 @@ const DonationInventory = () => {
                                   <b> Tags:</b> {item?.tags.slice(0, 3).join(', ')}
                                   {item?.tags.length > 3 && ' ...'}</span>
                               </div>
+                              <p className="text-sm text-slate-600">
+                                <b> Category: </b>{item.category}
+                              </p>
                             </div>
                           </div>
                         </td>
@@ -207,7 +210,7 @@ const DonationInventory = () => {
                         </td>
                         <td className="p-4">
                           <div className="grid grid-cols-2 grid-rows-2 gap-2 justify-items-center items-center h-full">
-                            <InventoryStockAdjuster inventoryId={item.inventoryId} />
+                            <InventoryStockAdjuster inventoryId={item.inventoryId} invType='donation' />
                             <EditInventory inventoryId={item.inventoryId} />
                             <DeleteInventory inventoryId={item.inventoryId} />
                           </div>

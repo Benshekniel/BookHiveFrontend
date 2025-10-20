@@ -22,6 +22,7 @@ const InventorySchema = z.object({
   authors: commaSeparatedArray,
   genres: commaSeparatedArray,
   tags: commaSeparatedArray,
+  category: nonEmptyString,
 
   condition: z.enum(["NEW", "USED", "FAIR"]).optional(),
 
