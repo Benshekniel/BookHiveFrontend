@@ -19,12 +19,14 @@ const PasswordSection = () => {
 
   const editPassword = async () => {
     const formData = new FormData();
+    const payload = { userId, oldPassword, newPassword };
+    formData.append("passChangeDTO", new Blob([JSON.stringify(payload)], { type: "application/json" }));
 
-    const passChangeDTO = { userId, oldPassword, newPassword };
-    const jsonBlob = new Blob([JSON.stringify(passChangeDTO)], {
-      type: "application/json",
-    });
-    formData.append("passChangeDTO", jsonBlob);
+    // const passChangeDTO = { userId, oldPassword, newPassword };
+    // const jsonBlob = new Blob([JSON.stringify(passChangeDTO)], {
+    //   type: "application/json",
+    // });
+    // formData.append("passChangeDTO", jsonBlob);
 
     const response = await axios.put(`http://localhost:9090/api/bookstore/password-change`, formData);
     return response.data;
@@ -73,6 +75,7 @@ const PasswordSection = () => {
     setOldPassword("");
     setNewPassword("");
     setConfirmPassword("");
+    setPasswordError("");
   }
 
   return (

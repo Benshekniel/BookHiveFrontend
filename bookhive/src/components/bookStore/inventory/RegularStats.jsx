@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Package, DollarSign, Clock, SearchSlash } from 'lucide-react';
+import { Package, DollarSign, Clock, SearchSlash, Star } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -32,19 +32,19 @@ const RegularStats = () => {
 
     return [
       {
-        label: 'TOTAL INVENTORY DRAFTS', value: regularStats.totalBooks, icon: Package,
+        label: 'TOTAL REGULAR INVENTORY', value: regularStats.totalBooks, icon: Package,
         bgColor: 'bg-blue-50', border: 'border-blue-200', textColor: 'text-blue-600'
       },
       {
-        label: 'SALE DRAFTS', value: regularStats.sellInventory, icon: DollarSign,
+        label: 'AVAILABLE FOR SALE', value: regularStats.totalSellable, icon: DollarSign,
         bgColor: 'bg-green-50', border: 'border-green-200', textColor: 'text-green-600'
       },
       {
-        label: 'LEND DRAFTS', value: regularStats.lendInventory, icon: Clock,
+        label: 'CONDITION NEW BOOKS', value: regularStats.newBooks, icon: Star,
         bgColor: 'bg-amber-50', border: 'border-amber-200', textColor: 'text-amber-600'
       },
       {
-        label: 'NOT-SET DRAFTS', value: regularStats.notSetInventory, icon: SearchSlash,
+        label: 'LOW STOCKS', value: regularStats.lowStockAlerts, icon: SearchSlash,
         bgColor: 'bg-purple-50', border: 'border-purple-200', textColor: 'text-purple-600'
       }
     ];

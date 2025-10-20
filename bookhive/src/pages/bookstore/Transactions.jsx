@@ -19,154 +19,154 @@ const TransactionsPage = () => {
     { id: 'donations', label: 'Donations', icon: Heart, count: 89 }
   ];
 
-  const salesStats = [
-    {
-      label: 'TOTAL ORDERS',
-      value: '2,891',
-      change: '+12% from last month',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
-      textColor: 'text-blue-600',
-      iconBg: 'bg-blue-100',
-      icon: ShoppingCart,
-      changeColor: 'text-green-600'
-    },
-    {
-      label: 'PENDING ORDERS',
-      value: '47',
-      change: '-3% from yesterday',
-      bgColor: 'bg-amber-50',
-      borderColor: 'border-amber-200',
-      textColor: 'text-amber-600',
-      iconBg: 'bg-amber-100',
-      icon: Clock,
-      changeColor: 'text-red-600'
-    },
-    {
-      label: 'COMPLETED',
-      value: '2,789',
-      change: '+8% from last week',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      textColor: 'text-green-600',
-      iconBg: 'bg-green-100',
-      icon: CheckCircle,
-      changeColor: 'text-green-600'
-    },
-    {
-      label: 'REVENUE',
-      value: '$24,591',
-      change: '+18% from last month',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200',
-      textColor: 'text-purple-600',
-      iconBg: 'bg-purple-100',
-      icon: DollarSign,
-      changeColor: 'text-green-600'
-    }
-  ];
+  // const salesStats = [
+  //   {
+  //     label: 'TOTAL ORDERS',
+  //     value: '2,891',
+  //     change: '+12% from last month',
+  //     bgColor: 'bg-blue-50',
+  //     borderColor: 'border-blue-200',
+  //     textColor: 'text-blue-600',
+  //     iconBg: 'bg-blue-100',
+  //     icon: ShoppingCart,
+  //     changeColor: 'text-green-600'
+  //   },
+  //   {
+  //     label: 'PENDING ORDERS',
+  //     value: '47',
+  //     change: '-3% from yesterday',
+  //     bgColor: 'bg-amber-50',
+  //     borderColor: 'border-amber-200',
+  //     textColor: 'text-amber-600',
+  //     iconBg: 'bg-amber-100',
+  //     icon: Clock,
+  //     changeColor: 'text-red-600'
+  //   },
+  //   {
+  //     label: 'COMPLETED',
+  //     value: '2,789',
+  //     change: '+8% from last week',
+  //     bgColor: 'bg-green-50',
+  //     borderColor: 'border-green-200',
+  //     textColor: 'text-green-600',
+  //     iconBg: 'bg-green-100',
+  //     icon: CheckCircle,
+  //     changeColor: 'text-green-600'
+  //   },
+  //   {
+  //     label: 'REVENUE',
+  //     value: '$24,591',
+  //     change: '+18% from last month',
+  //     bgColor: 'bg-purple-50',
+  //     borderColor: 'border-purple-200',
+  //     textColor: 'text-purple-600',
+  //     iconBg: 'bg-purple-100',
+  //     icon: DollarSign,
+  //     changeColor: 'text-green-600'
+  //   }
+  // ];
 
-  const lendingStats = [
-    {
-      label: 'ACTIVE LOANS',
-      value: '456',
-      change: '+5% from last week',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
-      textColor: 'text-blue-600',
-      iconBg: 'bg-blue-100',
-      icon: BookOpen,
-      changeColor: 'text-green-600'
-    },
-    {
-      label: 'OVERDUE',
-      value: '23',
-      change: '+2 from yesterday',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200',
-      textColor: 'text-red-600',
-      iconBg: 'bg-red-100',
-      icon: AlertCircle,
-      changeColor: 'text-red-600'
-    },
-    {
-      label: 'RETURNED',
-      value: '1,234',
-      change: '+15% from last month',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      textColor: 'text-green-600',
-      iconBg: 'bg-green-100',
-      icon: CheckCircle,
-      changeColor: 'text-green-600'
-    },
-    {
-      label: 'LATE FEES',
-      value: '$1,245',
-      change: '-8% from last month',
-      bgColor: 'bg-amber-50',
-      borderColor: 'border-amber-200',
-      textColor: 'text-amber-600',
-      iconBg: 'bg-amber-100',
-      icon: DollarSign,
-      changeColor: 'text-green-600'
-    }
-  ];
+  // const lendingStats = [
+  //   {
+  //     label: 'ACTIVE LOANS',
+  //     value: '456',
+  //     change: '+5% from last week',
+  //     bgColor: 'bg-blue-50',
+  //     borderColor: 'border-blue-200',
+  //     textColor: 'text-blue-600',
+  //     iconBg: 'bg-blue-100',
+  //     icon: BookOpen,
+  //     changeColor: 'text-green-600'
+  //   },
+  //   {
+  //     label: 'OVERDUE',
+  //     value: '23',
+  //     change: '+2 from yesterday',
+  //     bgColor: 'bg-red-50',
+  //     borderColor: 'border-red-200',
+  //     textColor: 'text-red-600',
+  //     iconBg: 'bg-red-100',
+  //     icon: AlertCircle,
+  //     changeColor: 'text-red-600'
+  //   },
+  //   {
+  //     label: 'RETURNED',
+  //     value: '1,234',
+  //     change: '+15% from last month',
+  //     bgColor: 'bg-green-50',
+  //     borderColor: 'border-green-200',
+  //     textColor: 'text-green-600',
+  //     iconBg: 'bg-green-100',
+  //     icon: CheckCircle,
+  //     changeColor: 'text-green-600'
+  //   },
+  //   {
+  //     label: 'LATE FEES',
+  //     value: '$1,245',
+  //     change: '-8% from last month',
+  //     bgColor: 'bg-amber-50',
+  //     borderColor: 'border-amber-200',
+  //     textColor: 'text-amber-600',
+  //     iconBg: 'bg-amber-100',
+  //     icon: DollarSign,
+  //     changeColor: 'text-green-600'
+  //   }
+  // ];
 
-  const donationStats = [
-    {
-      label: 'TOTAL DONATED',
-      value: '89',
-      change: '+12 this month',
-      bgColor: 'bg-pink-50',
-      borderColor: 'border-pink-200',
-      textColor: 'text-pink-600',
-      iconBg: 'bg-pink-100',
-      icon: Heart,
-      changeColor: 'text-green-600'
-    },
-    {
-      label: 'MATCHED',
-      value: '76',
-      change: '+8 this week',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      textColor: 'text-green-600',
-      iconBg: 'bg-green-100',
-      icon: CheckCircle,
-      changeColor: 'text-green-600'
-    },
-    {
-      label: 'DELIVERED',
-      value: '68',
-      change: '+5 this week',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
-      textColor: 'text-blue-600',
-      iconBg: 'bg-blue-100',
-      icon: Truck,
-      changeColor: 'text-green-600'
-    },
-    {
-      label: 'IMPACT SCORE',
-      value: '4.9',
-      change: '+0.1 this month',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200',
-      textColor: 'text-purple-600',
-      iconBg: 'bg-purple-100',
-      icon: Award,
-      changeColor: 'text-green-600'
-    }
-  ];
+  // const donationStats = [
+  //   {
+  //     label: 'TOTAL DONATED',
+  //     value: '89',
+  //     change: '+12 this month',
+  //     bgColor: 'bg-pink-50',
+  //     borderColor: 'border-pink-200',
+  //     textColor: 'text-pink-600',
+  //     iconBg: 'bg-pink-100',
+  //     icon: Heart,
+  //     changeColor: 'text-green-600'
+  //   },
+  //   {
+  //     label: 'MATCHED',
+  //     value: '76',
+  //     change: '+8 this week',
+  //     bgColor: 'bg-green-50',
+  //     borderColor: 'border-green-200',
+  //     textColor: 'text-green-600',
+  //     iconBg: 'bg-green-100',
+  //     icon: CheckCircle,
+  //     changeColor: 'text-green-600'
+  //   },
+  //   {
+  //     label: 'DELIVERED',
+  //     value: '68',
+  //     change: '+5 this week',
+  //     bgColor: 'bg-blue-50',
+  //     borderColor: 'border-blue-200',
+  //     textColor: 'text-blue-600',
+  //     iconBg: 'bg-blue-100',
+  //     icon: Truck,
+  //     changeColor: 'text-green-600'
+  //   },
+  //   {
+  //     label: 'IMPACT SCORE',
+  //     value: '4.9',
+  //     change: '+0.1 this month',
+  //     bgColor: 'bg-purple-50',
+  //     borderColor: 'border-purple-200',
+  //     textColor: 'text-purple-600',
+  //     iconBg: 'bg-purple-100',
+  //     icon: Award,
+  //     changeColor: 'text-green-600'
+  //   }
+  // ];
 
-  const getCurrentStats = () => {
-    switch (activeTab) {
-      case 'lending': return lendingStats;
-      case 'donations': return donationStats;
-      default: return salesStats;
-    }
-  };
+  // const getCurrentStats = () => {
+  //   switch (activeTab) {
+  //     case 'lending': return lendingStats;
+  //     case 'donations': return donationStats;
+  //     default: return salesStats;
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -185,16 +185,6 @@ const TransactionsPage = () => {
                 </p>
               </div>
             </div>
-            <div className="flex space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                <Upload className="w-4 h-4" />
-                <span className="font-medium">Export</span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-amber-400 text-slate-800 rounded-lg hover:bg-amber-500 transition-colors duration-200 font-medium">
-                <Plus className="w-4 h-4" />
-                <span>New Transaction</span>
-              </button>
-            </div>
           </div>
         </div>
 
@@ -211,14 +201,9 @@ const TransactionsPage = () => {
                     className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === tab.id
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-gray-300'
-                      }`}
-                  >
+                      }`} >
                     <IconComponent className="w-5 h-5" />
                     <span>{tab.label}</span>
-                    <span className={`px-2 py-1 text-xs rounded-full ${activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                      {tab.count.toLocaleString()}
-                    </span>
                   </button>
                 );
               })}
@@ -226,8 +211,7 @@ const TransactionsPage = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {getCurrentStats().map((stat, index) => {
             const IconComponent = stat.icon;
             return (
@@ -248,12 +232,11 @@ const TransactionsPage = () => {
               </div>
             );
           })}
-        </div>
+        </div> */}
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
+        {/* <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-4"> */}
+
             {/* <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -267,7 +250,6 @@ const TransactionsPage = () => {
               </div>
             </div> */}
 
-            {/* Filters */}
             {/* <div className="flex flex-wrap gap-3">
               <div className="relative">
                 <select
@@ -305,37 +287,15 @@ const TransactionsPage = () => {
                 <span>More Filters</span>
               </button>
             </div> */}
-          </div>
-        </div>
+
+          {/* </div>
+        </div> */}
 
         {/* Tab Content */}
         {activeTab === 'sales' && <SalesActivity />}
         {activeTab === 'lending' && <LendingActivity />}
         {activeTab === 'donations' && <DonationActivity />}
 
-        {/* Pagination */}
-        {/* <div className="flex items-center justify-between mt-6">
-          <p className="text-sm text-slate-600">
-            Showing 1 to {activeTab === 'sales' ? salesOrders.length : activeTab === 'lending' ? lendingActivity.length : donations.length} of {getCurrentStats()[0].value} results
-          </p>
-          <div className="flex space-x-2">
-            <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors duration-200">
-              Previous
-            </button>
-            <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors duration-200">
-              1
-            </button>
-            <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors duration-200">
-              2
-            </button>
-            <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors duration-200">
-              3
-            </button>
-            <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors duration-200">
-              Next
-            </button>
-          </div>
-        </div> */}
       </div>
     </div>
   );

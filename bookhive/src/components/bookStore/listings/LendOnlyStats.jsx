@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Package, DollarSign, Handshake, ActivitySquare, PackageCheck } from 'lucide-react';
+import { Package, DollarSign, Handshake, ActivitySquare, PackageCheck, Clock, Clock8, Timer } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -12,7 +12,7 @@ const LendOnlyStats = () => {
   const fetchLendOnlyStats = async () => {
     if (!user?.userId) return [];
     try {
-      const response = await axios.get(`http://localhost:9090/api/bs-books/stats/lendOnly/${user.userId}`);
+      const response = await axios.get(`http://localhost:9090/api/bs-book/stats/lendOnly/${user.userId}`);
       return response.data;
     }
     catch (err) {
@@ -31,23 +31,23 @@ const LendOnlyStats = () => {
     if (!lendOnlyStats) return []; // return empty until data is ready
     return [
       {
-        label: 'TOTAL LENDING BOOKS', value: lendOnlyStats.totalBooks, icon: Package,
+        label: 'TOTAL BOOK LISTINGS', value: lendOnlyStats.totalBooks, icon: Package,
         bgColor: 'bg-blue-50', border: 'border-blue-200', textColor: 'text-blue-600'
       },
       {
-        label: 'ACTIVE LISTINGS', value: lendOnlyStats.activeListings, icon: ActivitySquare,
+        label: 'ONLY FOR LENDING', value: lendOnlyStats.onlyLending, icon: ActivitySquare,
         bgColor: 'bg-green-50', border: 'border-green-200', textColor: 'text-green-600'
       },
       {
-        label: 'IN INVENTORY', value: lendOnlyStats.inInventory, icon: PackageCheck,
+        label: 'CURRENTLY LENT', value: lendOnlyStats.currentLent, icon: Clock,
         bgColor: 'bg-amber-50', border: 'border-amber-200', textColor: 'text-amber-600'
       },
       {
-        label: 'BOOKS LENT NOW', value: lendOnlyStats.onLoanCount, icon: Handshake,
+        label: 'AVERAGE LENDING PERIOD', value: `${(lendOnlyStats.avgLendPeriod).toFixed(2)} days`, icon: Timer,
         bgColor: 'bg-purple-50', border: 'border-purple-200', textColor: 'text-purple-600'
       },
       {
-        label: 'AVERAGE LENDING FEE', value: `Rs.${(lendOnlyStats.avgLendPrice).toFixed(2)}`, icon: DollarSign,
+        label: 'AVERAGE LENDING FEE', value: `Rs.${(lendOnlyStats.avgLendFee).toFixed(2)}`, icon: DollarSign,
         bgColor: 'bg-purple-50', border: 'border-purple-200', textColor: 'text-purple-600'
       }
     ];

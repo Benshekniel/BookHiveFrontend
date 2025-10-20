@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Package, DollarSign, Handshake, ActivitySquare, PackageCheck } from 'lucide-react';
+import { Package, DollarSign, Handshake, ActivitySquare, PackageCheck, DollarSignIcon, BadgeDollarSign, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -12,7 +12,8 @@ const SellAlsoStats = () => {
   const fetchSellAlsoStats = async () => {
     if (!user?.userId) return [];
     try {
-      const response = await axios.get(`http://localhost:9090/api/bs-books/stats/sellAlso/${user.userId}`);
+      const response = await axios.get(`http://localhost:9090/api/bs-book/stats/sellAlso/${user.userId}`);
+      console.log(response.data);
       return response.data;
     }
     catch (err) {
@@ -31,19 +32,19 @@ const SellAlsoStats = () => {
     if (!sellAlsoStats) return []; // return empty until data is ready
     return [
       {
-        label: 'TOTAL SALE BOOKS', value: sellAlsoStats.totalBooks, icon: Package,
+        label: 'TOTAL BOOK LISTINGS', value: sellAlsoStats.totalBooks, icon: Package,
         bgColor: 'bg-blue-50', border: 'border-blue-200', textColor: 'text-blue-600'
       },
       {
-        label: 'ACTIVE LISTINGS', value: sellAlsoStats.activeListings, icon: ActivitySquare,
+        label: 'SALE AVAILABLE', value: sellAlsoStats.totalSellable, icon: ActivitySquare,
         bgColor: 'bg-green-50', border: 'border-green-200', textColor: 'text-green-600'
       },
       {
-        label: 'IN INVENTORY', value: sellAlsoStats.inInventory, icon: PackageCheck,
+        label: 'CURRENTLY LENT', value: sellAlsoStats.currentLent, icon: Clock,
         bgColor: 'bg-amber-50', border: 'border-amber-200', textColor: 'text-amber-600'
       },
       {
-        label: 'BOOKS SOLD', value: sellAlsoStats.soldCount, icon: Handshake,
+        label: 'BOOKS SOLD', value: sellAlsoStats.soldCount, icon: BadgeDollarSign,
         bgColor: 'bg-purple-50', border: 'border-purple-200', textColor: 'text-purple-600'
       },
       {

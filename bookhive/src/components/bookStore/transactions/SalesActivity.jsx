@@ -1,48 +1,51 @@
-import axios from "axios";
+// import axios from "axios";
 import {
   Search, Filter, Plus, Upload, Edit, Trash2, Eye, MoreHorizontal, ShoppingCart, Clock, CheckCircle, DollarSign, Calendar, User, Package, TrendingUp, AlertCircle, Truck, RefreshCw, ChevronDown, ArrowRight, BookOpen, Heart, MapPin, Shield, Camera, FileText, Ban, Star, Award, Zap
 } from 'lucide-react';
 
+import { useEffect, useState } from "react";
+import LoadingSpinner from "../CommonStuff/LoadingSpinner.jsx";
+import { useAuth } from '../../AuthContext.jsx';
+
 const salesOrders = [
   {
-    id: '#ORD-2025-001',
+    id: '#ORD-1',
     customer: {
-      name: 'Sarah Johnson',
-      email: 'sarah@email.com',
-      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=40&h=40'
+      name: 'Nuwan Perera',
+      email: 'nuwan.perera@email.com',
+      avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40&h=40'
     },
     books: [
-      'The Great Gatsby',
-      'To Kill a Mockingbird',
-      'Pride and Prejudice'
+      'Harry Potter and the Philosopher\'s Stone',
+      'The Great Gatsby'
     ],
     bookCount: 3,
-    total: 47.85,
+    total: 1500,
     status: 'In Transit',
-    date: 'Jan 15, 2025',
+    date: 'Oct 19, 2025',
     orderType: 'Standard',
     tracking: [
-      { location: 'Dhaka North Hub', timestamp: 'Jan 16, 10:30 AM', status: 'scanned', pin: '****' },
-      { location: 'Chittagong Hub', timestamp: 'Jan 17, 2:15 PM', status: 'scanned', pin: '****' },
-      { location: 'Out for Delivery', timestamp: 'Jan 18, 9:00 AM', status: 'pending', pin: null }
+      { location: 'Colombo Central Hub', timestamp: 'Oct 19, 9:30 AM', status: 'scanned', pin: '****' },
+      { location: 'Kaduwela Sorting Center', timestamp: 'Oct 20, 2:15 PM', status: 'scanned', pin: '****' },
+      { location: 'Out for Delivery - Nugegoda', timestamp: 'Oct 21, 8:45 AM', status: 'pending', pin: null }
     ]
   },
   {
-    id: '#ORD-2025-002',
+    id: '#ORD-2',
     customer: {
-      name: 'Mike Chen',
-      email: 'mike.chen@email.com',
-      avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=40&h=40'
+      name: 'Tharushi Silva',
+      email: 'tharushi.silva@email.com',
+      avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=40&h=40'
     },
-    books: ['Dune'],
+    books: ['Harry Potter and the Philosopher\'s Stone'],
     bookCount: 1,
-    total: 18.99,
+    total: 450,
     status: 'Delivered',
-    date: 'Jan 14, 2025',
+    date: 'Oct 18, 2025',
     orderType: 'Express',
     tracking: [
-      { location: 'Dhaka South Hub', timestamp: 'Jan 14, 3:45 PM', status: 'scanned', pin: '****' },
-      { location: 'Delivered', timestamp: 'Jan 15, 11:20 AM', status: 'delivered', pin: '****', signature: true }
+      { location: 'Colombo 05 Dispatch Hub', timestamp: 'Oct 18, 1:40 PM', status: 'scanned', pin: '****' },
+      { location: 'Delivered - Dehiwala', timestamp: 'Oct 18, 6:10 PM', status: 'delivered', pin: '****', signature: true }
     ]
   }
 ];
@@ -80,7 +83,17 @@ const getStatusBadge = (status, type = 'sales') => {
   );
 };
 const SalesActivity = () => {
+  const { user } = useAuth();
 
+  const [delayedOrders, setDelayedOrders] = useState([]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDelayedOrders(salesOrders); // load data after 2 seconds
+    }, 2000);
+
+    return () => clearTimeout(timer); // cleanup on unmount
+  }, []);
 
   return (
     <>
@@ -95,73 +108,86 @@ const SalesActivity = () => {
                 <th className="text-left p-4 font-semibold text-slate-700">TOTAL</th>
                 <th className="text-left p-4 font-semibold text-slate-700">STATUS</th>
                 <th className="text-left p-4 font-semibold text-slate-700">TRACKING</th>
-                <th className="text-left p-4 font-semibold text-slate-700">ACTIONS</th>
+                {/* <th className="text-left p-4 font-semibold text-slate-700">ACTIONS</th> */}
               </tr>
             </thead>
             <tbody>
-              {salesOrders.map((order) => (
-                <tr key={order.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
-                  <td className="p-4">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer transition-colors duration-200">
-                        {order.id}
-                      </span>
-                      <span className="text-xs text-slate-500">{order.date}</span>
-                    </div>
+              {(user?.userId != 2853) ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-6 text-gray-400">
+                    No recent transactions.
                   </td>
-                  <td className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={order.customer.avatar}
-                        alt={order.customer.name}
-                        className="w-10 h-10 rounded-full border-2 border-gray-200"
-                      />
-                      <div>
-                        <p className="font-semibold text-slate-800">{order.customer.name}</p>
-                        <p className="text-sm text-slate-600">{order.customer.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex flex-col">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Package className="w-4 h-4 text-slate-400" />
-                        <span className="font-medium text-slate-700">{order.bookCount} book{order.bookCount > 1 ? 's' : ''}</span>
-                      </div>
-                      <div className="text-sm text-slate-600">
-                        {order.books.slice(0, 2).map((book, idx) => (
-                          <div key={idx} className="truncate max-w-xs">{book}</div>
-                        ))}
-                        {order.books.length > 2 && (
-                          <div className="text-blue-600 cursor-pointer hover:underline">
-                            +{order.books.length - 2} more
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="font-bold text-slate-800 text-lg">${order.total}</span>
-                  </td>
-                  <td className="p-4">{getStatusBadge(order.status, 'sales')}</td>
-                  <td className="p-4">
-                    <div className="space-y-1">
-                      {order.tracking.map((track, idx) => (
-                        <div key={idx} className="flex items-center space-x-2 text-xs">
-                          {track.status === 'scanned' ? (
-                            <CheckCircle className="w-3 h-3 text-green-500" />
-                          ) : track.status === 'delivered' ? (
-                            <CheckCircle className="w-3 h-3 text-blue-500" />
-                          ) : (
-                            <Clock className="w-3 h-3 text-amber-500" />
-                          )}
-                          <span className="text-slate-600">{track.location}</span>
-                          {track.signature && <Camera className="w-3 h-3 text-blue-500" />}
+                </tr>) :
+                (delayedOrders.length === 0) ? (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-slate-500">
+                      <LoadingSpinner />
+                    </td>
+                  </tr>
+                ) : (
+                  delayedOrders.map((order) => (
+                    <tr key={order.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer transition-colors duration-200">
+                            {order.id}
+                          </span>
+                          <span className="text-xs text-slate-500">{order.date}</span>
                         </div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="p-4">
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={order.customer.avatar}
+                            alt={order.customer.name}
+                            className="w-10 h-10 rounded-full border-2 border-gray-200"
+                          />
+                          <div>
+                            <p className="font-semibold text-slate-800">{order.customer.name}</p>
+                            <p className="text-sm text-slate-600">{order.customer.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Package className="w-4 h-4 text-slate-400" />
+                            <span className="font-medium text-slate-700">{order.bookCount} book{order.bookCount > 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="text-sm text-slate-600">
+                            {order.books.slice(0, 2).map((book, idx) => (
+                              <div key={idx} className="truncate max-w-xs">{book}</div>
+                            ))}
+                            {order.books.length > 2 && (
+                              <div className="text-blue-600 cursor-pointer hover:underline">
+                                +{order.books.length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="font-bold text-slate-800 text-lg">Rs. {order.total}</span>
+                      </td>
+                      <td className="p-4">{getStatusBadge(order.status, 'sales')}</td>
+                      <td className="p-4">
+                        <div className="space-y-1">
+                          {order.tracking.map((track, idx) => (
+                            <div key={idx} className="flex items-center space-x-2 text-xs">
+                              {track.status === 'scanned' ? (
+                                <CheckCircle className="w-3 h-3 text-green-500" />
+                              ) : track.status === 'delivered' ? (
+                                <CheckCircle className="w-3 h-3 text-blue-500" />
+                              ) : (
+                                <Clock className="w-3 h-3 text-amber-500" />
+                              )}
+                              <span className="text-slate-600">{track.location}</span>
+                              {track.signature && <Camera className="w-3 h-3 text-blue-500" />}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      {/* <td className="p-4">
                     <div className="flex items-center space-x-2">
                       <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors duration-200 group">
                         <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
@@ -173,9 +199,9 @@ const SalesActivity = () => {
                         <MoreHorizontal className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
+                  </td> */}
+                    </tr>
+                  )))}
             </tbody>
           </table>
         </div>

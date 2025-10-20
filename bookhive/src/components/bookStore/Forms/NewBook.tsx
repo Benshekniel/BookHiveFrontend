@@ -11,7 +11,7 @@ import { useAuth } from "../../AuthContext";
 import LoadingSpinner from "../CommonStuff/LoadingSpinner";
 
 const NewBook = () => {
-  const {user} = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);
@@ -25,7 +25,7 @@ const NewBook = () => {
     resolver: zodResolver(BookSchema),
   });
 
-  const TextInput = ({ itemName, type = "text", label, placeholder, full}:
+  const TextInput = ({ itemName, type = "text", label, placeholder, full }:
     { itemName: keyof BookFormFields; type?: string; label: string; placeholder?: string; full?: boolean }) => (
     <div className={full ? "col-span-2" : ""}>
       <label htmlFor={itemName as string} className="block text-sm font-medium text-gray-700 mb-2">
@@ -87,6 +87,7 @@ const NewBook = () => {
     const jsonBlob = new Blob([JSON.stringify(dataExtended)], {
       type: "application/json",
     });
+    console.log("🧾 newBookData:", dataExtended);
 
     formData.append("newBookData", jsonBlob);
     formData.append("coverImage", coverImage);
@@ -106,12 +107,23 @@ const NewBook = () => {
     mutationFn: (data: BookFormFields) => createBook(data, coverImage as File),
     onSuccess: () => {
       toast.success("Book record created successfully!");
-      queryClient.invalidateQueries({ queryKey: ["lendOnlyList", user?.userId] });
-      queryClient.invalidateQueries({ queryKey: ["sellAlsoList", user?.userId] });
+      // queryClient.invalidateQueries({ queryKey: ["lendOnlyList", user?.userId] });
+      // queryClient.invalidateQueries({ queryKey: ["sellAlsoList", user?.userId] });
       setShowForm(false);
     },
-    onError: () => {
-      toast.error("Something went wrong! Please try again later!");
+    // onError: (e) => {
+    //   toast.error("Something went wrong! Please try again later!");
+    //   console.error("Form error: " + e)
+    // },
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Backend response:", error.response?.data);
+        console.error("📦 Full error object:", error);
+        toast.error(error.response?.data || "Something went wrong! Please try again later!");
+      } else {
+        console.error("❌ Unknown error:", error);
+        toast.error("Unexpected error occurred!");
+      }
     },
   });
 
@@ -190,8 +202,8 @@ const NewBook = () => {
                 </h4>
                 <TextInput itemName="title" label="Book Title *" />
                 <TextInput itemName="authors" label="Authors (comma separated) *" />
-                <TextInput itemName="genres" label="Genres (comma separated) *" full={true}  />
-                <TextInput itemName="tags" label="Tags (comma separated) *" full={true}  />
+                <TextInput itemName="genres" label="Genres (comma separated) *" full={true} />
+                <TextInput itemName="tags" label="Tags (comma separated) *" full={true} />
 
                 <div className="col-span-2">
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
@@ -257,7 +269,7 @@ const NewBook = () => {
                     <option value="FAIR">Fair - Shows wear but readable</option>
                   </select>
                 </div>
-                
+
                 <div className="col-span-2">
                   <label htmlFor="terms" className="block text-sm font-medium text-gray-700 mb-2">
                     Terms: </label>
@@ -281,25 +293,11 @@ const NewBook = () => {
                 <label htmlFor="isForSelling" className="block text-md font-medium text-gray-700 mb-2">
                   Is the book also available for sale? </label>
                 <input id="isForSelling" type="checkbox" checked={isForSelling}
-                  onChange={() => setIsForSelling(!isForSelling)} className="m-2 rounded-5"/>
-                
+                  onChange={() => setIsForSelling(!isForSelling)} className="m-2 rounded-5" />
+
                 {isForSelling && (<>
                   <TextInput itemName="sellPrice" label="Selling Price (Rs.)" type="number" />
                 </>)}
-
-                {/* {isForSelling && (<>
-                  <div>
-                    <label htmlFor="bookValue" className="block text-sm font-medium text-gray-700 mb-2">
-                      Book Value (Rs.) </label>
-                    <input id="bookValue" {...register("sellPrice")}
-                      type="number" placeholder="Book Value (Rs.)"
-                      className="border border-gray-700 text-gray-700 py-3 px-6 rounded-l font-medium hover:bg-gray-50 transition-colors" />
-                    {errors.sellPrice && (
-                      <div className="block text-sm font-medium text-red-700 mb-2">
-                        {errors.sellPrice?.message as string} </div>
-                    )}
-                  </div>
-                </>)} */}
 
               </div>
 

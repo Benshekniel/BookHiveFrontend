@@ -1,82 +1,82 @@
-import axios from "axios";
-import {
-  Search, Filter, Plus, Upload, Edit, Trash2, Eye, MoreHorizontal, ShoppingCart, Clock, CheckCircle, DollarSign, Calendar, User, Package, TrendingUp, AlertCircle, Truck, RefreshCw, ChevronDown, ArrowRight, BookOpen, Heart, MapPin, Shield, Camera, FileText, Ban, Star, Award, Zap
-} from 'lucide-react';
+// import axios from "axios";
+// import {
+//   Search, Filter, Plus, Upload, Edit, Trash2, Eye, MoreHorizontal, ShoppingCart, Clock, CheckCircle, DollarSign, Calendar, User, Package, TrendingUp, AlertCircle, Truck, RefreshCw, ChevronDown, ArrowRight, BookOpen, Heart, MapPin, Shield, Camera, FileText, Ban, Star, Award, Zap
+// } from 'lucide-react';
 
-const lendingActivity = [
-  {
-    id: '#LOAN-2025-001',
-    borrower: {
-      name: 'Alex Thompson',
-      email: 'alex.t@email.com',
-      avatar: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=40&h=40',
-      trustScore: 4.7
-    },
-    book: 'Digital Marketing 2025',
-    author: 'Alex Johnson',
-    duration: '14 days',
-    dueDate: 'Jan 25, 2025',
-    status: 'Active',
-    lastSeen: 'Chittagong',
-    loanDate: 'Jan 11, 2025',
-    lateFee: '$2.00/day',
-    isOverdue: false
-  },
-  {
-    id: '#LOAN-2025-002',
-    borrower: {
-      name: 'Emma Davis',
-      email: 'emma.d@email.com',
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=40&h=40',
-      trustScore: 3.2
-    },
-    book: 'History of Art',
-    author: 'Maria Garcia',
-    duration: '21 days',
-    dueDate: 'Jan 20, 2025',
-    status: 'Overdue',
-    lastSeen: 'Sylhet',
-    loanDate: 'Dec 30, 2024',
-    lateFee: '$1.50/day',
-    isOverdue: true,
-    overdueBy: 5
-  }
-];
+// const lendingActivity = [
+//   {
+//     id: '#LOAN-2025-001',
+//     borrower: {
+//       name: 'Alex Thompson',
+//       email: 'alex.t@email.com',
+//       avatar: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=40&h=40',
+//       trustScore: 4.7
+//     },
+//     book: 'Digital Marketing 2025',
+//     author: 'Alex Johnson',
+//     duration: '14 days',
+//     dueDate: 'Jan 25, 2025',
+//     status: 'Active',
+//     lastSeen: 'Chittagong',
+//     loanDate: 'Jan 11, 2025',
+//     lateFee: '$2.00/day',
+//     isOverdue: false
+//   },
+//   {
+//     id: '#LOAN-2025-002',
+//     borrower: {
+//       name: 'Emma Davis',
+//       email: 'emma.d@email.com',
+//       avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=40&h=40',
+//       trustScore: 3.2
+//     },
+//     book: 'History of Art',
+//     author: 'Maria Garcia',
+//     duration: '21 days',
+//     dueDate: 'Jan 20, 2025',
+//     status: 'Overdue',
+//     lastSeen: 'Sylhet',
+//     loanDate: 'Dec 30, 2024',
+//     lateFee: '$1.50/day',
+//     isOverdue: true,
+//     overdueBy: 5
+//   }
+// ];
 
-const getStatusBadge = (status, type = 'sales') => {
-  const statusConfigs = {
-    sales: {
-      'Processing': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', icon: RefreshCw },
-      'In Transit': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200', icon: Truck },
-      'Delivered': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle },
-      'Pending': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200', icon: Clock },
-      'Cancelled': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200', icon: AlertCircle }
-    },
-    lending: {
-      'Active': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle },
-      'Overdue': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200', icon: AlertCircle },
-      'Returned': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', icon: BookOpen },
-      'Frozen': { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200', icon: Ban }
-    },
-    donations: {
-      'Pending': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200', icon: Clock },
-      'Matched': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', icon: Heart },
-      'Delivered': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle }
-    }
-  };
+// const getStatusBadge = (status, type = 'sales') => {
+//   const statusConfigs = {
+//     sales: {
+//       'Processing': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', icon: RefreshCw },
+//       'In Transit': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200', icon: Truck },
+//       'Delivered': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle },
+//       'Pending': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200', icon: Clock },
+//       'Cancelled': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200', icon: AlertCircle }
+//     },
+//     lending: {
+//       'Active': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle },
+//       'Overdue': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200', icon: AlertCircle },
+//       'Returned': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', icon: BookOpen },
+//       'Frozen': { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200', icon: Ban }
+//     },
+//     donations: {
+//       'Pending': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200', icon: Clock },
+//       'Matched': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', icon: Heart },
+//       'Delivered': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', icon: CheckCircle }
+//     }
+//   };
 
-  const config = statusConfigs[type][status] || statusConfigs[type]['Pending'] || statusConfigs.sales['Pending'];
-  const IconComponent = config.icon;
+//   const config = statusConfigs[type][status] || statusConfigs[type]['Pending'] || statusConfigs.sales['Pending'];
+//   const IconComponent = config.icon;
 
-  return (
-    <span className={`inline-flex items-center space-x-1 px-3 py-1 text-xs font-semibold rounded-full border ${config.bg} ${config.text} ${config.border}`}>
-      <IconComponent className="w-3 h-3" />
-      <span>{status}</span>
-    </span>
-  );
-};
+//   return (
+//     <span className={`inline-flex items-center space-x-1 px-3 py-1 text-xs font-semibold rounded-full border ${config.bg} ${config.text} ${config.border}`}>
+//       <IconComponent className="w-3 h-3" />
+//       <span>{status}</span>
+//     </span>
+//   );
+// };
+
 const LendingActivity = () => {
-
 
   return (
     <>
@@ -95,7 +95,12 @@ const LendingActivity = () => {
               </tr>
             </thead>
             <tbody>
-              {lendingActivity.map((loan) => (
+              <tr>
+                <td colSpan={7} className="text-center py-6 text-gray-400">
+                  No recent transactions.
+                </td>
+              </tr>
+              {/* {lendingActivity.map((loan) => (
                 <tr key={loan.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors duration-150">
                   <td className="p-4">
                     <div className="flex flex-col">
@@ -168,7 +173,7 @@ const LendingActivity = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))} */}
             </tbody>
           </table>
         </div>

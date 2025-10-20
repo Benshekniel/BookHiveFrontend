@@ -90,7 +90,7 @@ const ContributePopup = ({ category, donationId, contributable }: Props) => {
       const { donationId, contributions } = payload;
       console.log(contributions);
       return axios.put(
-        `http://localhost:9090/api/bs-donation/contribute/${donationId}`,
+        `http://localhost:9090/api/bs-donation/contribute/${donationId}/${user?.userId}`,
         contributions
       );
     },
