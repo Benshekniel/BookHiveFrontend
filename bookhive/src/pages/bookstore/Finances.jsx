@@ -203,7 +203,7 @@ const Finances = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Finances</h1>
             <p className="text-gray-600">Track your revenue, expenses, and financial performance</p>
           </div>
-          <div className="flex items-center space-x-3">
+          {/* <div className="flex items-center space-x-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -229,12 +229,12 @@ const Finances = () => {
               <Download className="w-4 h-4 mr-2" />
               Export
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -258,7 +258,7 @@ const Finances = () => {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Revenue Breakdown */}
@@ -345,9 +345,9 @@ const Finances = () => {
               </div>
             ))}
           </div>
-          <button className="w-full mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium">
+          {/* <button className="w-full mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium">
             View Payout Schedule
-          </button>
+          </button> */}
         </div>
       </div>
 
