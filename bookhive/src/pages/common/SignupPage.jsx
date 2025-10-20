@@ -344,8 +344,53 @@ const SignupPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50"></div>
+        <div
+          className="absolute top-10 left-10 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite' }}
+        ></div>
+        <div
+          className="absolute top-0 right-10 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite 1.5s' }}
+        ></div>
+        <div
+          className="absolute bottom-10 left-1/4 w-80 h-80 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite 3s' }}
+        ></div>
+        <div
+          className="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite 4.5s' }}
+        ></div>
+        <div
+          className="absolute top-1/2 left-1/2 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"
+          style={{ animation: 'blob 9s infinite 6s' }}
+        ></div>
+      </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          25% {
+            transform: translate(20px, -30px) scale(1.05);
+          }
+          50% {
+            transform: translate(-15px, 15px) scale(0.95);
+          }
+          75% {
+            transform: translate(25px, 20px) scale(1.02);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+      `}</style>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center">
           <div className="flex items-center text-3xl font-bold" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
             <BookOpen className="mr-2" style={{ color: '#ffd639' }} size={32} />
