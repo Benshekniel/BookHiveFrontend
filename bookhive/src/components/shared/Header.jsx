@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import React, { useState, useEffect } from 'react';
 import { Bell, Search, User, Menu } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import Sidebar from './Sidebar';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 
 const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollapsed, onLogout }) => {
