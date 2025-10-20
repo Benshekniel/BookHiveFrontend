@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Search, User, Menu } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import Sidebar from './Sidebar';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 
 const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollapsed, onLogout }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasShownExpiredModal, setHasShownExpiredModal] = useState(false);
 
   // console.log('Header rendered - collapsed:', collapsed, 'isMobileOpen:', isMobileOpen, 'window.innerHeight:', window.innerHeight, 'children:', !!children);
 
@@ -68,8 +73,101 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
 
   const { user } = useAuth();
 
+  // Mark initial load as complete after first render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 500); // Wait 500ms for auth to load
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle session expiration - redirect to login with message
+  useEffect(() => {
+    // Only show modal if:
+    // 1. Not on initial load/refresh
+    // 2. User is null (session expired)
+    // 3. Haven't already shown the modal
+    if (!isInitialLoad && !user && !hasShownExpiredModal) {
+      setHasShownExpiredModal(true);
+
+      // Show session expired message
+      const sessionExpiredMsg = document.createElement('div');
+      sessionExpiredMsg.innerHTML = `
+        <div style="
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 2rem;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+          z-index: 9999;
+          text-align: center;
+          max-width: 400px;
+        ">
+          <div style="
+            width: 60px;
+            height: 60px;
+            background: #FEE2E2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+          ">
+            <svg width="30" height="30" fill="#DC2626" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+          </div>
+          <h2 style="
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0F172A;
+            margin-bottom: 0.5rem;
+          ">Session Expired</h2>
+          <p style="
+            color: #64748B;
+            margin-bottom: 1.5rem;
+          ">Your session has expired. Please log in again to continue.</p>
+          <div style="
+            background: #F1F5F9;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: #475569;
+          ">
+            Redirecting to login page...
+          </div>
+        </div>
+      `;
+
+      // Add backdrop
+      const backdrop = document.createElement('div');
+      backdrop.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+      `;
+
+      document.body.appendChild(backdrop);
+      document.body.appendChild(sessionExpiredMsg);
+
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        document.body.removeChild(backdrop);
+        document.body.removeChild(sessionExpiredMsg);
+        navigate('/login');
+      }, 2000);
+    }
+  }, [user, navigate, isInitialLoad, hasShownExpiredModal]);
+
+  // If no user, show nothing (the useEffect will handle redirection)
   if (!user) {
-    return <p>Please log in.</p>;
+    return null;
+    return null;
   }
 
 
@@ -93,14 +191,10 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
       };
     } else if (path.startsWith('/bookstore')) {
       return {
-        // name:  'Rohan',
-        // email: '',
-        // role: '',
-        // image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
         name: user.name || 'Rohan',
         email: user.email,
         role: user.role,
-        image: user.profileImage || 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
+        image: user.profileImage || 'https://www.southernliving.com/thmb/DiILPN4-PmulZZ1zFbP7xANxbr8=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/15-WilliamChrisantandSonsOldFloridaBookShop-photobyWilliamChrisant-7077d9a8033a4ac692689380e2dad7bc.jpg',
       };
     } else if (path.startsWith('/manager')) {
       return {

@@ -5,8 +5,7 @@ import { useState } from "react";
 
 import { formatDateTime, getConditionBadge, getBookStatusBadge } from "../CommonStuff/CommonFunc.tsx";
 
-// import { useAuth } from "../../AuthContext.jsx";
-
+import { useAuth } from "../../AuthContext.jsx";
 import LoadingSpinner from "../CommonStuff/LoadingSpinner.jsx";
 
 import EditBook from "../Forms/EditBook.tsx";
@@ -14,9 +13,8 @@ import DeleteBook from "../Buttons/DeleteBook.tsx";
 
 
 const SellAlsoList = () => {
+	const { user } = useAuth();
 	const queryClient = useQueryClient();
-	// const { user } = useAuth();
-	const user = { userId: 603 }; // hard-coded userId until login completed
 
 	const [searchTerm, setSearchTerm] = useState("");
 	const [searchISBN, setSearchISBN] = useState("");

@@ -7,11 +7,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
 
 import { BookSchema, BookFormFields } from "../Schemas/BookSchema";
+import { useAuth } from "../../AuthContext";
 import LoadingSpinner from "../CommonStuff/LoadingSpinner";
 
 const NewBook = () => {
-  // const {user} = useAuth();
-  const user = { userId: 603 }; // hard-coded userId until login completed
+  const {user} = useAuth();
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);
@@ -140,8 +140,7 @@ const NewBook = () => {
     <>
       <button
         onClick={() => setShowForm(true)}
-        className="flex items-center space-x-2 px-4 py-2 bg-amber-400 text-slate-800 rounded-lg hover:bg-amber-500 transition-colors duration-200 font-medium"
-      >
+        className="flex items-center space-x-2 px-4 py-2 bg-amber-400 text-slate-800 rounded-lg hover:bg-amber-500 transition-colors duration-200 font-medium" >
         <Plus className="w-4 h-4" />
         <span>Add Book</span>
       </button>
