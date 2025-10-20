@@ -17,7 +17,11 @@ import {
   AlertTriangle,
   CheckCircle,
   Truck,
-  Home
+  Home,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { deliveryApi, agentApi } from '../../services/deliveryService';
 
@@ -35,6 +39,10 @@ const Deliveries = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Fetch deliveries and stats from backend
   useEffect(() => {
@@ -87,6 +95,11 @@ const Deliveries = () => {
 
     fetchData();
   }, []);
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
 
   // Map backend status to frontend status
   const mapBackendStatus = (backendStatus) => {
@@ -172,6 +185,7 @@ const Deliveries = () => {
     }));
   };
 
+  // Filter deliveries based on search and status
   const filteredDeliveries = deliveries.filter(delivery => {
     const matchesSearch = delivery.id?.toString().includes(searchTerm.toLowerCase()) ||
                          delivery.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,6 +194,12 @@ const Deliveries = () => {
     const matchesStatus = statusFilter === 'all' || delivery.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentDeliveries = filteredDeliveries.slice(startIndex, endIndex);
 
   const handleViewDelivery = (delivery) => {
     setSelectedDelivery(delivery);
@@ -226,6 +246,40 @@ const Deliveries = () => {
       console.error('Error updating delivery status:', err);
       alert('Failed to update delivery status');
     }
+  };
+
+  // Pagination handlers
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+  const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const goToLastPage = () => setCurrentPage(totalPages);
+  const goToPage = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, '...');
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push('...', totalPages);
+    } else {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
   };
 
   const TrackingProgressBar = ({ delivery }) => {
@@ -501,6 +555,95 @@ const Deliveries = () => {
     );
   };
 
+  // Pagination Component
+  const PaginationControls = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="bg-white px-6 py-4 flex items-center justify-between border-t border-gray-200 rounded-b-xl">
+        {/* Results info */}
+        <div className="flex items-center space-x-2">
+          <p className="text-sm text-gray-700">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredDeliveries.length)} of{' '}
+            {filteredDeliveries.length} results
+          </p>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="ml-4 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value={5}>5 per page</option>
+            <option value={10}>10 per page</option>
+            <option value={20}>20 per page</option>
+            <option value={50}>50 per page</option>
+          </select>
+        </div>
+
+        {/* Pagination controls */}
+        <div className="flex items-center space-x-1">
+          {/* First page */}
+          <button
+            onClick={goToFirstPage}
+            disabled={currentPage === 1}
+            className="p-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </button>
+
+          {/* Previous page */}
+          <button
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1}
+            className="p-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Page numbers */}
+          <div className="flex items-center space-x-1">
+            {getPageNumbers().map((pageNumber, index) => (
+              <button
+                key={index}
+                onClick={() => typeof pageNumber === 'number' && goToPage(pageNumber)}
+                disabled={pageNumber === '...'}
+                className={`px-3 py-2 text-sm rounded-lg ${
+                  pageNumber === currentPage
+                    ? 'bg-blue-600 text-white'
+                    : pageNumber === '...'
+                    ? 'text-gray-400 cursor-default'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
+          </div>
+
+          {/* Next page */}
+          <button
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+            className="p-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Last page */}
+          <button
+            onClick={goToLastPage}
+            disabled={currentPage === totalPages}
+            className="p-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Loading animation
   if (loading) {
     return (
@@ -590,7 +733,7 @@ const Deliveries = () => {
         </select>
       </div>
 
-      {/* Deliveries List */}
+      {/* Deliveries List with Pagination */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -620,7 +763,7 @@ const Deliveries = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredDeliveries.map((delivery) => (
+              {currentDeliveries.map((delivery) => (
                 <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
@@ -684,6 +827,9 @@ const Deliveries = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <PaginationControls />
       </div>
 
       {filteredDeliveries.length === 0 && !loading && (
