@@ -7,9 +7,6 @@ import {
 import RecentOrders from '../../components/bookStore/dashboard/RecentOrders';
 import DashboardStats from '../../components/bookStore/dashboard/DashboardStats';
 
-// MetricCard component inline
-
-// };
 
 // QuickActions component inline
 const ActionButton = ({ icon, title, description, onClick, color }) => (
@@ -32,7 +29,7 @@ const QuickActions = () => {
     {
       icon: <Plus className="w-5 h-5" />,
       title: 'Add New Book',
-      description: 'List a new book for sale',
+      description: 'Add new books to inventory',
       color: 'border-blue-300 text-blue-600 hover:bg-blue-50',
       onClick: () => window.location.href = './bookstore/inventory'
     },
@@ -43,20 +40,20 @@ const QuickActions = () => {
       color: 'border-green-300 text-green-600 hover:bg-green-50',
       onClick: () => window.location.href = './bookstore/inventory'
     },
-    {
-      icon: <TrendingUp className="w-5 h-5" />,
-      title: 'View Analytics',
-      description: 'Detailed sales reports',
-      color: 'border-purple-300 text-purple-600 hover:bg-purple-50',
-      onClick: () => console.log('View analytics')
-    },
-    {
-      icon: <Settings className="w-5 h-5" />,
-      title: 'Store Settings',
-      description: 'Configure your store',
-      color: 'border-gray-300 text-gray-600 hover:bg-gray-50',
-      onClick: () => console.log('Store settings')
-    }
+    // {
+    //   icon: <TrendingUp className="w-5 h-5" />,
+    //   title: 'View Analytics',
+    //   description: 'Detailed sales reports',
+    //   color: 'border-purple-300 text-purple-600 hover:bg-purple-50',
+    //   onClick: () => console.log('View analytics')
+    // },
+    // {
+    //   icon: <Settings className="w-5 h-5" />,
+    //   title: 'Store Settings',
+    //   description: 'Configure your store',
+    //   color: 'border-gray-300 text-gray-600 hover:bg-gray-50',
+    //   onClick: () => console.log('Store settings')
+    // }
   ];
 
   return (

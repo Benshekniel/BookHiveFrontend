@@ -159,7 +159,8 @@ const EditBook = ({ bookId }: { bookId: number }) => {
     mutationFn: (data: BookFormFields) => editInventory(data, coverImage as File),
     onSuccess: () => {
       toast.success("Book details edited successfully!");
-      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["lendOnlyList", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["sellAlsoList", user?.userId] });
       setShowForm(false);
     },
     onError: () => {
@@ -198,8 +199,8 @@ const EditBook = ({ bookId }: { bookId: number }) => {
 
   return (
     <>
-      <button className="p-2 bg-green-100 border border-green-200 hover:bg-green-200 rounded-lg transition-colors duration-200"
-        title="Edit stock and sellable counts."
+      <button className="p-2 bg-blue-100 border border-blue-200 hover:bg-blue-200 rounded-lg transition-colors duration-200"
+        title="Edit book details"
         onClick={() => { setShowForm(true); }} >
         <Edit className="w-5 h-5 text-slate-600" />
       </button>

@@ -36,7 +36,7 @@ export const sidebarMenuConfig = {
     { label: 'Inventory', icon: Box, path: '/bookstore/inventory' },
     { label: 'Listings', icon: FileText, path: '/bookstore/listings' },
     { label: 'Transactions', icon: ArrowRightLeft, path: '/bookstore/transactions' },
-    { label: 'Finances', icon: DollarSign, path: '/bookstore/finances' },
+    // { label: 'Finances', icon: DollarSign, path: '/bookstore/finances' },
     { label: 'Support', icon: Headset, path: '/bookstore/support' }
   ],
   'delivery-manager': [

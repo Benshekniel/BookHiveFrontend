@@ -53,7 +53,7 @@ const DeleteBook = ({bookId}: {bookId: number}) => {
 
   return (
     <button className="p-2 bg-red-100 border border-red-200 hover:bg-red-200 rounded-lg transition-colors duration-200"
-      onClick={deleteItemConfirm}>
+      onClick={deleteItemConfirm} title="Delete book">
       <Trash2 className="w-5 h-5 text-slate-600" />
     </button>
   )

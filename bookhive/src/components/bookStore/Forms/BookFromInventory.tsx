@@ -102,6 +102,10 @@ const BookFromInventory = ({inventoryId}: {inventoryId: number}) => {
     mutationFn: (data: any) => createBook(data, images),
     onSuccess: () => {
       toast.success("Inventory record created successfully!");
+      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["donationInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["lendOnlyList", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["sellAlsoList", user?.userId] });
       setShowForm(false);
     },
     onError: () => {

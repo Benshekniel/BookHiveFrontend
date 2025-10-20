@@ -181,7 +181,7 @@ const RegularInventory = () => {
                         <td className="p-4 align-middle">
                           <div className="flex flex-col justify-center items-center gap-1 text-sm text-slate-600 h-full">
                             {item.stockCount < 5 ? (
-                              <span className="inline-block px-3 py-1 font-semibold rounded-full border bg-red-200 text-red-900 border-red-300 w-fit">
+                              <span className="text-xs inline-block px-3 py-1 font-semibold rounded-full border bg-red-200 text-red-900 border-red-300 w-fit">
                                 In Stock: {item.stockCount} </span>
                             ) : (
                               <span>In Stock: {item.stockCount}</span>
