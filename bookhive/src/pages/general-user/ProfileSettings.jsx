@@ -191,6 +191,37 @@ const ProfileSettings = () => {
     setShowPasswordForm(false);
   };
 
+  // Handle referral link copy
+  const handleCopyReferralLink = () => {
+    const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setToast({ visible: true, message: "Referral link copied to clipboard!", type: "success" });
+    }).catch(() => {
+      setToast({ visible: true, message: "Failed to copy referral link", type: "error" });
+    });
+  };
+
+  // Handle social sharing
+  const handleShare = (platform) => {
+    const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
+    let shareUrl;
+    const shareText = `Join me on this awesome book-sharing app! 📚 ${referralLink}`;
+    switch (platform) {
+      case "email":
+        shareUrl = `mailto:?subject=Join our Book Sharing App!&body=${encodeURIComponent(shareText)}`;
+        break;
+      case "whatsapp":
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        break;
+      case "twitter":
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+        break;
+      default:
+        return;
+    }
+    window.open(shareUrl, "_blank");
+  };
+
   // Toast auto-hide
   useEffect(() => {
     if (toast.visible) {
