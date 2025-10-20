@@ -600,6 +600,102 @@ getYearlyUsers: async () => {
       // Other error
       return error.message || 'An unexpected error occurred.';
     }
+  },
+
+  // ==================== ORGANIZATION OPERATIONS ====================
+
+  /**
+   * Get all active organizations
+   * @returns {Promise} API response
+   */
+  getActiveOrganizations: async () => {
+    try {
+      const response = await apiClient.get('/activeOrgs');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get all banned organizations
+   * @returns {Promise} API response
+   */
+  getBannedOrganizations: async () => {
+    try {
+      const response = await apiClient.get('/bannedOrgs');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get all pending organizations
+   * @returns {Promise} API response
+   */
+  getPendingOrganizations: async () => {
+    try {
+      const response = await apiClient.get('/pendingOrgs');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get all rejected organizations
+   * @returns {Promise} API response
+   */
+  getRejectedOrganizations: async () => {
+    try {
+      const response = await apiClient.get('/rejectedOrgs');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Activate an organization
+   * @param {number} userId - User ID
+   * @returns {Promise} API response
+   */
+  activateOrganization: async (userId) => {
+    try {
+      const response = await apiClient.put(`/applyActivateOrgs/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Ban an organization
+   * @param {number} userId - User ID
+   * @returns {Promise} API response
+   */
+  banOrganization: async (userId) => {
+    try {
+      const response = await apiClient.put(`/applyBanOrgs/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Reject an organization
+   * @param {number} userId - User ID
+   * @returns {Promise} API response
+   */
+  rejectOrganization: async (userId) => {
+    try {
+      const response = await apiClient.put(`/applyRejectOrgs/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };
 

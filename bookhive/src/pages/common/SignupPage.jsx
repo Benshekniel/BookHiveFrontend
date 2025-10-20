@@ -49,10 +49,11 @@ const bookstoreSchemaStep3 = z.object({
 });
 
 const organizationSchemaStep3 = z.object({
+  organizationName: z.string().min(2, 'Organization Name is required'),
   organizationType: z.string().min(1, 'Organization Type is required'),
   registrationNo: z.string().min(1, 'Registration No is required'),
   registrationCopy: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png', 'application/pdf'].includes(file[0].type), 'Please upload a valid image or PDF'),
-  runningYears: z.string().min(1, 'Running Years is required'),
+  runningYears: z.string().min(1, 'Running Years is required').regex(/^\d+$/, 'Must be a valid number'),
 });
 
 const deliveryAgentSchemaStep3 = z.object({
@@ -276,65 +277,50 @@ const SignupPage = () => {
       // Create FormData and append JSON + file
       const formDataToSend = new FormData();
 
-      // Append file
-      formDataToSend.append('registrationCopyFile', registrationCopyFile);
+      // Append file (backend expects 'registrationCopy')
+      formDataToSend.append('registrationCopy', registrationCopyFile);
 
-      // Create JSON and append as Blob
-      const orgData = {
-        type: allData.organizationType,
-        reg_no: allData.registrationNo,
+      // Create JSON matching OrganizationNewDTO
+      const organizationData = {
+        regNo: allData.registrationNo,
         fname: allData.firstName,
         lname: allData.lastName,
         email: allData.email,
         password: allData.password,
+        type: allData.organizationType,
         phone: parseInt(allData.phone.slice(0, 10), 10),
         years: parseInt(allData.runningYears, 10),
         address: allData.address,
         city: allData.city,
         state: allData.state,
-        zip: allData.zipCode
+        zip: allData.zipCode,
+        organizationName: allData.organizationName
       };
 
-      const jsonBlob = new Blob([JSON.stringify(orgData)], {
+      const jsonBlob = new Blob([JSON.stringify(organizationData)], {
         type: 'application/json'
       });
 
-      formDataToSend.append('orgData', jsonBlob);
+      // Backend expects 'userData' as the JSON part
+      formDataToSend.append('userData', jsonBlob);
 
       try {
         setIsLoading(true); // Start loading animation
-        const response = await axios.post('http://localhost:9090/api/registerOrg', formDataToSend, {
+        await axios.post('http://localhost:9090/api/registerOrganization', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
 
-        const result = response.data;
+        // Always show success message for organization registrations
+        showMessageCard(
+          'Registration Received!',
+          'We received your request. Our team will get back to you soon!',
+          'success'
+        );
 
-        if (result.message === 'success&pending') {
-          // Show card for pending verification
-          showMessageCard(
-            'Your account request has been received!',
-            'We are currently verifying your information. Please check your email for updates.',
-            'info'
-          );
-        } else if (result.message === 'success&active') {
-          // Show card for successful account creation
-          showMessageCard(
-            'Account Created Successfully!',
-            'You can now log in to your account.',
-            'success'
-          );
-          setTimeout(() => navigate('/login'), 2000);
-        } else {
-          // Any other response, treat as error
-          showMessageCard(
-            'Error',
-            'Something went wrong: ' + result.message,
-            'error'
-          );
-          setError(result.message);
-        }
+        setTimeout(() => navigate('/login'), 3000);
+
       } catch (error) {
         console.error('Error:', error);
         const errMsg =
@@ -993,8 +979,29 @@ const SignupPage = () => {
             {step === 3 && selectedRole === 'organization' && (
               <>
                 <div>
+                  <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700">
+                    Organization Name ✱
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="organizationName"
+                      type="text"
+                      {...register('organizationName')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      placeholder="ABC Charity Foundation"
+                    />
+                    {errors.organizationName && (
+                      <p className="mt-1 text-sm text-red-600">{errors.organizationName.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
                   <label htmlFor="organizationType" className="block text-sm font-medium text-gray-700">
-                    Organization Type
+                    Organization Type ✱
                   </label>
                   <div className="mt-1">
                     <select
@@ -1020,7 +1027,7 @@ const SignupPage = () => {
 
                 <div>
                   <label htmlFor="registrationNo" className="block text-sm font-medium text-gray-700">
-                    Registration No
+                    Registration No ✱
                   </label>
                   <div className="mt-1">
                     <input
@@ -1041,7 +1048,7 @@ const SignupPage = () => {
 
                 <div>
                   <label htmlFor="registrationCopy" className="block text-sm font-medium text-gray-700">
-                    Registration Copy
+                    Registration Copy ✱
                   </label>
                   <div className="mt-1">
                     <input
@@ -1062,7 +1069,7 @@ const SignupPage = () => {
 
                 <div>
                   <label htmlFor="runningYears" className="block text-sm font-medium text-gray-700">
-                    Running Years
+                    Running Years ✱
                   </label>
                   <div className="mt-1">
                     <input
@@ -1074,6 +1081,7 @@ const SignupPage = () => {
                       onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                       onBlur={(e) => (e.target.style.boxShadow = 'none')}
                       placeholder="5"
+                      min="0"
                     />
                     {errors.runningYears && (
                       <p className="mt-1 text-sm text-red-600">{errors.runningYears.message}</p>

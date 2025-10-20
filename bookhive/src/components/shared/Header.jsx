@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import React, { useState, useEffect } from 'react';
 import { Bell, Search, User, Menu } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import Sidebar from './Sidebar';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 
 const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollapsed, onLogout }) => {
@@ -18,6 +16,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   const pathLabels = {
     '/admin': 'Dashboard',
     '/admin/moderator': 'Moderators',
+    '/admin/organizations': 'Organizations',
     '/admin/content': 'Contents',
     '/admin/analytics': 'Analytics',
     '/admin/notification': 'Notification',
@@ -28,6 +27,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/moderator/bookcircle': 'BookCircle',
     '/moderator/competitions': 'Competitions',
     '/moderator/users': 'Users',
+    '/moderator/bookstores': 'BookStores',
     '/moderator/hub': 'Hub',
     '/moderator/compliance': 'Compliance',
     '/moderator/support': 'Support',
@@ -172,7 +172,6 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
 
   // If no user, show nothing (the useEffect will handle redirection)
   if (!user) {
-    return null;
     return null;
   }
 
