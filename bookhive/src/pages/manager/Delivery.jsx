@@ -350,6 +350,12 @@ const statics = [
     setSelectedDelivery(null);
   };
 
+  const handleBackToHubs = () => {
+    setSelectedHub(null);
+    setSearchTerm('');
+    setStatusFilter('all');
+  };
+
   const TrackingProgressBar = ({ delivery }) => {
     const steps = getTrackingSteps(delivery.status);
     
@@ -587,6 +593,10 @@ const statics = [
   if (!selectedHub) {
     return (
       <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-slate-900">Delivery Hubs</h1>
+        </div>
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
@@ -640,26 +650,44 @@ const statics = [
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
+      {/* Back Button and Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={handleBackToHubs}
+            className="flex items-center space-x-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{selectedHub.name}</h1>
+            <p className="text-sm text-gray-600">{selectedHub.location}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {statics.map((stat, index) => {
-        const Icon = stat.icon;
-        return (
-          <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1 font-medium">{stat.title}</p>
-                <p className="text-2xl font-bold text-slate-900 font-heading">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
-              </div>
-              <div className={`p-3 rounded-lg ${stat.bg}`}>
-                <Icon className={stat.color} size={24} />
+        {statics.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1 font-medium">{stat.title}</p>
+                  <p className="text-2xl font-bold text-slate-900 font-heading">{stat.value}</p>
+                  <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${stat.bg}`}>
+                  <Icon className={stat.color} size={24} />
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
 
+      {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -685,6 +713,7 @@ const statics = [
         </select>
       </div>
 
+      {/* Deliveries Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
