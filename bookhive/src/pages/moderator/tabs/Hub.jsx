@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapPin, Truck, Package, Clock, Users, TrendingUp, Filter, Map, RefreshCw, AlertCircle, Navigation, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { hubApi, agentApi, deliveryApi, moderatorService } from '../../../services/moderatorService';
 
 const Hub = () => {
   const [activeTab, setActiveTab] = useState('hubs');
@@ -8,10 +7,7 @@ const Hub = () => {
   
   // Data states
   const [hubs, setHubs] = useState([]);
-  const [agents, setAgents] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
-  const [hubStats, setHubStats] = useState([]);
-  const [deliveryStats, setDeliveryStats] = useState([]);
   const [hubPerformance, setHubPerformance] = useState([]);
   const [dashboardStats, setDashboardStats] = useState({
     activeHubs: 0,
@@ -109,7 +105,7 @@ const Hub = () => {
 
     console.log(`Adding ${hubs.length} hubs to map...`);
 
-    hubs.forEach((hub, index) => {
+    hubs.forEach((hub) => {
       const coordinates = getHubCoordinates(hub);
       if (coordinates && coordinates.lat && coordinates.lng) {
         addHubMarkerToMap(map, hub, coordinates, bounds);
@@ -245,23 +241,46 @@ const Hub = () => {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching moderator dashboard data...');
+      console.log('Fetching hub data from backend...');
 
-      // Load dashboard data
-      const dashboardData = await moderatorService.getDashboardData();
+      // Fetch hubs from the backend API
+      const response = await fetch('http://localhost:9090/api/hubs');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
-      setHubs(dashboardData.hubs || []);
-      setAgents(dashboardData.agents || []);
-      setDeliveries(dashboardData.deliveries || []);
-      setHubStats(dashboardData.hubStats || []);
-      setDeliveryStats(dashboardData.deliveryStats || []);
+      const hubsData = await response.json();
+      console.log('Fetched hubs:', hubsData);
+      
+      // Transform the backend data to match our component structure
+      const transformedHubs = hubsData.map(hub => ({
+        hubId: hub.hubId,
+        hubName: hub.name,
+        name: hub.name,
+        address: hub.address,
+        city: hub.city,
+        status: 'operational', // Default status since not provided by backend
+        phoneNumber: hub.phoneNumber || 'N/A',
+        managerName: hub.hubManagerName || 'Not assigned',
+        managerId: hub.hubManagerId,
+        agentCount: hub.totalAgents || 0,
+        activeAgents: hub.activeAgents || 0,
+        totalDeliveries: hub.totalDeliveries || 0,
+        activeDeliveries: Math.floor((hub.totalDeliveries || 0) * 0.3), // Estimate active deliveries
+        completedToday: Math.floor((hub.totalDeliveries || 0) * 0.1), // Estimate today's completions
+        todayDeliveries: Math.floor((hub.totalDeliveries || 0) * 0.1),
+        numberOfRoutes: hub.numberOfRoutes || 0,
+        createdAt: hub.createdAt
+      }));
 
+      setHubs(transformedHubs);
+      
       // Calculate dashboard statistics
-      calculateDashboardStats(dashboardData);
+      calculateDashboardStats({ hubs: transformedHubs, agents: [], deliveries: [] });
 
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again.');
+      console.error('Error loading hub data:', err);
+      setError('Failed to load hub data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -269,19 +288,9 @@ const Hub = () => {
 
   const loadDeliverySchedules = async () => {
     try {
-      const [todaysDeliveries, allDeliveries] = await Promise.all([
-        deliveryApi.getTodaysDeliveries(),
-        deliveryApi.getAllDeliveries()
-      ]);
-      
-      // Combine and sort by scheduled time
-      const combinedDeliveries = [...todaysDeliveries, ...allDeliveries]
-        .filter((delivery, index, self) => 
-          index === self.findIndex(d => d.deliveryId === delivery.deliveryId)
-        )
-        .sort((a, b) => new Date(a.scheduledTime || a.createdAt) - new Date(b.scheduledTime || b.createdAt));
-      
-      setDeliveries(combinedDeliveries);
+      // For now, show a placeholder until delivery API is implemented
+      console.log('Delivery schedules will be loaded when delivery API is ready');
+      setDeliveries([]);
     } catch (err) {
       console.error('Error loading delivery schedules:', err);
     }
@@ -289,29 +298,16 @@ const Hub = () => {
 
   const loadPerformanceData = async () => {
     try {
-      const allHubPerformance = await Promise.all(
-        hubs.map(async (hub) => {
-          try {
-            const performance = await hubApi.getHubPerformance(hub.hubId);
-            return {
-              ...performance,
-              hubId: hub.hubId,
-              hubName: hub.hubName || hub.name
-            };
-          } catch (err) {
-            // If individual hub performance fails, return default data
-            return {
-              hubId: hub.hubId,
-              hubName: hub.hubName || hub.name,
-              deliveriesThisWeek: 0,
-              onTimeRate: 0,
-              customerSatisfaction: 0,
-              avgDeliveryTime: 0,
-              efficiency: 'unknown'
-            };
-          }
-        })
-      );
+      // Generate mock performance data based on real hubs
+      const allHubPerformance = hubs.map((hub) => ({
+        hubId: hub.hubId,
+        hubName: hub.hubName || hub.name,
+        deliveriesThisWeek: Math.floor(Math.random() * 50) + 10,
+        onTimeRate: Math.floor(Math.random() * 30) + 70,
+        customerSatisfaction: (Math.random() * 2 + 3).toFixed(1),
+        avgDeliveryTime: Math.floor(Math.random() * 10) + 2,
+        efficiency: ['excellent', 'good', 'needs_improvement'][Math.floor(Math.random() * 3)]
+      }));
       
       setHubPerformance(allHubPerformance);
     } catch (err) {
@@ -322,17 +318,9 @@ const Hub = () => {
   const calculateDashboardStats = (data) => {
     const stats = {
       activeHubs: data.hubs?.filter(hub => hub.status === 'operational' || hub.status === 'busy')?.length || 0,
-      activeDeliveries: data.deliveries?.filter(delivery => 
-        delivery.status === 'IN_TRANSIT' || 
-        delivery.status === 'PICKED_UP' || 
-        delivery.status === 'OUT_FOR_DELIVERY'
-      )?.length || 0,
-      totalAgents: data.agents?.length || 0,
-      completedToday: data.deliveries?.filter(delivery => {
-        const today = new Date().toDateString();
-        const deliveryDate = new Date(delivery.deliveryDate || delivery.updatedAt).toDateString();
-        return delivery.status === 'DELIVERED' && deliveryDate === today;
-      })?.length || 0
+      activeDeliveries: data.hubs?.reduce((total, hub) => total + (hub.activeDeliveries || 0), 0) || 0,
+      totalAgents: data.hubs?.reduce((total, hub) => total + (hub.agentCount || 0), 0) || 0,
+      completedToday: data.hubs?.reduce((total, hub) => total + (hub.completedToday || 0), 0) || 0
     };
     
     setDashboardStats(stats);
@@ -438,6 +426,14 @@ const Hub = () => {
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {refreshing && (
+          <div className="col-span-full bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+            <div className="flex items-center space-x-2 text-blue-700">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span className="text-sm font-medium">Refreshing hub data...</span>
+            </div>
+          </div>
+        )}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -481,6 +477,14 @@ const Hub = () => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Hub Locations - Sri Lanka</h3>
           <div className="flex space-x-2">
+            <button 
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{refreshing ? 'Refreshing...' : 'Refresh Data'}</span>
+            </button>
             <button className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2">
               <Navigation size={16} />
               <span>Optimize Routes</span>
