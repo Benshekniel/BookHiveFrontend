@@ -79,7 +79,9 @@ const BookRequest = () => {
         return data;
       }
 
-      return response;
+      // For responses with no content (like DELETE operations)
+      console.log(`API Response: ${endpoint} - Success (No Content)`);
+      return null;
     } catch (error) {
       console.error(`API request failed for ${endpoint}:`, error);
       throw error;
@@ -239,18 +241,17 @@ const BookRequest = () => {
   };
 
   const handleCancel = async (requestId) => {
-    if (!window.confirm('Are you sure you want to cancel this request?')) return;
+    if (!window.confirm('Are you sure you want to delete this request?')) return;
 
-    setLoading(true);
+    setError(null);
+    setSuccess(null);
     try {
       await cancelBookRequest(requestId);
-      setSuccess('Request cancelled successfully!');
+      setSuccess('Request deleted successfully!');
       await loadRequests();
     } catch (err) {
-      setError('Failed to cancel request');
-      console.error('Cancel error:', err);
-    } finally {
-      setLoading(false);
+      setError('Failed to delete request');
+      console.error('Delete error:', err);
     }
   };
 
@@ -303,6 +304,12 @@ const BookRequest = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Check if request can be edited/deleted
+  const canModifyRequest = (status) => {
+    const normalizedStatus = status?.toUpperCase().trim();
+    return normalizedStatus === 'PENDING' || normalizedStatus === 'DRAFT';
   };
 
   const formatDate = (dateString) => {
@@ -563,12 +570,11 @@ const BookRequest = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-2 ml-4">
-                {(request.status?.toLowerCase() === 'pending' || request.status?.toLowerCase() === 'draft') && (
+                {canModifyRequest(request.status) && (
                   <button
                     onClick={() => handleEdit(request)}
                     className="p-2 text-gray-600 hover:text-primary transition-colors"
                     title="Edit request"
-                    disabled={submitting}
                   >
                     <Edit className="h-5 w-5" />
                   </button>
@@ -577,16 +583,14 @@ const BookRequest = () => {
                   onClick={() => handleViewDetails(request.id)}
                   className="p-2 text-gray-600 hover:text-primary transition-colors"
                   title="View details"
-                  disabled={submitting}
                 >
                   <Eye className="h-5 w-5" />
                 </button>
-                {(request.status?.toLowerCase() === 'pending' || request.status?.toLowerCase() === 'draft') && (
+                {canModifyRequest(request.status) && (
                   <button
                     onClick={() => handleCancel(request.id)}
                     className="p-2 text-gray-600 hover:text-error transition-colors"
-                    title="Cancel request"
-                    disabled={submitting}
+                    title="Delete request"
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>

@@ -316,28 +316,6 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <button
-                  className="relative p-2 rounded-lg transition-colors"
-                  style={{
-                    color: '#6B7280',
-                    backgroundColor: 'transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.color = '#0F172A';
-                    e.target.style.backgroundColor = '#F3F4F6';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.color = '#6B7280';
-                    e.target.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <Bell className="w-5 h-5" />
-                  <span
-                    className="absolute top-1 right-1 w-2 h-2 rounded-full"
-                    style={{ backgroundColor: '#EF4444' }}
-                  ></span>
-                </button>
-                
                 {/* Profile Dropdown */}
                 <div className="relative">
                   <button
