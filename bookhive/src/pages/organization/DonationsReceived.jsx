@@ -283,6 +283,64 @@ const DonationsReceived = () => {
     return condition.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  // Get progress percentage and status steps
+  const getProgressData = (status) => {
+    const normalizedStatus = status?.toLowerCase();
+    
+    const steps = [
+      { label: 'Pending', value: 'pending', percentage: 0 },
+      { label: 'Approved', value: 'approved', percentage: 25 },
+      { label: 'Shipped', value: 'shipped', percentage: 50 },
+      { label: 'In Transit', value: 'in_transit', percentage: 75 },
+      { label: 'Received', value: 'received', percentage: 100 },
+    ];
+
+    let currentPercentage = 0;
+    let currentStepIndex = 0;
+
+    switch (normalizedStatus) {
+      case 'pending':
+        currentPercentage = 0;
+        currentStepIndex = 0;
+        break;
+      case 'approved':
+        currentPercentage = 25;
+        currentStepIndex = 1;
+        break;
+      case 'shipped':
+        currentPercentage = 50;
+        currentStepIndex = 2;
+        break;
+      case 'in_transit':
+        currentPercentage = 75;
+        currentStepIndex = 3;
+        break;
+      case 'delivered':
+      case 'received':
+        currentPercentage = 100;
+        currentStepIndex = 4;
+        break;
+      case 'rejected':
+        currentPercentage = 0;
+        currentStepIndex = -1; // Special case for rejected
+        break;
+      default:
+        currentPercentage = 0;
+        currentStepIndex = 0;
+    }
+
+    return { percentage: currentPercentage, steps, currentStepIndex };
+  };
+
+  // Get progress color based on percentage
+  const getProgressColor = (percentage) => {
+    if (percentage === 100) return 'bg-success';
+    if (percentage >= 75) return 'bg-accent';
+    if (percentage >= 50) return 'bg-blue-500';
+    if (percentage >= 25) return 'bg-secondary';
+    return 'bg-gray-400';
+  };
+
   const handleMarkAsReceived = (donation) => {
     setSelectedDonation(donation);
     setConfirmationData({
@@ -504,6 +562,7 @@ const DonationsReceived = () => {
         {filteredDonations.map((donation) => {
           const StatusIcon = getStatusIcon(donation.status);
           const isActionLoading = actionLoading[donation.id];
+          const progressData = getProgressData(donation.status);
 
           return (
             <div key={donation.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
@@ -522,6 +581,44 @@ const DonationsReceived = () => {
                           <StatusIcon className="inline h-3 w-3 mr-1" />
                           {formatStatus(donation.status)}
                         </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-gray-600">Delivery Progress</span>
+                          <span className="text-xs font-semibold text-primary">{progressData.percentage}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className={`h-full ${getProgressColor(progressData.percentage)} transition-all duration-500 ease-out rounded-full`}
+                            style={{ width: `${progressData.percentage}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          {progressData.steps.map((step, index) => {
+                            const isCompleted = index <= progressData.currentStepIndex;
+                            const isCurrent = index === progressData.currentStepIndex;
+                            return (
+                              <div key={step.value} className="flex flex-col items-center flex-1">
+                                <div className={`w-2 h-2 rounded-full mb-1 ${
+                                  isCompleted 
+                                    ? isCurrent 
+                                      ? getProgressColor(progressData.percentage)
+                                      : 'bg-gray-400'
+                                    : 'bg-gray-300'
+                                }`}></div>
+                                <span className={`text-xs ${
+                                  isCompleted 
+                                    ? 'text-gray-700 font-medium' 
+                                    : 'text-gray-400'
+                                }`}>
+                                  {step.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
