@@ -69,10 +69,12 @@ const Feedback = () => {
   // Create feedback
   const createFeedback = async (feedbackData) => {
     try {
+      console.log('Creating feedback with data:', feedbackData);
       const data = await apiCall('/organization-feedback', {
         method: 'POST',
         body: feedbackData,
       });
+      console.log('Feedback created successfully:', data);
       return data;
     } catch (error) {
       console.error('Failed to create feedback:', error);
@@ -148,13 +150,18 @@ const Feedback = () => {
       return;
     }
 
+    if (comment.trim().length < 10) {
+      setError('Comment must be at least 10 characters long.');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
     try {
       await createFeedback({
-        organizationId: orgId,
-        donationId: selectedDonation,
+        organizationId: parseInt(orgId),
+        donationId: parseInt(selectedDonation),
         rating,
         comment: comment.trim(),
       });
@@ -169,7 +176,9 @@ const Feedback = () => {
       setSelectedDonation('');
     } catch (err) {
       console.error('Error submitting feedback:', err);
-      setError('Failed to submit feedback. Please try again.');
+      // Try to extract error message from response
+      const errorMessage = err.message || 'Failed to submit feedback. Please try again.';
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -397,14 +406,18 @@ const Feedback = () => {
                 disabled={submitting}
                 maxLength={500}
               ></textarea>
-              <p className="text-xs text-gray-500 mt-1">{comment.length}/500 characters</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {comment.length}/500 characters {comment.length > 0 && comment.length < 10 && (
+                  <span className="text-red-500">(minimum 10 characters)</span>
+                )}
+              </p>
             </div>
 
             <div className="flex items-center space-x-4">
               <button
                 type="submit"
                 className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={submitting || rating === 0 || !comment.trim()}
+                disabled={submitting || rating === 0 || !comment.trim() || comment.trim().length < 10}
               >
                 {submitting ? 'Submitting...' : 'Submit Feedback'}
               </button>

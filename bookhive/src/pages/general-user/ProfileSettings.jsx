@@ -34,6 +34,20 @@ const ProfileSettings = () => {
 
   // Fetch user details from backend
   const fetchUserDetails = useCallback(async () => {
+    // Dummy user vector for profile fallback
+    const dummyUser = {
+      id: "dummy_001",
+      name: "John Doe",
+      fname: "John",
+      lname: "Doe",
+      email: "john.doe@example.com",
+      address: "123 Main Street, Colombo 03, Western Province, Sri Lanka",
+      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      bio: "Passionate reader and book enthusiast who loves exploring different genres and sharing book recommendations.",
+      phone: "+94 77 123 4567",
+      password: "", // Never store actual password
+    };
+
     try {
       setLoadingUserData(true);
       console.log('Fetching user details for email:', user.email);
@@ -75,12 +89,13 @@ const ProfileSettings = () => {
       
     } catch (error) {
       console.error('Error fetching user details:', error);
-      setToast({ visible: true, message: "Failed to load user details", type: "error" });
-      // Set defaults with user email from auth context
-      setUserData(prev => ({
-        ...prev,
-        email: user.email || "",
-      }));
+      setToast({ visible: true, message: "Failed to load user details, using demo profile", type: "error" });
+      
+      // Use dummy user data as fallback when backend fails
+      setUserData({
+        ...dummyUser,
+        email: user.email || dummyUser.email, // Preserve actual user email if available
+      });
     } finally {
       setLoadingUserData(false);
     }
@@ -191,6 +206,37 @@ const ProfileSettings = () => {
     setShowPasswordForm(false);
   };
 
+  // Handle referral link copy
+  const handleCopyReferralLink = () => {
+    const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setToast({ visible: true, message: "Referral link copied to clipboard!", type: "success" });
+    }).catch(() => {
+      setToast({ visible: true, message: "Failed to copy referral link", type: "error" });
+    });
+  };
+
+  // Handle social sharing
+  const handleShare = (platform) => {
+    const referralLink = `https://book-sharing-app.com/referral/${userData.id}`;
+    let shareUrl;
+    const shareText = `Join me on this awesome book-sharing app! 📚 ${referralLink}`;
+    switch (platform) {
+      case "email":
+        shareUrl = `mailto:?subject=Join our Book Sharing App!&body=${encodeURIComponent(shareText)}`;
+        break;
+      case "whatsapp":
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        break;
+      case "twitter":
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+        break;
+      default:
+        return;
+    }
+    window.open(shareUrl, "_blank");
+  };
+
   // Toast auto-hide
   useEffect(() => {
     if (toast.visible) {
@@ -226,7 +272,13 @@ const ProfileSettings = () => {
         {/* Profile Settings Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="p-6">
-            <div className="space-y-6">
+            {loadingUserData ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1e3a8a]"></div>
+                <span className="ml-3 text-gray-600">Loading profile data...</span>
+              </div>
+            ) : (
+              <div className="space-y-6">
               {/* Profile Picture */}
               <div className="flex items-center space-x-4">
                 <img
@@ -326,16 +378,17 @@ const ProfileSettings = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location
+                    Address
                   </label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <input
                       type="text"
-                      name="location"
-                      value={userData.location}
+                      name="address"
+                      value={userData.address}
                       onChange={handleInputChange}
                       disabled={!isEditing}
+                      placeholder="Enter your full address"
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] disabled:bg-gray-50"
                     />
                   </div>
@@ -454,7 +507,8 @@ const ProfileSettings = () => {
                   </button>
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
