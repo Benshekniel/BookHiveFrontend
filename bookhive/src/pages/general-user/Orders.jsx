@@ -5,13 +5,15 @@ import {
   ArrowRight, Download, FileText, Camera, ThumbsUp, ThumbsDown, Gavel,
   Trophy, X, XCircle, CreditCard, Loader
 } from "lucide-react";
-import { 
-  userTransactionApi, 
-  userApi, 
-  bookApi, 
-  reviewApi, 
+import {
+  userTransactionApi,
+  userApi,
+  bookApi,
   userServiceHelpers,
-  enhancedBookApi  // Add this
+  enhancedBookApi,
+  debugImageIssue,
+  imageService,
+  reviewApi  // ✅ Add this import
 } from "../../services/userService";
 
 const OrdersPage = () => {
@@ -23,6 +25,7 @@ const OrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
+  const [imageStatus, setImageStatus] = useState({});
 
   // State for orders and pagination
   const [orders, setOrders] = useState([]);
@@ -39,12 +42,30 @@ const OrdersPage = () => {
     refundMethod: "original",
   });
 
+  // UPDATED: New review form structure
   const [reviewForm, setReviewForm] = useState({
-    rating: 5,
+    sellerRating: 5,
+    bookConditionRating: 5,
+    overallRating: 5,
     comment: "",
-    bookCondition: 5,
-    ownerRating: 5,
   });
+
+  // Generate safe fallback image
+  const generateSafeFallbackImage = (bookId) => {
+    return imageService.generateFallbackImage(`Book ${bookId}`);
+  };
+
+  // ✅ Updated: Only show review for truly delivered orders
+  const canWriteReview = (order) => {
+    const status = order.status?.toLowerCase();
+    return status === "delivered";
+  };
+
+  // ✅ Helper function to check if order can be tracked
+  const canTrackOrder = (order) => {
+    const status = order.status?.toLowerCase();
+    return !["cancelled", "failed"].includes(status);
+  };
 
   // Fetch orders from API
   const fetchOrders = async (filters = {}) => {
@@ -60,7 +81,7 @@ const OrdersPage = () => {
         ...filters
       };
 
-      // Map frontend tabs to API filters
+      // Map frontend tabs to API filters - UPDATED
       if (activeTab !== "all") {
         switch (activeTab) {
           case "borrowed":
@@ -76,10 +97,10 @@ const OrdersPage = () => {
             apiFilters.type = "bidding";
             break;
           case "active":
-            apiFilters.status = "active";
+            apiFilters.status = "pending"; // Map active to pending
             break;
           case "completed":
-            apiFilters.status = "delivered";
+            apiFilters.status = "completed"; // This will be handled by backend to check delivery status
             break;
         }
       }
@@ -96,7 +117,7 @@ const OrdersPage = () => {
             id: transaction.bookId || 0,
             title: `Book ${transaction.bookId || 'Unknown'}`,
             author: 'Unknown Author',
-            cover: generateSafeFallbackImage(transaction.bookId || 0),
+            cover: null,
             bookImage: null
           };
         }
@@ -107,6 +128,9 @@ const OrdersPage = () => {
       setOrders(transformedOrders);
       setTotalOrders(response.totalElements);
       setTotalPages(response.totalPages);
+
+      // ✅ Debug: Log order statuses
+      console.log('Order statuses:', transformedOrders.map(o => ({ id: o.id, status: o.status })));
 
       // Load real book data in background (non-blocking)
       loadBookDataInBackground(transformedOrders);
@@ -119,16 +143,7 @@ const OrdersPage = () => {
     }
   };
 
-  const generateSafeFallbackImage = (bookId) => {
-    const title = `Book ${bookId}`;
-    return `data:image/svg+xml,${encodeURIComponent(`
-    <svg width="150" height="200" xmlns="http://www.w3.org/2000/svg">
-      <rect width="150" height="200" fill="#4F46E5"/>
-      <text x="75" y="100" text-anchor="middle" fill="#FFFFFF" font-size="12">${title}</text>
-    </svg>
-  `)}`;
-  };
-
+  // Load book data and images in background
   const loadBookDataInBackground = async (orders) => {
     try {
       // Get unique book IDs
@@ -149,7 +164,7 @@ const OrdersPage = () => {
                       ...order.book,
                       title: bookData.title,
                       author: bookData.author,
-                      cover: bookData.cover || order.book.cover,
+                      cover: bookData.bookImage, // This contains the filename
                       bookImage: bookData.bookImage
                     }
                   }
@@ -159,9 +174,32 @@ const OrdersPage = () => {
           }
         } catch (error) {
           console.error(`Failed to load book ${bookId}:`, error);
-          // Continue with other books even if one fails
         }
       }
+
+      // Load images using the image service
+      setTimeout(() => {
+        setOrders(currentOrders => {
+          // Load images for all books that have bookImage
+          const booksWithImages = currentOrders
+            .filter(order => order.book.bookImage)
+            .map(order => ({
+              id: order.book.id,
+              bookId: order.book.id,
+              bookImage: order.book.bookImage
+            }));
+
+          imageService.loadBookImages(booksWithImages, (key, imageData) => {
+            setImageStatus(prev => ({
+              ...prev,
+              [key]: imageData
+            }));
+          });
+
+          return currentOrders;
+        });
+      }, 100);
+
     } catch (error) {
       console.error('Error loading book data in background:', error);
     }
@@ -207,22 +245,36 @@ const OrdersPage = () => {
     return () => clearInterval(interval);
   }, [currentPage, activeTab]);
 
+  useEffect(() => {
+    // Debug image loading for the first book that has an image
+    if (orders.length > 0) {
+      const orderWithImage = orders.find(order => order.book.bookImage);
+      if (orderWithImage) {
+        console.log('Debugging image for:', orderWithImage.book.bookImage);
+        debugImageIssue(orderWithImage.book.bookImage, 'userBooks');
+      }
+    }
+  }, [orders]);
+
   const getStatusColor = (status) => userServiceHelpers.getStatusColor(status);
 
+  // Updated status icon function to handle delivery status
   const getStatusIcon = (status) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "delivered":
-      case "completed":
         return <CheckCircle size={16} />;
-      case "active":
-        return <BookOpen size={16} />;
-      case "in_transit":
-      case "pending":
+      case "order placed":
+        return <Package size={16} />;
+      case "picked up":
         return <Truck size={16} />;
-      case "overdue":
-        return <AlertCircle size={16} />;
+      case "in transit":
+        return <Clock size={16} />;
       case "cancelled":
         return <XCircle size={16} />;
+      case "failed":
+        return <AlertCircle size={16} />;
+      case "delayed":
+        return <AlertCircle size={16} />;
       default:
         return <Package size={16} />;
     }
@@ -230,28 +282,79 @@ const OrdersPage = () => {
 
   const filteredOrders = orders; // Already filtered by API
 
+  // ✅ FIXED: Review submission using reviewApi
   const handleReviewSubmit = async () => {
     try {
+      // Debug logging
+      console.log('Selected Order:', selectedOrder);
+      console.log('Transaction ID:', selectedOrder.transactionId);
+
+      // Validate form
+      if (!reviewForm.comment.trim()) {
+        alert("Please write a comment for your review.");
+        return;
+      }
+
+      if (reviewForm.sellerRating < 1 || reviewForm.sellerRating > 5) {
+        alert("Please provide a valid seller rating (1-5 stars).");
+        return;
+      }
+
+      if (reviewForm.bookConditionRating < 1 || reviewForm.bookConditionRating > 5) {
+        alert("Please provide a valid book condition rating (1-5 stars).");
+        return;
+      }
+
+      if (!selectedOrder.transactionId) {
+        alert("Transaction ID is missing. Cannot submit review.");
+        return;
+      }
+
+      // ✅ Get the user being reviewed based on transaction type
+      let reviewedUserId = null;
+      if (selectedOrder.type === "purchase" && selectedOrder.seller) {
+        reviewedUserId = selectedOrder.seller.userId || selectedOrder.seller.id;
+      } else if (selectedOrder.type === "borrow" && selectedOrder.lender) {
+        reviewedUserId = selectedOrder.lender.userId || selectedOrder.lender.id;
+      } else if (selectedOrder.type === "exchange" && selectedOrder.exchanger) {
+        reviewedUserId = selectedOrder.exchanger.userId || selectedOrder.exchanger.id;
+      }
+
+      console.log('Reviewed User ID:', reviewedUserId);
+
       const reviewData = {
         transactionId: selectedOrder.transactionId,
-        userId: currentUserId,
+        reviewerUserId: currentUserId,
         bookId: selectedOrder.book.id,
-        rating: reviewForm.rating,
-        comment: reviewForm.comment,
-        bookCondition: reviewForm.bookCondition,
-        ownerRating: reviewForm.ownerRating
+        reviewedUserId: reviewedUserId, // Can be null
+        sellerRating: reviewForm.sellerRating,
+        bookConditionRating: reviewForm.bookConditionRating,
+        overallRating: reviewForm.overallRating,
+        comment: reviewForm.comment.trim() // Frontend sends "comment"
       };
 
+      console.log('Submitting review data:', reviewData);
+
       await reviewApi.submitReview(reviewData);
+
       alert("Thank you for your review!");
       setShowReviewModal(false);
-      setReviewForm({ rating: 5, comment: "", bookCondition: 5, ownerRating: 5 });
+      setReviewForm({ sellerRating: 5, bookConditionRating: 5, overallRating: 5, comment: "" });
+
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert("Failed to submit review. Please try again.");
+
+      if (error.message.includes('already submitted a review') || error.message.includes('Review already exists')) {
+        alert("You have already submitted a review for this order.");
+      } else if (error.message.includes('400')) {
+        alert("Invalid review data. Please check all fields and try again.");
+      } else if (error.message.includes('500')) {
+        alert("Server error. Please try again later.");
+      } else {
+        alert("Failed to submit review. Please try again.");
+      }
     }
   };
-
   const handleCancelOrder = async () => {
     if (!selectedOrder || !cancelForm.reason) {
       alert("Please select a reason for cancellation.");
@@ -301,137 +404,130 @@ const OrdersPage = () => {
 
   const canCancelOrder = (order) => userServiceHelpers.canCancelOrder(order);
 
-  const renderOrderCard = (order) => (
-    <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-4">
-          <img
-            src={order.book?.cover || generateSafeFallbackImage(order.book?.id || 0)}
-            alt={order.book?.title || 'Book cover'}
-            className="w-16 h-20 object-cover rounded"
-            onError={(e) => {
-              e.target.src = generateSafeFallbackImage(order.book?.id || 0);
-            }}
-          />
+  const renderOrderCard = (order) => {
+    const imageKey = `book_${order.book.id}`;
+    const imageData = imageStatus[imageKey];
 
-          <div>
-            <h3 className="font-semibold text-gray-900 text-lg">{order.book.title}</h3>
-            <p className="text-gray-600">{order.book.author}</p>
-            <p className="text-sm text-gray-500">Order #{order.id}</p>
-            <p className="text-sm text-gray-500">{userServiceHelpers.formatDate(order.orderDate)}</p>
+    // Determine image source
+    let imageSrc;
+    if (imageData?.status === 'loaded' && imageData.url) {
+      // ✅ Handle direct base64 response like UserReview
+      if (imageData.url.startsWith('data:')) {
+        imageSrc = imageData.url;
+      } else {
+        imageSrc = `data:image/jpeg;base64,${imageData.url}`;
+      }
+    } else {
+      imageSrc = generateSafeFallbackImage(order.book?.id || 0);
+    }
+
+    // ✅ Debug: Log order status for troubleshooting
+    console.log(`Order ${order.id} status: "${order.status}" - Can write review: ${canWriteReview(order)}`);
+
+    return (
+      <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <img
+              src={imageSrc}
+              alt={order.book?.title || 'Book cover'}
+              className="w-16 h-20 object-cover rounded"
+              onError={(e) => {
+                e.target.src = generateSafeFallbackImage(order.book?.id || 0);
+              }}
+            />
+            <div className="flex-grow">
+              <h3 className="font-semibold text-gray-900 mb-1">{order.book.title}</h3>
+              <p className="text-gray-600 text-sm mb-2">{order.book.author}</p>
+              <div className="flex items-center space-x-3">
+                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                  {getStatusIcon(order.status)}
+                  <span className="ml-1 capitalize">{order.status.replace("_", " ")}</span>
+                </div>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  {userServiceHelpers.getTransactionTypeDisplayName(order.type)}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="text-right">
-          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-            {getStatusIcon(order.status)}
-            <span className="ml-1 capitalize">{order.status.replace("_", " ")}</span>
-          </div>
-          {(order.type === "purchase" || order.type === "bidding") && order.totalAmount && (
-            <p className="text-lg font-bold text-green-600 mt-2">
+          <div className="text-right">
+            <p className="text-lg font-semibold text-gray-900 mb-1">
               {userServiceHelpers.formatCurrency(order.totalAmount)}
             </p>
-          )}
-          {order.type === "bidding" && order.winningBid && (
-            <div className="mt-2 text-right">
-              <div className="flex items-center justify-end mb-1">
-                <Gavel className="w-4 h-4 text-yellow-500 mr-1" />
-                <span className="text-sm text-yellow-600 font-medium">Won Auction</span>
+            <p className="text-sm text-gray-500">
+              {userServiceHelpers.formatDate(order.orderDate)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+          <div className="flex items-center space-x-4 text-sm text-gray-600">
+            {order.deliveryMethod === "pickup" ? (
+              <div className="flex items-center">
+                <MapPin size={14} className="mr-1" />
+                <span>Pickup</span>
               </div>
-              <p className="text-xs text-gray-500">
-                Winning Bid: {userServiceHelpers.formatCurrency(order.winningBid)}
-              </p>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center">
+                <Truck size={14} className="mr-1" />
+                <span>Delivery</span>
+              </div>
+            )}
+            {order.estimatedDelivery && (
+              <div className="flex items-center">
+                <Calendar size={14} className="mr-1" />
+                <span>Est: {userServiceHelpers.formatDate(order.estimatedDelivery)}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex space-x-2">
+            {/* ✅ Show track button for trackable orders */}
+            {canTrackOrder(order) && (
+              <button
+                onClick={() => {
+                  setSelectedOrder(order);
+                  setShowTrackingModal(true);
+                }}
+                className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium flex items-center space-x-1"
+              >
+                <Eye size={14} />
+                <span>Track</span>
+              </button>
+            )}
+
+            {/* ✅ FIXED: Show review button for completed/delivered orders */}
+            {canWriteReview(order) && (
+              <button
+                onClick={() => {
+                  console.log('Review button clicked for order:', order.id, 'status:', order.status);
+                  setSelectedOrder(order);
+                  setShowReviewModal(true);
+                }}
+                className="bg-yellow-50 text-yellow-600 px-4 py-2 rounded-lg hover:bg-yellow-100 transition-colors text-sm font-medium flex items-center space-x-1"
+              >
+                <Star size={14} />
+                <span>Review</span>
+              </button>
+            )}
+
+            {/* ✅ Show cancel button for cancellable orders */}
+            {canCancelOrder(order) && (
+              <button
+                onClick={() => {
+                  setSelectedOrder(order);
+                  setShowCancelModal(true);
+                }}
+                className="bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium flex items-center space-x-1"
+              >
+                <X size={14} />
+                <span>Cancel</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <p className="text-sm text-gray-600">
-            <strong>
-              {order.type === "purchase" ? "Seller:" :
-                order.type === "borrow" ? "Lender:" :
-                  order.type === "exchange" ? "Exchanger:" :
-                    order.type === "bidding" ? "Seller:" : "Seller:"}
-            </strong>{" "}
-            {(order.seller || order.lender || order.exchanger)?.name || 'N/A'}
-          </p>
-          <p className="text-sm text-gray-600">
-            <strong>Delivery:</strong>{" "}
-            {order.deliveryMethod === "pickup" ? "Pickup" : "Home Delivery"}
-          </p>
-          {order.trackingNumber && (
-            <p className="text-sm text-gray-600">
-              <strong>Tracking:</strong> {order.trackingNumber}
-            </p>
-          )}
-          {order.type === "bidding" && order.auctionEndDate && (
-            <p className="text-sm text-gray-600">
-              <strong>Auction Ended:</strong> {userServiceHelpers.formatDate(order.auctionEndDate)}
-            </p>
-          )}
-        </div>
-        <div>
-          {(order.type === "borrow" || order.type === "exchange") && (
-            <>
-              <p className="text-sm text-gray-600">
-                <strong>Return Date:</strong> {userServiceHelpers.formatDate(order.returnDate)}
-              </p>
-              {order.status === "overdue" && order.overdueBy > 0 && (
-                <p className="text-sm text-red-600">
-                  <strong>Overdue by:</strong> {order.overdueBy} days
-                </p>
-              )}
-            </>
-          )}
-          {order.estimatedDelivery && order.status !== "delivered" && order.status !== "completed" && (
-            <p className="text-sm text-gray-600">
-              <strong>Expected:</strong> {userServiceHelpers.formatDate(order.estimatedDelivery)}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => {
-            setSelectedOrder(order);
-            setShowTrackingModal(true);
-          }}
-          className="bg-transparent border-2 border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
-        >
-          <Eye className="w-4 h-4" />
-          <span>Track Order</span>
-        </button>
-
-        {canCancelOrder(order) && (
-          <button
-            onClick={() => {
-              setSelectedOrder(order);
-              setShowCancelModal(true);
-            }}
-            className="bg-transparent border-2 border-red-300 text-red-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-red-50 transition-colors"
-          >
-            <XCircle className="w-4 h-4" />
-            <span>Cancel Order</span>
-          </button>
-        )}
-
-        {(order.status === "delivered" || order.status === "completed") && (
-          <button
-            onClick={() => {
-              setSelectedOrder(order);
-              setShowReviewModal(true);
-            }}
-            className="bg-transparent border-2 border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
-          >
-            <Star className="w-4 h-4" />
-            <span>Write Review</span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (loading && orders.length === 0) {
     return (
@@ -495,7 +591,7 @@ const OrdersPage = () => {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Currently Borrowed</p>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Borrowed Books</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.borrowedBooks || 0}</p>
                 </div>
                 <div className="p-3 rounded-full bg-blue-100">
@@ -507,7 +603,19 @@ const OrdersPage = () => {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Currently Exchanged</p>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Purchased Books</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.purchasedBooks || 0}</p>
+                </div>
+                <div className="p-3 rounded-full bg-green-100">
+                  <DollarSign className="w-6 h-6 text-green-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Exchanged Books</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.exchangedBooks || 0}</p>
                 </div>
                 <div className="p-3 rounded-full bg-purple-100">
@@ -531,18 +639,6 @@ const OrdersPage = () => {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Overdue</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.overdueOrders || 0}</p>
-                </div>
-                <div className="p-3 rounded-full bg-red-100">
-                  <AlertCircle className="w-6 h-6 text-red-500" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
                   <p className="text-gray-600 text-sm font-medium mb-1">Won Auctions</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.wonAuctions || 0}</p>
                 </div>
@@ -559,7 +655,6 @@ const OrdersPage = () => {
           <div className="flex flex-wrap border-b">
             {[
               { key: "all", label: "All Orders", count: stats?.totalOrders || 0 },
-              { key: "active", label: "Active", count: stats?.activeOrders || 0 },
               { key: "borrowed", label: "Borrowed Books", count: stats?.borrowedBooks || 0 },
               { key: "purchased", label: "Purchased Books", count: stats?.purchasedBooks || 0 },
               { key: "exchanged", label: "Exchanged Books", count: stats?.exchangedBooks || 0 },
@@ -642,7 +737,7 @@ const OrdersPage = () => {
         </div>
       </div>
 
-      {/* Order Tracking Modal */}
+      {/* Order Tracking Modal - UPDATED with current status highlighting */}
       {showTrackingModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -664,7 +759,16 @@ const OrdersPage = () => {
               <div className="bg-gray-50 rounded-xl p-4 mb-6">
                 <div className="flex items-center space-x-4">
                   <img
-                    src={selectedOrder.book?.cover || generateSafeFallbackImage(selectedOrder.book?.id || 0)}
+                    src={(() => {
+                      const imageKey = `book_${selectedOrder.book.id}`;
+                      const imageData = imageStatus[imageKey];
+                      if (imageData?.status === 'loaded' && imageData.url) {
+                        return imageData.url.startsWith('data:')
+                          ? imageData.url
+                          : `data:image/jpeg;base64,${imageData.url}`;
+                      }
+                      return generateSafeFallbackImage(selectedOrder.book?.id || 0);
+                    })()}
                     alt={selectedOrder.book?.title || 'Book cover'}
                     className="w-16 h-20 object-cover rounded"
                     onError={(e) => {
@@ -723,7 +827,7 @@ const OrdersPage = () => {
                 </div>
               </div>
 
-              {/* Tracking Timeline */}
+              {/* Tracking Timeline - UPDATED with current status highlighting */}
               <div className="mb-6">
                 <h4 className="font-semibold mb-4 flex items-center text-gray-900">
                   <Truck className="mr-2 text-gray-600" size={16} />
@@ -731,20 +835,32 @@ const OrdersPage = () => {
                 </h4>
                 <div className="space-y-4">
                   {selectedOrder.tracking && selectedOrder.tracking.length > 0 ? (
-                    selectedOrder.tracking.map((track, index) => (
-                      <div key={index} className="flex items-start space-x-4">
-                        <div className={`w-3 h-3 rounded-full mt-1 ${index === 0 ? "bg-yellow-500" : "bg-gray-300"}`}></div>
-                        <div className="flex-grow">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-gray-900">{track.status}</p>
-                              <p className="text-sm text-gray-600">{track.description}</p>
+                    selectedOrder.tracking.map((track, index) => {
+                      // Check if this is the current status
+                      const isCurrentStatus = index === 0 ||
+                        track.status.toLowerCase().includes(selectedOrder.status.toLowerCase());
+
+                      return (
+                        <div key={index} className="flex items-start space-x-4">
+                          <div className={`w-3 h-3 rounded-full mt-1 ${isCurrentStatus ? "bg-yellow-500" : "bg-gray-300"
+                            }`}></div>
+                          <div className="flex-grow">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className={`font-medium ${isCurrentStatus ? "text-yellow-600" : "text-gray-900"}`}>
+                                  {track.status}
+                                </p>
+                                <p className="text-sm text-gray-600">{track.description}</p>
+                                {isCurrentStatus && (
+                                  <p className="text-xs text-yellow-500 font-medium mt-1">Current Status</p>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500">{track.timestamp}</span>
                             </div>
-                            <span className="text-xs text-gray-500">{track.timestamp}</span>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-gray-500 text-sm">No tracking information available</p>
                   )}
@@ -759,7 +875,8 @@ const OrdersPage = () => {
                 >
                   Close
                 </button>
-                {(selectedOrder.status === "delivered" || selectedOrder.status === "completed") && (
+                {/* ✅ FIXED: Use helper function for review button */}
+                {canWriteReview(selectedOrder) && (
                   <button
                     onClick={() => {
                       setShowTrackingModal(false);
@@ -927,7 +1044,7 @@ const OrdersPage = () => {
         </div>
       )}
 
-      {/* Review Modal */}
+      {/* UPDATED Review Modal */}
       {showReviewModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
@@ -937,16 +1054,19 @@ const OrdersPage = () => {
             </div>
 
             <div className="space-y-4">
+              {/* UPDATED: Seller Rating - Moved to top */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Delivery Rating
+                  {selectedOrder.type === "purchase" ? "Seller" :
+                    selectedOrder.type === "borrow" ? "Lender" :
+                      selectedOrder.type === "exchange" ? "Exchanger" : "Seller"} Rating
                 </label>
                 <div className="flex space-x-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
-                      onClick={() => setReviewForm((prev) => ({ ...prev, rating: star }))}
-                      className={`text-2xl ${star <= reviewForm.rating ? "text-yellow-500" : "text-gray-300"}`}
+                      onClick={() => setReviewForm((prev) => ({ ...prev, sellerRating: star }))}
+                      className={`text-xl ${star <= reviewForm.sellerRating ? "text-blue-500" : "text-gray-300"}`}
                     >
                       ★
                     </button>
@@ -954,6 +1074,7 @@ const OrdersPage = () => {
                 </div>
               </div>
 
+              {/* UPDATED: Book Condition Rating - Under delivery rating */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Book Condition Rating
@@ -962,8 +1083,8 @@ const OrdersPage = () => {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
-                      onClick={() => setReviewForm((prev) => ({ ...prev, bookCondition: star }))}
-                      className={`text-xl ${star <= reviewForm.bookCondition ? "text-green-500" : "text-gray-300"}`}
+                      onClick={() => setReviewForm((prev) => ({ ...prev, bookConditionRating: star }))}
+                      className={`text-xl ${star <= reviewForm.bookConditionRating ? "text-green-500" : "text-gray-300"}`}
                     >
                       ★
                     </button>
@@ -971,23 +1092,6 @@ const OrdersPage = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {selectedOrder.type === "purchase" ? "Seller" :
-                    selectedOrder.type === "borrow" ? "Lender" : "Exchanger"} Rating
-                </label>
-                <div className="flex space-x-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => setReviewForm((prev) => ({ ...prev, ownerRating: star }))}
-                      className={`text-xl ${star <= reviewForm.ownerRating ? "text-blue-500" : "text-gray-300"}`}
-                    >
-                      ★
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1007,7 +1111,7 @@ const OrdersPage = () => {
               <button
                 onClick={() => {
                   setShowReviewModal(false);
-                  setReviewForm({ rating: 5, comment: "", bookCondition: 5, ownerRating: 5 });
+                  setReviewForm({ sellerRating: 5, bookConditionRating: 5, overallRating: 5, comment: "" });
                 }}
                 className="bg-transparent border-2 border-gray-300 text-gray-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
               >

@@ -16,6 +16,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   const pathLabels = {
     '/admin': 'Dashboard',
     '/admin/moderator': 'Moderators',
+    '/admin/organizations': 'Organizations',
     '/admin/content': 'Contents',
     '/admin/analytics': 'Analytics',
     '/admin/notification': 'Notification',
@@ -26,6 +27,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/moderator/bookcircle': 'BookCircle',
     '/moderator/competitions': 'Competitions',
     '/moderator/users': 'Users',
+    '/moderator/bookstores': 'BookStores',
     '/moderator/hub': 'Hub',
     '/moderator/compliance': 'Compliance',
     '/moderator/support': 'Support',
@@ -59,6 +61,12 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/hubmanager/support': 'Support',
     '/hubmanager/settings': 'Hub Settings',
     '/organization': 'Dashboard',
+    '/organization/request': 'Book Request',
+    '/organization/received': 'Donations Received',
+    '/organization/messages': 'Messages',
+    '/organization/notifications': 'Notifications',
+    '/organization/feedback': 'Feedback & Reviews',
+    '/organization/settings': 'Profile Settings',
     '/organization/reports': 'Reports',
     '/dashboard': 'Dashboard',
     '/user': 'Dashboard',
@@ -164,7 +172,6 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
 
   // If no user, show nothing (the useEffect will handle redirection)
   if (!user) {
-    return null;
     return null;
   }
 
@@ -309,28 +316,6 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <button
-                  className="relative p-2 rounded-lg transition-colors"
-                  style={{
-                    color: '#6B7280',
-                    backgroundColor: 'transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.color = '#0F172A';
-                    e.target.style.backgroundColor = '#F3F4F6';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.color = '#6B7280';
-                    e.target.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <Bell className="w-5 h-5" />
-                  <span
-                    className="absolute top-1 right-1 w-2 h-2 rounded-full"
-                    style={{ backgroundColor: '#EF4444' }}
-                  ></span>
-                </button>
-                
                 {/* Profile Dropdown */}
                 <div className="relative">
                   <button

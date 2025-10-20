@@ -1315,4 +1315,154 @@ export const documentHelpers = {
   }
 };
 
+// ========================
+// Google Maps Distance Matrix API Integration
+// ========================
+
+const googleMapsApiKey = "AIzaSyC_N6VhUsq0bX8FEDfanh3Af-I1Bx5caFU";
+
+/**
+ * Get distance between two addresses using backend proxy to avoid CORS
+ * @param {string} origin - Origin address
+ * @param {string} destination - Destination address
+ * @returns {Promise<number|null>} Distance in kilometers, or null if failed
+ */
+export async function getDistanceBetweenAddresses(origin, destination) {
+  try {
+    // Use backend proxy to avoid CORS issues
+    const url = `${API_BASE_URL}/calculateDistance`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        origin: origin,
+        destination: destination
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.distanceKm || data.distanceKm < 0) {
+      console.error("Invalid distance data received:", data);
+      throw new Error("Invalid distance data from backend");
+    }
+
+    const distanceKm = data.distanceKm;
+
+    console.log(`📍 Distance calculated: ${distanceKm.toFixed(2)} km from "${origin}" to "${destination}"`);
+    return distanceKm;
+  } catch (error) {
+    console.error("Error fetching distance:", error);
+    return null;
+  }
+}
+
+/**
+ * Get user address by user ID
+ * @param {number} userId - User ID
+ * @returns {Promise<string|null>} User address, or null if not found
+ */
+export async function getAddressByUserId(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/getAddressAlluser/${userId}`);
+
+    if (!response.ok) {
+      console.error(`Failed to fetch address for user ID ${userId}: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.address || null;
+  } catch (error) {
+    console.error("Error fetching address by user ID:", error);
+    return null;
+  }
+}
+
+/**
+ * Get user address by email
+ * @param {string} email - User email
+ * @returns {Promise<string|null>} User address, or null if not found
+ */
+export async function getAddressByEmail(email) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/getAddressUsers/${encodeURIComponent(email)}`);
+
+    if (!response.ok) {
+      console.error(`Failed to fetch address for email ${email}: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.address || null;
+  } catch (error) {
+    console.error("Error fetching address by email:", error);
+    return null;
+  }
+}
+
+/**
+ * Calculate delivery fee based on distance
+ * @param {number} distanceKm - Distance in kilometers
+ * @param {number} ratePerKm - Rate per kilometer (default: 7 Rs)
+ * @returns {number} Delivery fee in Rs
+ */
+export function calculateDeliveryFee(distanceKm, ratePerKm = 7) {
+  if (!distanceKm || distanceKm < 0) return 0;
+
+  const fee = Math.round(distanceKm * ratePerKm);
+  console.log(`💰 Delivery fee: Rs. ${fee} (${distanceKm.toFixed(2)} km × Rs. ${ratePerKm}/km)`);
+  return fee;
+}
+
+/**
+ * Get distance and calculate delivery fee between two users
+ * @param {number|string} originUserIdOrEmail - Origin user ID or email
+ * @param {number|string} destinationUserIdOrEmail - Destination user ID or email
+ * @param {number} ratePerKm - Rate per kilometer (default: 7 Rs)
+ * @returns {Promise<{distance: number, deliveryFee: number, originAddress: string, destinationAddress: string}|null>}
+ */
+export async function calculateDeliveryBetweenUsers(originUserIdOrEmail, destinationUserIdOrEmail, ratePerKm = 7) {
+  try {
+    // Determine if input is userId (number) or email (string)
+    const originAddress = typeof originUserIdOrEmail === 'number'
+      ? await getAddressByUserId(originUserIdOrEmail)
+      : await getAddressByEmail(originUserIdOrEmail);
+
+    const destinationAddress = typeof destinationUserIdOrEmail === 'number'
+      ? await getAddressByUserId(destinationUserIdOrEmail)
+      : await getAddressByEmail(destinationUserIdOrEmail);
+
+    if (!originAddress || !destinationAddress) {
+      console.error("Could not retrieve one or both addresses");
+      return null;
+    }
+
+    const distance = await getDistanceBetweenAddresses(originAddress, destinationAddress);
+
+    if (distance === null) {
+      return null;
+    }
+
+    const deliveryFee = calculateDeliveryFee(distance, ratePerKm);
+
+    return {
+      distance: parseFloat(distance.toFixed(2)),
+      deliveryFee,
+      originAddress,
+      destinationAddress
+    };
+  } catch (error) {
+    console.error("Error calculating delivery between users:", error);
+    return null;
+  }
+}
+
 export default apiClient;

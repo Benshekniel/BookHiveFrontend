@@ -14,9 +14,9 @@ const ProfileSettings = () => {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  const [storeImage, setStoreImage] = useState <File | null> (null);
-  const [storePreviewUrl, setStorePreviewUrl] = useState <string | null> (null);
-  const [storeImageChanged, setStoreImageChanged] = useState(false);
+  // const [storeImage, setStoreImage] = useState <File | null> (null);
+  // const [storePreviewUrl, setStorePreviewUrl] = useState <string | null> (null);
+  // const [storeImageChanged, setStoreImageChanged] = useState(false);
 
   const [storeLogoImage, setStoreLogoImage] = useState <File | null> (null);
   const [storeLogoPreviewUrl, setStoreLogoPreviewUrl] = useState <string | null> (null);
@@ -29,12 +29,12 @@ const ProfileSettings = () => {
       console.log(response.data);
 
       // Store image
-      if (item.storeImage) {
-        const storeImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
-          params: { fileName: item.storeImage, folderName: "???" }
-        });
-        setStorePreviewUrl(storeImageRes.data);
-      }
+      // if (item.storeImage) {
+      //   const storeImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
+      //     params: { fileName: item.storeImage, folderName: "???" }
+      //   });
+      //   setStorePreviewUrl(storeImageRes.data);
+      // }
       // Store logo image
       if (item.storeLogoImage) {
         const storeLogoImageRes = await axios.get(`http://localhost:9090/getFileAsBase64`, {
@@ -58,11 +58,11 @@ const ProfileSettings = () => {
   });
 
   const [profileData, setProfileData] = useState({
-    storeName: 'PageTurner Books',
+    storeName: 'Manuel\'s Store',
     storeDescription: 'A cozy independent bookstore specializing in rare finds and beloved classics. We\'ve been serving book lovers in the community for over 15 years.',
-    email: 'contact@pageturnerbooks.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Main Street, Booktown, BT 12345',
+    email: 'manuelstores@gmail.com',
+    phone: '+94 76 7130191',
+    address: '123 Main Street, Dehiwela',
     businessHours: {
       monday: '9:00 AM - 7:00 PM',
       tuesday: '9:00 AM - 7:00 PM',
@@ -72,8 +72,8 @@ const ProfileSettings = () => {
       saturday: '10:00 AM - 6:00 PM',
       sunday: '11:00 AM - 5:00 PM'
     },
-    website: 'www.pageturnerbooks.com',
-    established: '2009',
+    website: 'www.manuelbooks.com',
+    established: '2010',
     specialties: ['Classic Literature', 'Mystery & Thriller', 'Local Authors', 'Rare Books']
   });
 
@@ -218,22 +218,6 @@ const ProfileSettings = () => {
 
             {/* Profile Photo Section */}
             <div className="flex mb-2 justify-around">
-            <div className="flex items-center mb-6">
-              <div className="relative">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  PB
-                </div>
-                {isEditing && (
-                  <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
-                    <Camera className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Change Store Logo</p>
-                <p className="text-xs text-gray-500">JPG, PNG or GIF. Max size 2MB</p>
-              </div>
-            </div>
 
             <div className="flex items-center mb-6">
               <div className="relative">
@@ -270,7 +254,7 @@ const ProfileSettings = () => {
               </div>
 
               {/* Website */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
                 {isEditing ? (
                   <input
@@ -282,7 +266,7 @@ const ProfileSettings = () => {
                 ) : (
                   <p className="text-gray-900">{profileData.website}</p>
                 )}
-              </div>
+              </div> */}
             </div>
 
             {/* Store Description */}

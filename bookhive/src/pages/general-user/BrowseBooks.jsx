@@ -26,6 +26,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import LazyImage from "../../components/LazyImage";
 import imageCache from "../../utils/imageCache";
+import { exchangeApi } from "../../services/bookApiService";
+import { parseSriLankanAddress } from "../../utils/sriLankaLocations";
 
 // Fix missing marker icon issue in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -101,6 +103,23 @@ const Toast = ({ message, type, onClose }) => {
     </div>
   );
 };
+
+// Skeleton Loader for Book Cards
+const BookCardSkeleton = () => (
+  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+    <div className="h-48 bg-gray-200"></div>
+    <div className="p-4 space-y-3">
+      <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="flex gap-2">
+        <div className="h-6 bg-gray-200 rounded w-16"></div>
+        <div className="h-6 bg-gray-200 rounded w-20"></div>
+      </div>
+      <div className="h-4 bg-gray-200 rounded w-full"></div>
+      <div className="h-9 bg-gray-200 rounded w-full mt-2"></div>
+    </div>
+  </div>
+);
 
 // UserAvatar component for consistent user image handling
 const UserAvatar = ({ user, size = "md", className = "" }) => {
@@ -203,6 +222,16 @@ const BooksPage = () => {
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [deletingReq, setDeletingReq] = useState({}); // { [requestId]: boolean }
 
+  // Exchange Requests
+  const [incomingExchanges, setIncomingExchanges] = useState([]);
+  const [outgoingExchanges, setOutgoingExchanges] = useState([]);
+  const [loadingExchanges, setLoadingExchanges] = useState(false);
+  const [exchangeBookDetails, setExchangeBookDetails] = useState({}); // { [bookId]: bookData }
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [selectedExchange, setSelectedExchange] = useState(null);
+  const [processingExchange, setProcessingExchange] = useState({});
+
   const [toast, setToast] = useState(null);
   const [paymentType, setPaymentType] = useState(""); // 'borrow' or 'exchange'
   const [exchangeBook, setExchangeBook] = useState(null);
@@ -241,13 +270,17 @@ const BooksPage = () => {
     new Set((books || []).map((book) => book.condition))
   );
 
-  // Book locations with real geocoded coordinates
+  // Book locations with real geocoded coordinates from Sri Lanka database
   const bookLocations = filteredBooks.map((book) => ({
     id: book.id,
     title: book.title,
     location: book.location,
     lat: book.lat || 6.9271 + (Math.random() - 0.5) * 0.05,
     lng: book.lng || 79.8612 + (Math.random() - 0.5) * 0.05,
+    locationMatched: book.locationMatched || false,
+    locationConfidence: book.locationConfidence || 0,
+    district: book.district,
+    province: book.province,
   }));
 
   // User's actual location or default to Colombo
@@ -272,26 +305,25 @@ const BooksPage = () => {
     }, 300000); // 5 minutes
   };
 
-  // Fetch user location from backend
-  const geocodeAddress = useCallback(async (address) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          address
-        )}, Sri Lanka&limit=1`
-      );
-      const data = await response.json();
-      if (data && data.length > 0) {
-        return {
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon),
-        };
-      }
-    } catch (error) {
-      console.error("Geocoding error:", error);
+  // Parse Sri Lankan address to coordinates (FAST - no API calls!)
+  const geocodeAddress = useCallback((address) => {
+    const result = parseSriLankanAddress(address);
+
+    // Log matching info for debugging
+    if (result.matched && result.confidence >= 70) {
+      console.log(`📍 Matched "${address}" → ${result.matchedLocation} (${result.confidence}% confidence)`);
+    } else if (!result.matched) {
+      console.log(`⚠️ No match for "${address}", using default: ${result.matchedLocation}`);
     }
-    // Return Colombo as fallback
-    return { lat: 6.9271, lng: 79.8612 };
+
+    return {
+      lat: result.lat,
+      lng: result.lng,
+      matched: result.matched,
+      confidence: result.confidence,
+      district: result.district,
+      province: result.province,
+    };
   }, []);
 
   const fetchUserLocation = useCallback(async () => {
@@ -304,7 +336,7 @@ const BooksPage = () => {
       if (response.ok) {
         const userData = await response.json();
         if (userData.address) {
-          const coords = await geocodeAddress(userData.address);
+          const coords = geocodeAddress(userData.address); // No await - synchronous now
           setUserLocation(coords);
         }
       }
@@ -313,12 +345,32 @@ const BooksPage = () => {
     }
   }, [geocodeAddress]);
 
-  // Fetch books
+  // Cache for books data with timestamp and user email
+  const [booksCache, setBooksCache] = useState({ data: null, timestamp: null, userEmail: null });
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
+  // Fetch books with caching and optimization
   const fetchBooks = useCallback(async () => {
     try {
+      // Check cache first
+      const now = Date.now();
+      const cacheValid = booksCache.data &&
+                        booksCache.timestamp &&
+                        (now - booksCache.timestamp < CACHE_DURATION) &&
+                        booksCache.userEmail === user?.email; // Invalidate cache if user changed
+
+      if (cacheValid) {
+        console.log('Using cached books data for user:', user?.email);
+        setBooks(booksCache.data);
+        setFilteredBooks(booksCache.data);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       const response = await axios.get(`${baseUrl}/api/getBooks`, {
         headers: { "Content-Type": "application/json" },
+        timeout: 10000, // 10 second timeout
       });
 
       const mappedBooks = response.data.map((book, index) => ({
@@ -364,71 +416,278 @@ const BooksPage = () => {
         rating: book.rating || 0,
         status: book.status || "active",
         userEmail: book.userEmail || "",
+        lat: null, // Will be geocoded lazily
+        lng: null,
       }));
 
-      const activeBooks = mappedBooks.filter((book) => book.status === "active");
+      // Filter out inactive books AND books owned by the current user
+      const activeBooks = mappedBooks.filter((book) => {
+        // Exclude inactive books
+        if (book.status !== "active") return false;
 
-      const geocodedBooks = await Promise.all(
-        activeBooks.map(async (book) => {
-          if (book.location) {
-            const coords = await geocodeAddress(book.location);
+        // Exclude books owned by current user (so they don't buy/exchange their own books)
+        if (user?.email && book.userEmail && book.userEmail.toLowerCase() === user.email.toLowerCase()) {
+          return false;
+        }
+
+        return true;
+      });
+
+      // Don't geocode immediately - do it lazily when needed
+      setBooks(activeBooks);
+      setFilteredBooks(activeBooks);
+
+      // Cache the data with current user email
+      setBooksCache({ data: activeBooks, timestamp: Date.now(), userEmail: user?.email });
+
+      // Geocode in background (non-blocking) - INSTANT now, no API calls!
+      setTimeout(() => {
+        try {
+          const geocodedBooks = activeBooks.map((book) => {
+            if (book.location) {
+              const coords = geocodeAddress(book.location); // Synchronous
+              return {
+                ...book,
+                lat: coords.lat,
+                lng: coords.lng,
+                locationMatched: coords.matched,
+                locationConfidence: coords.confidence,
+                district: coords.district,
+                province: coords.province,
+              };
+            }
+            // Default to Colombo with slight randomization
             return {
               ...book,
-              lat: coords.lat,
-              lng: coords.lng,
+              lat: 6.9271 + (Math.random() - 0.5) * 0.05,
+              lng: 79.8612 + (Math.random() - 0.5) * 0.05,
+              locationMatched: false,
+              locationConfidence: 0,
             };
-          }
-          return {
-            ...book,
-            lat: 6.9271 + (Math.random() - 0.5) * 0.1,
-            lng: 79.8612 + (Math.random() - 0.5) * 0.1,
-          };
-        })
-      );
+          });
+          setBooks(geocodedBooks);
+          setFilteredBooks(geocodedBooks);
+          setBooksCache({ data: geocodedBooks, timestamp: Date.now(), userEmail: user?.email });
+        } catch (e) {
+          console.warn('Geocoding failed, using books without coordinates');
+        }
+      }, 50); // Reduced to 50ms - it's instant now!
 
-      setBooks(geocodedBooks);
-      setFilteredBooks(geocodedBooks);
-
-      // Preload images after a short delay
-      setTimeout(() => {
-        preloadImages(activeBooks);
-      }, 1000);
+      // Don't preload ALL images - LazyImage will handle it
+      setLoading(false);
     } catch (err) {
       console.error("Failed to fetch books:", err);
-      showToast("Failed to load books. Please try again.", "error");
-    } finally {
+      const errorMsg = err.code === 'ECONNABORTED'
+        ? "Request timed out. Please check your connection."
+        : err.response?.status === 404
+        ? "Books service not available. Please try again later."
+        : err.response?.status >= 500
+        ? "Server error. Please try again later."
+        : "Unable to load books. Please refresh the page.";
+
+      showToast(errorMsg, "error");
       setLoading(false);
     }
-  }, [preloadImages, geocodeAddress]);
+  }, [geocodeAddress, booksCache, user?.email]);
 
-  // Fetch user's borrow requests (REAL)
+  // Fetch user's borrow requests (REAL) with better error handling
   const fetchBorrowRequests = useCallback(async () => {
     if (!user?.userId) return;
     try {
       setLoadingRequests(true);
-      const res = await fetch(`${baseUrl}/api/borrowUser/${user.userId}`);
-      if (!res.ok) throw new Error(`Failed ${res.status}`);
+      const res = await fetch(`${baseUrl}/api/borrowUser/${user.userId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          setBorrowRequests([]);
+          return;
+        }
+        throw new Error(`Server error: ${res.status}`);
+      }
+
       const data = await res.json();
       setBorrowRequests(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Fetch borrow requests error:", e);
+      const errorMsg = e.message.includes('Failed to fetch')
+        ? "Unable to load requests. Please check your connection."
+        : "Unable to load borrow requests. Please try again.";
+
+      if (activeTab === "borrow-requests") {
+        showToast(errorMsg, "error");
+      }
       setBorrowRequests([]);
     } finally {
       setLoadingRequests(false);
     }
-  }, [user?.userId]);
+  }, [user?.userId, activeTab]);
 
   useEffect(() => {
     fetchBooks();
     fetchUserLocation();
   }, [fetchBooks, fetchUserLocation]);
 
+  // Fetch exchange requests (incoming and outgoing) - OPTIMIZED
+  const fetchExchangeRequests = useCallback(async () => {
+    if (!user?.userId) return;
+    try {
+      setLoadingExchanges(true);
+
+      // Fetch both incoming and outgoing exchanges in parallel
+      const [incoming, outgoing] = await Promise.all([
+        exchangeApi.getIncomingExchanges(user.userId).catch(err => {
+          console.warn('Failed to fetch incoming exchanges:', err);
+          return [];
+        }),
+        exchangeApi.getOutgoingExchanges(user.userId).catch(err => {
+          console.warn('Failed to fetch outgoing exchanges:', err);
+          return [];
+        })
+      ]);
+
+      setIncomingExchanges(Array.isArray(incoming) ? incoming : []);
+      setOutgoingExchanges(Array.isArray(outgoing) ? outgoing : []);
+
+      // Fetch book details for all exchanges - but only unique IDs
+      const allExchanges = [...(incoming || []), ...(outgoing || [])];
+      const bookIds = new Set();
+
+      allExchanges.forEach(ex => {
+        if (ex.userBookId) bookIds.add(ex.userBookId);
+        if (ex.approverBookId) bookIds.add(ex.approverBookId);
+      });
+
+      if (bookIds.size === 0) {
+        setLoadingExchanges(false);
+        return;
+      }
+
+      // Fetch book details in batches of 5 to avoid overwhelming the server
+      const bookIdArray = Array.from(bookIds);
+      const batchSize = 5;
+      const bookDetailsMap = {};
+
+      for (let i = 0; i < bookIdArray.length; i += batchSize) {
+        const batch = bookIdArray.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (bookId) => {
+          try {
+            const book = await exchangeApi.getBookById(bookId);
+            return { bookId, book };
+          } catch (err) {
+            console.warn(`Failed to fetch book ${bookId}:`, err);
+            return { bookId, book: null };
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach(({ bookId, book }) => {
+          if (book) bookDetailsMap[bookId] = book;
+        });
+      }
+
+      setExchangeBookDetails(bookDetailsMap);
+    } catch (e) {
+      console.error("Fetch exchange requests error:", e);
+      const errorMsg = e.message?.includes('Failed to fetch') || e.message?.includes('Network')
+        ? "Unable to load exchange requests. Please check your connection."
+        : "Unable to load exchange requests. Please try again.";
+
+      if (activeTab === "exchange-requests") {
+        showToast(errorMsg, "error");
+      }
+      setIncomingExchanges([]);
+      setOutgoingExchanges([]);
+    } finally {
+      setLoadingExchanges(false);
+    }
+  }, [user?.userId, activeTab]);
+
+  // Approve exchange request
+  const handleApproveExchange = async (exchange) => {
+    if (!exchange || !exchange.exchangeId) return;
+
+    // Calculate fees for approver side
+    const approverBook = exchangeBookDetails[exchange.approverBookId];
+    const distanceKm = 50;
+    const deliveryFee = distanceKm * 7; // 7 rs per km
+    const handlingFee = (approverBook?.price || 0) * 0.04; // 4% of book price
+
+    const confirmMsg = `Are you sure you want to approve this exchange?\n\nYour Costs:\nDelivery Fee: Rs. ${deliveryFee}\nHandling Fee: Rs. ${handlingFee.toFixed(2)}\nTotal: Rs. ${(deliveryFee + handlingFee).toFixed(2)}`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setProcessingExchange(prev => ({ ...prev, [exchange.exchangeId]: true }));
+
+      const result = await exchangeApi.approveExchange(
+        exchange.exchangeId,
+        deliveryFee,
+        handlingFee
+      );
+
+      if (result && result.status === "APPROVED") {
+        showToast("Exchange request approved successfully!", "success");
+        await fetchExchangeRequests(); // Refresh the list
+      } else {
+        showToast("Failed to approve exchange. Please try again.", "error");
+      }
+    } catch (err) {
+      console.error("Approve exchange error:", err);
+      showToast("Failed to approve exchange. Please try again.", "error");
+    } finally {
+      setProcessingExchange(prev => ({ ...prev, [exchange.exchangeId]: false }));
+    }
+  };
+
+  // Reject exchange request
+  const handleRejectExchange = (exchange) => {
+    setSelectedExchange(exchange);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  const confirmRejectExchange = async () => {
+    if (!selectedExchange || !rejectReason.trim()) {
+      showToast("Please provide a reason for rejection.", "error");
+      return;
+    }
+
+    try {
+      setProcessingExchange(prev => ({ ...prev, [selectedExchange.exchangeId]: true }));
+
+      const result = await exchangeApi.rejectExchange(
+        selectedExchange.exchangeId,
+        rejectReason
+      );
+
+      if (result && result.status === "REJECTED") {
+        showToast("Exchange request rejected.", "success");
+        setShowRejectModal(false);
+        setSelectedExchange(null);
+        setRejectReason("");
+        await fetchExchangeRequests(); // Refresh the list
+      } else {
+        showToast("Failed to reject exchange. Please try again.", "error");
+      }
+    } catch (err) {
+      console.error("Reject exchange error:", err);
+      showToast("Failed to reject exchange. Please try again.", "error");
+    } finally {
+      setProcessingExchange(prev => ({ ...prev, [selectedExchange.exchangeId]: false }));
+    }
+  };
+
   // Load real requests when tab opens
   useEffect(() => {
-    if (activeTab === "requests") {
+    if (activeTab === "borrow-requests") {
       fetchBorrowRequests();
+    } else if (activeTab === "exchange-requests") {
+      fetchExchangeRequests();
     }
-  }, [activeTab, fetchBorrowRequests]);
+  }, [activeTab, fetchBorrowRequests, fetchExchangeRequests]);
 
   // Clear cache when user logs out
   useEffect(() => {
@@ -785,30 +1044,36 @@ const BooksPage = () => {
           <>
             {/* Tabs */}
             <div className="mb-6">
-              <div className="flex space-x-4 border-b border-gray-200">
+              <div className="flex space-x-4 border-b border-gray-200 overflow-x-auto">
                 <button
-                  className={`pb-2 px-4 ${activeTab === "browse" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`pb-2 px-4 whitespace-nowrap ${activeTab === "browse" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
                   onClick={() => setActiveTab("browse")}
                 >
                   Browse Books
                 </button>
                 <button
-                  className={`pb-2 px-4 ${activeTab === "wishlist" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`pb-2 px-4 whitespace-nowrap ${activeTab === "wishlist" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
                   onClick={() => setActiveTab("wishlist")}
                 >
                   Wishlisted Books
                 </button>
                 <button
-                  className={`pb-2 px-4 ${activeTab === "favorites" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`pb-2 px-4 whitespace-nowrap ${activeTab === "favorites" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
                   onClick={() => setActiveTab("favorites")}
                 >
                   Favorites
                 </button>
                 <button
-                  className={`pb-2 px-4 ${activeTab === "requests" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
-                  onClick={() => setActiveTab("requests")}
+                  className={`pb-2 px-4 whitespace-nowrap ${activeTab === "borrow-requests" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+                  onClick={() => setActiveTab("borrow-requests")}
                 >
-                  My Requests ({borrowRequests.length})
+                  Borrow Requests ({borrowRequests.length})
+                </button>
+                <button
+                  className={`pb-2 px-4 whitespace-nowrap ${activeTab === "exchange-requests" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+                  onClick={() => setActiveTab("exchange-requests")}
+                >
+                  Exchange Requests
                 </button>
               </div>
             </div>
@@ -1028,7 +1293,13 @@ const BooksPage = () => {
                           </div>
                         )}
                       </div>
-                      {filteredBooks.length > 0 ? (
+                      {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {[1, 2, 3, 4, 5, 6].map((i) => (
+                            <BookCardSkeleton key={i} />
+                          ))}
+                        </div>
+                      ) : filteredBooks.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {filteredBooks.map((book) => {
                             const isDisabled = disabledBooks.has(book.id);
@@ -1228,9 +1499,28 @@ const BooksPage = () => {
                               }}
                             >
                               <Popup>
-                                <strong>{loc.title}</strong>
-                                <br />
-                                {loc.location}
+                                <div className="p-2 min-w-[200px]">
+                                  <strong className="text-base block mb-1">{loc.title}</strong>
+                                  <div className="text-sm text-gray-600 space-y-1">
+                                    <div className="flex items-start">
+                                      <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                                      <span>{loc.location}</span>
+                                    </div>
+                                    {loc.district && (
+                                      <div className="text-xs text-gray-500">
+                                        📍 {loc.district}, {loc.province}
+                                      </div>
+                                    )}
+                                    {loc.locationMatched && (
+                                      <div className="text-xs text-green-600 font-medium">
+                                        ✓ Verified Location ({loc.locationConfidence}% match)
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button className="mt-2 text-xs text-blue-600 hover:underline">
+                                    Click to view details →
+                                  </button>
+                                </div>
                               </Popup>
                             </Marker>
                           ))}
@@ -1520,14 +1810,14 @@ const BooksPage = () => {
               </div>
             )}
 
-            {/* My Requests Tab (REAL DATA) */}
-            {activeTab === "requests" && (
+            {/* Borrow Requests Tab (REAL DATA) */}
+            {activeTab === "borrow-requests" && (
               <div className="bg-white/90 rounded-2xl shadow-md border border-gray-200 p-4 sm:p-6">
                 <h2
                   className="text-xl sm:text-2xl font-bold mb-4 text-gray-900"
                   style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
                 >
-                  My Requests
+                  Borrow Requests
                 </h2>
 
                 {loadingRequests ? (
@@ -1627,6 +1917,400 @@ const BooksPage = () => {
                     <p className="text-gray-600 text-sm">Your borrow requests will appear here.</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Exchange Requests Tab */}
+            {activeTab === "exchange-requests" && (
+              <div className="bg-white/90 rounded-2xl shadow-md border border-gray-200 p-4 sm:p-6">
+                <h2
+                  className="text-xl sm:text-2xl font-bold mb-6 text-gray-900"
+                  style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
+                >
+                  Exchange Requests
+                </h2>
+
+                {loadingExchanges ? (
+                  <div className="space-y-8">
+                    {/* Incoming Skeleton */}
+                    <div>
+                      <div className="h-6 bg-gray-200 rounded w-48 mb-4 animate-pulse"></div>
+                      <div className="space-y-4">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+                            <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                <div className="h-16 bg-gray-200 rounded"></div>
+                              </div>
+                              <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                <div className="h-16 bg-gray-200 rounded"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Outgoing Skeleton */}
+                    <div>
+                      <div className="h-6 bg-gray-200 rounded w-48 mb-4 animate-pulse"></div>
+                      <div className="space-y-4">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+                            <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                <div className="h-16 bg-gray-200 rounded"></div>
+                              </div>
+                              <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                <div className="h-16 bg-gray-200 rounded"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {/* Incoming Exchange Requests */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <MessageSquare className="w-5 h-5 mr-2 text-purple-500" />
+                        Incoming Requests ({incomingExchanges.length})
+                        <span className="text-sm font-normal text-gray-500 ml-2">
+                          - Others want your books
+                        </span>
+                      </h3>
+
+                      {incomingExchanges.length > 0 ? (
+                        <div className="space-y-4">
+                          {incomingExchanges.map((exchange) => {
+                            const userBook = exchangeBookDetails[exchange.userBookId];
+                            const approverBook = exchangeBookDetails[exchange.approverBookId];
+                            const status = (exchange.status || "PENDING").toUpperCase();
+                            const badgeClass =
+                              status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : status === "APPROVED"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800";
+
+                            return (
+                              <div key={exchange.exchangeId} className="bg-white rounded-lg border border-gray-200 p-4">
+                                <div className="flex items-start justify-between mb-4">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                                    {status === "PENDING" && <Clock className="w-3 h-3 inline mr-1" />}
+                                    {status === "APPROVED" && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                                    {status === "REJECTED" && <XCircle className="w-3 h-3 inline mr-1" />}
+                                    {status}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                  {/* They Offer */}
+                                  <div className="border border-blue-200 bg-blue-50 rounded-lg p-3">
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">They Offer:</h4>
+                                    {userBook ? (
+                                      <div className="flex items-start space-x-3">
+                                        {userBook.bookImage ? (
+                                          <LazyImage
+                                            src={placeholder}
+                                            alt={userBook.title}
+                                            className="w-12 h-16 object-cover rounded"
+                                            fileName={userBook.bookImage}
+                                            folderName="userBooks"
+                                            baseUrl={baseUrl}
+                                          />
+                                        ) : (
+                                          <div className="w-12 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                            <BookOpen className="w-4 h-4 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-semibold text-gray-900 text-sm truncate">{userBook.title}</p>
+                                          <p className="text-xs text-gray-600">by {userBook.authors?.join(', ') || 'Unknown'}</p>
+                                          <p className="text-xs text-gray-500">Condition: {userBook.condition}</p>
+                                          <p className="text-xs text-gray-500">Price: Rs. {userBook.price || 0}</p>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-gray-500">Loading book details...</p>
+                                    )}
+                                    <div className="mt-2 pt-2 border-t border-blue-200">
+                                      <p className="text-xs text-gray-600">Their Delivery: Rs. {exchange.userDeliveryPrice || 0}</p>
+                                      <p className="text-xs text-gray-600">Their Handling: Rs. {exchange.userHandlingPrice?.toFixed(2) || 0}</p>
+                                    </div>
+                                  </div>
+
+                                  {/* You Give */}
+                                  <div className="border border-purple-200 bg-purple-50 rounded-lg p-3">
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">You Give:</h4>
+                                    {approverBook ? (
+                                      <div className="flex items-start space-x-3">
+                                        {approverBook.bookImage ? (
+                                          <LazyImage
+                                            src={placeholder}
+                                            alt={approverBook.title}
+                                            className="w-12 h-16 object-cover rounded"
+                                            fileName={approverBook.bookImage}
+                                            folderName="userBooks"
+                                            baseUrl={baseUrl}
+                                          />
+                                        ) : (
+                                          <div className="w-12 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                            <BookOpen className="w-4 h-4 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-semibold text-gray-900 text-sm truncate">{approverBook.title}</p>
+                                          <p className="text-xs text-gray-600">by {approverBook.authors?.join(', ') || 'Unknown'}</p>
+                                          <p className="text-xs text-gray-500">Condition: {approverBook.condition}</p>
+                                          <p className="text-xs text-gray-500">Price: Rs. {approverBook.price || 0}</p>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-gray-500">Loading book details...</p>
+                                    )}
+                                    {status === "APPROVED" && (
+                                      <div className="mt-2 pt-2 border-t border-purple-200">
+                                        <p className="text-xs text-gray-600">Your Delivery: Rs. {exchange.approverDeliveryPrice || 0}</p>
+                                        <p className="text-xs text-gray-600">Your Handling: Rs. {exchange.approverHandlingPrice?.toFixed(2) || 0}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {exchange.rejectReason && status === "REJECTED" && (
+                                  <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                    <strong>Reject Reason:</strong> {exchange.rejectReason}
+                                  </div>
+                                )}
+
+                                {/* Actions for pending incoming requests */}
+                                {status === "PENDING" && (
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1"
+                                      onClick={() => handleApproveExchange(exchange)}
+                                      disabled={!!processingExchange[exchange.exchangeId]}
+                                    >
+                                      {processingExchange[exchange.exchangeId] ? "Approving..." : "Approve"}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="border border-red-200 text-red-600 hover:bg-red-50 text-xs px-3 py-1 bg-transparent"
+                                      onClick={() => handleRejectExchange(exchange)}
+                                      disabled={!!processingExchange[exchange.exchangeId]}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                          <Repeat size={32} className="mx-auto mb-2 text-gray-300" />
+                          <p className="text-gray-600 text-sm">No incoming exchange requests</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Outgoing Exchange Requests */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <Repeat className="w-5 h-5 mr-2 text-blue-500" />
+                        Outgoing Requests ({outgoingExchanges.length})
+                        <span className="text-sm font-normal text-gray-500 ml-2">
+                          - You want others' books
+                        </span>
+                      </h3>
+
+                      {outgoingExchanges.length > 0 ? (
+                        <div className="space-y-4">
+                          {outgoingExchanges.map((exchange) => {
+                            const userBook = exchangeBookDetails[exchange.userBookId];
+                            const approverBook = exchangeBookDetails[exchange.approverBookId];
+                            const status = (exchange.status || "PENDING").toUpperCase();
+                            const badgeClass =
+                              status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : status === "APPROVED"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800";
+
+                            return (
+                              <div key={exchange.exchangeId} className="bg-white rounded-lg border border-gray-200 p-4">
+                                <div className="flex items-start justify-between mb-4">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                                    {status === "PENDING" && <Clock className="w-3 h-3 inline mr-1" />}
+                                    {status === "APPROVED" && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                                    {status === "REJECTED" && <XCircle className="w-3 h-3 inline mr-1" />}
+                                    {status}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                  {/* You Offer */}
+                                  <div className="border border-blue-200 bg-blue-50 rounded-lg p-3">
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">You Offer:</h4>
+                                    {userBook ? (
+                                      <div className="flex items-start space-x-3">
+                                        {userBook.bookImage ? (
+                                          <LazyImage
+                                            src={placeholder}
+                                            alt={userBook.title}
+                                            className="w-12 h-16 object-cover rounded"
+                                            fileName={userBook.bookImage}
+                                            folderName="userBooks"
+                                            baseUrl={baseUrl}
+                                          />
+                                        ) : (
+                                          <div className="w-12 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                            <BookOpen className="w-4 h-4 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-semibold text-gray-900 text-sm truncate">{userBook.title}</p>
+                                          <p className="text-xs text-gray-600">by {userBook.authors?.join(', ') || 'Unknown'}</p>
+                                          <p className="text-xs text-gray-500">Condition: {userBook.condition}</p>
+                                          <p className="text-xs text-gray-500">Price: Rs. {userBook.price || 0}</p>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-gray-500">Loading book details...</p>
+                                    )}
+                                    <div className="mt-2 pt-2 border-t border-blue-200">
+                                      <p className="text-xs text-gray-600">Your Delivery: Rs. {exchange.userDeliveryPrice || 0}</p>
+                                      <p className="text-xs text-gray-600">Your Handling: Rs. {exchange.userHandlingPrice?.toFixed(2) || 0}</p>
+                                    </div>
+                                  </div>
+
+                                  {/* You Want */}
+                                  <div className="border border-purple-200 bg-purple-50 rounded-lg p-3">
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">You Want:</h4>
+                                    {approverBook ? (
+                                      <div className="flex items-start space-x-3">
+                                        {approverBook.bookImage ? (
+                                          <LazyImage
+                                            src={placeholder}
+                                            alt={approverBook.title}
+                                            className="w-12 h-16 object-cover rounded"
+                                            fileName={approverBook.bookImage}
+                                            folderName="userBooks"
+                                            baseUrl={baseUrl}
+                                          />
+                                        ) : (
+                                          <div className="w-12 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                            <BookOpen className="w-4 h-4 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-semibold text-gray-900 text-sm truncate">{approverBook.title}</p>
+                                          <p className="text-xs text-gray-600">by {approverBook.authors?.join(', ') || 'Unknown'}</p>
+                                          <p className="text-xs text-gray-500">Condition: {approverBook.condition}</p>
+                                          <p className="text-xs text-gray-500">Price: Rs. {approverBook.price || 0}</p>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-gray-500">Loading book details...</p>
+                                    )}
+                                    {status === "APPROVED" && (
+                                      <div className="mt-2 pt-2 border-t border-purple-200">
+                                        <p className="text-xs text-gray-600">Their Delivery: Rs. {exchange.approverDeliveryPrice || 0}</p>
+                                        <p className="text-xs text-gray-600">Their Handling: Rs. {exchange.approverHandlingPrice?.toFixed(2) || 0}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {exchange.rejectReason && status === "REJECTED" && (
+                                  <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                    <strong>Reject Reason:</strong> {exchange.rejectReason}
+                                  </div>
+                                )}
+
+                                {/* Info message for outgoing requests */}
+                                {status === "PENDING" && (
+                                  <div className="text-xs text-gray-500 italic">
+                                    Waiting for the book owner to approve or reject your request.
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                          <Repeat size={32} className="mx-auto mb-2 text-gray-300" />
+                          <p className="text-gray-600 text-sm">No outgoing exchange requests</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Reject Exchange Modal */}
+            {showRejectModal && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+                <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-bold">Reject Exchange Request</h3>
+                    <button
+                      onClick={() => {
+                        setShowRejectModal(false);
+                        setSelectedExchange(null);
+                        setRejectReason("");
+                      }}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                  <div className="mb-6">
+                    <p className="text-gray-600 mb-4">Please provide a reason for rejecting this exchange:</p>
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-200"
+                      rows="4"
+                      placeholder="e.g., Book condition doesn't match, looking for different edition, etc."
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowRejectModal(false);
+                        setSelectedExchange(null);
+                        setRejectReason("");
+                      }}
+                      className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onClick={confirmRejectExchange}
+                      className="bg-red-500 hover:bg-red-600 text-white"
+                      disabled={!rejectReason.trim() || (selectedExchange && processingExchange[selectedExchange.exchangeId])}
+                    >
+                      {selectedExchange && processingExchange[selectedExchange.exchangeId] ? "Rejecting..." : "Confirm Reject"}
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 

@@ -59,24 +59,6 @@ const DonationInventory = () => {
   return (
     <>
       <div className="space-y-6">
-        {/* Donation Impact */}
-        <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Your Donation Impact</h3>
-              <p className="text-slate-600">You've donated 23 books and helped 18 recipients</p>
-              <div className="flex items-center space-x-2 mt-2">
-                <Award className="w-5 h-5 text-amber-500" />
-                <span className="text-sm font-medium text-amber-700">Donated 20+ books badge earned!</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center">
-                <Heart className="w-8 h-8 text-pink-600" />
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
           <div className="flex flex-col lg:flex-row gap-4">
@@ -180,6 +162,9 @@ const DonationInventory = () => {
                                   <b> Tags:</b> {item?.tags.slice(0, 3).join(', ')}
                                   {item?.tags.length > 3 && ' ...'}</span>
                               </div>
+                              <p className="text-sm text-slate-600">
+                                <b> Category: </b>{item.category}
+                              </p>
                             </div>
                           </div>
                         </td>
@@ -194,7 +179,7 @@ const DonationInventory = () => {
                         <td className="p-4 align-middle">
                           <div className="flex flex-col justify-center items-center gap-1 text-sm text-slate-600 h-full">
                             {item.stockCount < 5 ? (
-                              <span className="inline-block px-3 py-1 font-semibold rounded-full border bg-red-200 text-red-900 border-red-300 w-fit">
+                              <span className="text-xs inline-block px-3 py-1 font-semibold rounded-full border bg-red-200 text-red-900 border-red-300 w-fit">
                                 In Stock: {item.stockCount} </span>
                             ) : (
                               <span>In Stock: {item.stockCount}</span>
@@ -207,7 +192,7 @@ const DonationInventory = () => {
                         </td>
                         <td className="p-4">
                           <div className="grid grid-cols-2 grid-rows-2 gap-2 justify-items-center items-center h-full">
-                            <InventoryStockAdjuster inventoryId={item.inventoryId} />
+                            <InventoryStockAdjuster inventoryId={item.inventoryId} invType='donation' />
                             <EditInventory inventoryId={item.inventoryId} />
                             <DeleteInventory inventoryId={item.inventoryId} />
                           </div>

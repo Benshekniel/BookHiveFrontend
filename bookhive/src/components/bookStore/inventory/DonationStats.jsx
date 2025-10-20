@@ -32,19 +32,19 @@ const DonationStats = () => {
 
     return [
       {
-        label: 'TOTAL INVENTORY DRAFTS', value: donationStats.totalBooks, icon: Package,
+        label: 'TOTAL DONATION INVENTORY', value: donationStats.totalDonationInventory, icon: Package,
         bgColor: 'bg-blue-50', border: 'border-blue-200', textColor: 'text-blue-600'
       },
       {
-        label: 'DONATION INVENTORY', value: donationStats.donationStock, icon: Heart,
+        label: 'DONATIONED BOOKS', value: donationStats.donatedCount, icon: Heart,
         bgColor: 'bg-green-50', border: 'border-green-200', textColor: 'text-green-600'
       },
       {
-        label: 'TOTAL DONATIONS', value: donationStats.donated, icon: HandHeart,
+        label: 'DONATED CLIENTS', value: donationStats.donatedClientCount, icon: HandHeart,
         bgColor: 'bg-pink-50', border: 'border-pink-200', textColor: 'text-pink-600'
       },
       {
-        label: 'IMPACT SCORE', value: donationStats.impactScore, icon: Award,
+        label: 'IMPACT SCORE', value: `${donationStats.donatedCount * 10}`, icon: Award,
         bgColor: 'bg-purple-50', border: 'border-purple-200', textColor: 'text-purple-600'
       }
     ];

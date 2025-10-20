@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 import LoadingSpinner from "../CommonStuff/LoadingSpinner";
 import { useAuth } from "../../AuthContext";
 
-const InventoryStockAdjuster = ({ inventoryId }: { inventoryId: number }) => {
+const InventoryStockAdjuster = ({ inventoryId, invType }: { inventoryId: number, invType?: string }) => {
   const {user} = useAuth();
 	const queryClient = useQueryClient();
 
@@ -45,8 +45,9 @@ const InventoryStockAdjuster = ({ inventoryId }: { inventoryId: number }) => {
   const adjustMutation = useMutation({
     mutationFn: updateStockItem,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
       toast.success("Stock updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["donationInventory", user?.userId] });
       setShowForm(false);
     },
     onError: () => {
@@ -88,6 +89,7 @@ const InventoryStockAdjuster = ({ inventoryId }: { inventoryId: number }) => {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="bg-gray-50 rounded-xl py-6 px-10 grid grid-cols-1 md:grid-cols-2 gap-4 justify-center items-center">
 
+              {invType !== 'donation' && (
                 <div className="flex flex-col mb-6 justify-center items-center">
                   <label className="mb-2 font-medium text-gray-700">Sellable Count</label>
                   <div className="flex items-center gap-3">
@@ -111,6 +113,7 @@ const InventoryStockAdjuster = ({ inventoryId }: { inventoryId: number }) => {
                     </button>
                   </div>
                 </div>
+              )}
 
                 <div className="flex flex-col mb-6 justify-center items-center">
                   <label className="mb-2 font-medium text-gray-700">Stock Count</label>

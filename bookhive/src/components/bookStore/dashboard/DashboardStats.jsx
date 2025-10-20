@@ -4,10 +4,10 @@ import { useMemo } from 'react';
 import { DollarSign, Package,Book,Handshake} from 'lucide-react';
 
 import LoadingSpinner from '../CommonStuff/LoadingSpinner';
+import { useAuth } from '../../AuthContext';
 
 const DashboardStats = () => {
-  // const { user } = useAuth();
-  const user = { userId: 603 };
+  const { user } = useAuth();
 
   const fetchDashboardStats = async () => {
     if (!user?.userId) return [];

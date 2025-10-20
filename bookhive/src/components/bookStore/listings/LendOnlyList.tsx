@@ -35,7 +35,7 @@ const LendOnlyList = () => {
 							);
 							return { ...book, coverImageURL: res.data };
 						} catch (err) {
-							console.error("Axios Error: ", err);
+							console.error("Error fetching image: ", err);
 							return { ...book, coverImageURL: null }; // fallback
 						}
 					}
@@ -53,8 +53,7 @@ const LendOnlyList = () => {
 		queryKey: ["lendOnlyList", user?.userId],
 		queryFn: getLendOnlyList,
 		staleTime: 5 * 60 * 1000,       // cache considered fresh for 5 minutes
-		enabled: !!user?.userId,
-		retryDelay: 1000
+		enabled: !!user?.userId
 	});
 
 
@@ -96,7 +95,6 @@ const LendOnlyList = () => {
 									<option value="">All Status</option>
 									<option value="AVAILABLE">Available</option>
 									<option value="LENT">Lent</option>
-									<option value="AUCTION">On Auction</option>
 								</select>
 								<ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
 							</div>

@@ -3,13 +3,14 @@ import {
   Home, User, Settings, CreditCard, BookOpen, Users, Warehouse, MessageSquare, Calendar, Headphones,
   Truck, Building, HeartHandshake, BookHeart, Trophy, UsersRound, Headset, MessageCircleMore, MapPin, Bell,
   ShieldCheck, FileText, BarChart2, ArrowRightLeft, DollarSign, Box,
-  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route,FlaskConical, CircleDashed,MessageSquareText,MessageCircle,UserCog
+  LineChart, LayoutDashboard, ClipboardList, CalendarCheck2, Route,FlaskConical, CircleDashed,MessageSquareText,MessageCircle,UserCog, Store, Building2
 } from 'lucide-react';
 
 export const sidebarMenuConfig = {
   admin: [
     { label: 'Dashboard', icon: Home, path: '/admin' },
     { label: 'Moderators', icon: User, path: '/admin/moderator' }, // Same as Manage Users, as it deals with user roles
+    { label: 'Organizations', icon: Building2, path: '/admin/organizations' },
     { label: 'Analytics', icon: BarChart2, path: '/admin/analytics' },
     { label: 'Messages', icon: MessageSquare, path: '/admin/messages' },
     { label: 'Payment', icon: CreditCard, path: '/admin/payment' },
@@ -20,11 +21,12 @@ export const sidebarMenuConfig = {
     { label: 'BookCircle', icon: BookHeart, path: '/moderator/bookcircle' },
     { label: 'Competitions', icon: Trophy, path: '/moderator/competitions' },
     { label: 'Users', icon: UsersRound, path: '/moderator/users' },
+    { label: 'BookStores', icon: Store, path: '/moderator/bookstores' },
     { label: 'Hub', icon: Truck, path: '/moderator/hub' },
     { label: 'Messages', icon: MessageSquare, path: '/moderator/messages' },
     // { label: 'Compliance', icon: MessageCircleMore, path: '/moderator/compliance' },
     { label: 'Support', icon: Headset, path: '/moderator/support' },
-    { label: 'Messages', icon: MessageSquare, path: '/moderator/message' },
+    // { label: 'Messages', icon: MessageSquare, path: '/moderator/message' },
     // { label: 'Testing', icon: FlaskConical, path: '/moderator/test' },
     { label: 'Settings', icon: Settings, path: '/moderator/settings' },
 
@@ -34,7 +36,7 @@ export const sidebarMenuConfig = {
     { label: 'Inventory', icon: Box, path: '/bookstore/inventory' },
     { label: 'Listings', icon: FileText, path: '/bookstore/listings' },
     { label: 'Transactions', icon: ArrowRightLeft, path: '/bookstore/transactions' },
-    { label: 'Finances', icon: DollarSign, path: '/bookstore/finances' },
+    // { label: 'Finances', icon: DollarSign, path: '/bookstore/finances' },
     { label: 'Support', icon: Headset, path: '/bookstore/support' }
   ],
   'delivery-manager': [

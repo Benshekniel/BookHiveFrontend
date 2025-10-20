@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { 
-  MapPin, Tag, Heart, MessageSquare, Gavel, ArrowLeft, X, Star, 
+import {
+  MapPin, Tag, Heart, MessageSquare, Gavel, ArrowLeft, X, Star,
   Eye, Share2, Flag, User, Calendar, BookOpen, Clock, Shield,
   Phone, Mail, Award, TrendingUp, Users, ChevronDown, ArrowRight,
   ShoppingCart, Repeat, CheckCircle, XCircle, AlertCircle
@@ -10,6 +10,8 @@ import Button from "../../components/shared/Button";
 import LazyImage from "../../components/LazyImage";
 import imageCache from "../../utils/imageCache";
 import { useAuth } from '../../components/AuthContext';
+import { exchangeApi } from '../../services/bookApiService';
+import { calculateDeliveryBetweenUsers } from '../../services/deliveryService';
 
 const API_BASE = import.meta.env?.VITE_API_URL || "http://localhost:9090/api";
 
@@ -74,6 +76,13 @@ const BookDetailsPage = () => {
   // NEW: borrow existence states
   const [checkingBorrow, setCheckingBorrow] = useState(false);
   const [hasActiveBorrow, setHasActiveBorrow] = useState(false);
+
+  // NEW: exchange existence states
+  const [checkingExchange, setCheckingExchange] = useState(false);
+  const [hasActiveExchange, setHasActiveExchange] = useState(false);
+  const [userBooks, setUserBooks] = useState([]);
+  const [selectedUserBook, setSelectedUserBook] = useState(null);
+  const [loadingUserBooks, setLoadingUserBooks] = useState(false);
 
   const { user } = useAuth();
 
@@ -198,6 +207,26 @@ const BookDetailsPage = () => {
     run();
   }, [user?.userId, book]);
 
+  // NEW: Check if an active exchange request exists (hide actions if true)
+  useEffect(() => {
+    const run = async () => {
+      if (!user?.userId || !book) return;
+      const bookId = book.id || book.bookId;
+      if (!bookId) return;
+      try {
+        setCheckingExchange(true);
+        const exists = await exchangeApi.checkExchangeExists(user.userId, bookId);
+        setHasActiveExchange(Boolean(exists));
+      } catch (err) {
+        console.warn("Exchange existence check failed:", err.message);
+        setHasActiveExchange(false);
+      } finally {
+        setCheckingExchange(false);
+      }
+    };
+    run();
+  }, [user?.userId, book]);
+
   // Navigation handlers
   const handleBidClick = () => {
     navigate(`/user/browse-books/bidding/${book.id || book.bookId}`, { 
@@ -220,7 +249,7 @@ const BookDetailsPage = () => {
     setShowBorrowModal(true);
   };
 
-  // NEW: Backend borrow creation
+  // NEW: Backend borrow creation with dynamic distance calculation
   const confirmBorrowRequest = async () => {
     const bookId = book.id || book.bookId;
     const ownerEmail = book.owner?.email || book.userEmail || book.ownerEmail;
@@ -238,10 +267,35 @@ const BookDetailsPage = () => {
       return;
     }
 
-    // Fees based on distance
-    const distanceKm = 50;
-    const deliveryPrice = distanceKm * 7;
-    const handlingPrice = distanceKm * 1;
+    // Show loading message
+    showToast("Calculating delivery fee based on distance...", "info");
+
+    try {
+      // Calculate distance and delivery fee between requester and owner
+      const deliveryInfo = await calculateDeliveryBetweenUsers(user.userId, ownerEmail, 7);
+
+      if (!deliveryInfo) {
+        showToast("Unable to calculate delivery fee. Using default distance (50 km).", "warning");
+        // Fallback to default
+        var distanceKm = 50;
+        var deliveryPrice = distanceKm * 7;
+        var handlingPrice = distanceKm * 1;
+      } else {
+        var distanceKm = deliveryInfo.distance;
+        var deliveryPrice = deliveryInfo.deliveryFee;
+        var handlingPrice = Math.round(distanceKm * 1); // 1 Rs per km handling fee
+
+        console.log(`📦 Borrow Request - Distance: ${distanceKm} km, Delivery: Rs. ${deliveryPrice}, Handling: Rs. ${handlingPrice}`);
+        showToast(`Distance calculated: ${distanceKm} km - Delivery fee: Rs. ${deliveryPrice}`, "success");
+      }
+    } catch (error) {
+      console.error("Error calculating distance:", error);
+      showToast("Error calculating delivery fee. Using default distance.", "warning");
+      // Fallback to default
+      var distanceKm = 50;
+      var deliveryPrice = distanceKm * 7;
+      var handlingPrice = distanceKm * 1;
+    }
 
     const dto = {
       userId: Number(user.userId),
@@ -286,25 +340,126 @@ const BookDetailsPage = () => {
     }
   };
 
-  const handleExchangeRequest = () => {
-    setRequestType("exchange");
-    setShowExchangeModal(true);
+  const handleExchangeRequest = async () => {
+    // Re-check to prevent race
+    if (hasActiveExchange) {
+      showToast("You already have an active exchange request for this book.", "info");
+      return;
+    }
+
+    // Load user's books
+    if (!user?.email) {
+      showToast("User email not found. Please login again.", "error");
+      return;
+    }
+
+    try {
+      setLoadingUserBooks(true);
+      setRequestType("exchange");
+      setShowExchangeModal(true);
+      const books = await exchangeApi.getBooksByEmail(user.email);
+      setUserBooks(books || []);
+    } catch (err) {
+      console.error("Failed to load user books:", err);
+      showToast("Failed to load your books. Please try again.", "error");
+      setShowExchangeModal(false);
+    } finally {
+      setLoadingUserBooks(false);
+    }
   };
 
-  const confirmExchangeRequest = () => {
-    disableBookTemporarily(book.id || book.bookId);
-    const newRequest = {
-      id: `req-${Date.now()}`,
-      bookId: book.id || book.bookId,
-      bookTitle: book.title,
-      type: "exchange",
-      status: "pending",
-      requestedAt: new Date().toISOString(),
-      book: book,
+  const confirmExchangeRequest = async () => {
+    if (!selectedUserBook) {
+      showToast("Please select one of your books to exchange.", "error");
+      return;
+    }
+
+    const bookId = book.id || book.bookId;
+    const ownerEmail = book.owner?.email || book.userEmail || book.ownerEmail;
+
+    if (!user?.userId) {
+      showToast("User not found. Please login again.", "error");
+      return;
+    }
+    if (!bookId) {
+      showToast("Book ID missing. Please try again.", "error");
+      return;
+    }
+    if (!ownerEmail) {
+      showToast("Owner email not available for this book.", "error");
+      return;
+    }
+
+    // Show loading message
+    showToast("Calculating delivery fee based on distance...", "info");
+
+    try {
+      // Calculate distance and delivery fee between requester and approver
+      const deliveryInfo = await calculateDeliveryBetweenUsers(user.userId, ownerEmail, 7);
+
+      if (!deliveryInfo) {
+        showToast("Unable to calculate delivery fee. Using default distance (50 km).", "warning");
+        // Fallback to default
+        var distanceKm = 50;
+        var deliveryPrice = distanceKm * 7;
+      } else {
+        var distanceKm = deliveryInfo.distance;
+        var deliveryPrice = deliveryInfo.deliveryFee;
+
+        console.log(`🔄 Exchange Request - Distance: ${distanceKm} km, Delivery: Rs. ${deliveryPrice}`);
+        showToast(`Distance calculated: ${distanceKm} km - Delivery fee: Rs. ${deliveryPrice}`, "success");
+      }
+    } catch (error) {
+      console.error("Error calculating distance:", error);
+      showToast("Error calculating delivery fee. Using default distance.", "warning");
+      // Fallback to default
+      var distanceKm = 50;
+      var deliveryPrice = distanceKm * 7;
+    }
+
+    const handlingPrice = (book.price || 0) * 0.04; // 4% of book price
+
+    const exchangeData = {
+      userId: Number(user.userId),
+      userBookId: Number(selectedUserBook.bookId),
+      approverBookId: Number(bookId),
+      userDeliveryPrice: deliveryPrice,
+      userHandlingPrice: handlingPrice,
+      approverEmail: ownerEmail
     };
-    setMyRequests((prev) => [...prev, newRequest]);
-    setShowExchangeModal(false);
-    showToast("Your exchange request has been sent. Wait for approval.", "success");
+
+    try {
+      disableBookTemporarily(bookId);
+      const result = await exchangeApi.createExchange(exchangeData);
+
+      if (!result) {
+        showToast("Approver not found. Please try again.", "error");
+        return;
+      }
+
+      setShowExchangeModal(false);
+      setSelectedUserBook(null);
+      setHasActiveExchange(true); // hide buttons now
+
+      setMyRequests((prev) => [
+        ...prev,
+        {
+          id: `req-${Date.now()}`,
+          bookId: bookId,
+          bookTitle: book.title,
+          type: "exchange",
+          status: "pending",
+          requestedAt: new Date().toISOString(),
+          book: book,
+          server: result
+        }
+      ]);
+
+      showToast("Your exchange request has been sent. Wait for approval.", "success");
+    } catch (err) {
+      console.error("Create exchange error:", err);
+      showToast("Failed to send exchange request. Try again.", "error");
+    }
   };
 
   const handleWishlistToggle = () => {
@@ -432,7 +587,7 @@ const BookDetailsPage = () => {
     });
   };
 
-  const actionsBlocked = hasActiveBorrow;
+  const actionsBlocked = hasActiveBorrow || hasActiveExchange;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -649,7 +804,7 @@ const BookDetailsPage = () => {
                         className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
                         onClick={handleExchangeRequest}
                         icon={<Repeat className="w-4 h-4" />}
-                        disabled={isDisabled || checkingBorrow}
+                        disabled={isDisabled || checkingBorrow || checkingExchange}
                       >
                         Request Exchange
                       </Button>
@@ -861,27 +1016,117 @@ const BookDetailsPage = () => {
         {/* Exchange Confirmation Modal */}
         {showExchangeModal && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 bg-opacity-50">
-            <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6">
+            <div className="bg-white rounded-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold">Confirm Exchange Request</h3>
-                <button onClick={() => setShowExchangeModal(false)} className="text-gray-500 hover:text-gray-700">
+                <h3 className="text-xl font-bold">Select Your Book to Exchange</h3>
+                <button onClick={() => { setShowExchangeModal(false); setSelectedUserBook(null); }} className="text-gray-500 hover:text-gray-700">
                   <X size={24} />
                 </button>
               </div>
+
               <div className="mb-6">
-                <p className="text-gray-600 mb-2">Are you sure you want to send an exchange request for:</p>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="font-semibold">{book.title}</h4>
-                  <p className="text-sm text-gray-600">{book.author}</p>
-                  <p className="text-sm text-gray-600">Owner: {book.owner.name}</p>
-                  <p className="text-sm text-gray-600">Delivery Price: Rs. 200</p>
+                <p className="text-gray-600 mb-4">You want to exchange for:</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <h4 className="font-semibold text-gray-900">{book.title}</h4>
+                  <p className="text-sm text-gray-600">by {book.author || book.authors?.join(', ')}</p>
+                  <p className="text-sm text-gray-600">Owner: {book.owner?.name || 'Unknown'}</p>
+                  <p className="text-sm text-gray-600">Price: Rs. {book.price || 0}</p>
                 </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">Select one of your books:</h4>
+
+                  {loadingUserBooks ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                      <p className="text-gray-600 mt-2">Loading your books...</p>
+                    </div>
+                  ) : userBooks.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg">
+                      <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600">You don't have any books to exchange yet.</p>
+                      <p className="text-sm text-gray-500 mt-1">Add books to your collection first.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto">
+                      {userBooks.map((userBook) => (
+                        <div
+                          key={userBook.bookId}
+                          onClick={() => setSelectedUserBook(userBook)}
+                          className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                            selectedUserBook?.bookId === userBook.bookId
+                              ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200'
+                              : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              {userBook.bookImage ? (
+                                <LazyImage
+                                  src={placeholderImg}
+                                  alt={userBook.title}
+                                  className="w-16 h-20 object-cover rounded"
+                                  fileName={userBook.bookImage}
+                                  folderName="userBooks"
+                                  baseUrl={baseUrl}
+                                />
+                              ) : (
+                                <div className="w-16 h-20 bg-gray-200 flex items-center justify-center rounded">
+                                  <BookOpen className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h5 className="font-semibold text-gray-900 truncate">{userBook.title}</h5>
+                                  <p className="text-sm text-gray-600">by {userBook.authors?.join(', ') || 'Unknown'}</p>
+                                  <p className="text-xs text-gray-500 mt-1">Condition: {userBook.condition}</p>
+                                  <p className="text-xs text-gray-500">Price: Rs. {userBook.price || 0}</p>
+                                </div>
+                                {selectedUserBook?.bookId === userBook.bookId && (
+                                  <CheckCircle className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {selectedUserBook && (
+                  <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <h5 className="font-semibold text-gray-900 mb-2">Exchange Details:</h5>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Delivery Fee (50km × Rs.7/km):</span>
+                        <span className="font-medium">Rs. {50 * 7}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Handling Fee (4% of Rs.{book.price || 0}):</span>
+                        <span className="font-medium">Rs. {((book.price || 0) * 0.04).toFixed(2)}</span>
+                      </div>
+                      <div className="border-t pt-2 flex justify-between font-semibold">
+                        <span>Total Cost:</span>
+                        <span className="text-purple-600">Rs. {(50 * 7 + (book.price || 0) * 0.04).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
               <div className="flex justify-end space-x-3">
-                <Button variant="outline" onClick={() => setShowExchangeModal(false)} className="border-gray-200 text-gray-700 hover:bg-gray-50">
+                <Button variant="outline" onClick={() => { setShowExchangeModal(false); setSelectedUserBook(null); }} className="border-gray-200 text-gray-700 hover:bg-gray-50">
                   Cancel
                 </Button>
-                <Button variant="primary" onClick={confirmExchangeRequest} className="bg-purple-500 hover:bg-purple-600 text-white">
+                <Button
+                  variant="primary"
+                  onClick={confirmExchangeRequest}
+                  className="bg-purple-500 hover:bg-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!selectedUserBook || loadingUserBooks}
+                >
                   Confirm Exchange Request
                 </Button>
               </div>

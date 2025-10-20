@@ -120,6 +120,7 @@ const EditInventory = ({inventoryId}: {inventoryId: number}) => {
     onSuccess: () => {
       toast.success("Inventory details edited successfully!");
       queryClient.invalidateQueries({ queryKey: ["regularInventory", user?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["donationInventory", user?.userId] });
       setShowForm(false);
     },
     onError: () => {
@@ -155,7 +156,7 @@ const EditInventory = ({inventoryId}: {inventoryId: number}) => {
   return (
     <>
       <button className="p-2 bg-green-100 border border-green-200 hover:bg-green-200 rounded-lg transition-colors duration-200"
-        title="Edit stock and sellable counts."
+        title="Edit inventory item details"
         onClick={() => { setShowForm(true); }} >
           <Edit className="w-5 h-5 text-slate-600" />
       </button>
@@ -203,6 +204,7 @@ const EditInventory = ({inventoryId}: {inventoryId: number}) => {
                 <TextInput itemName="authors" label="Authors (comma separated) *" />
                 <TextInput itemName="genres" label="Genres (comma separated) *" full={true}/>
                 <TextInput itemName="tags" label="Tags (comma separated) *" full={true} />
+                <TextInput itemName="category" label="Category *" full={true} />
 
                 <div className="col-span-2">
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">

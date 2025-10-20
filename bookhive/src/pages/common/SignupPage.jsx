@@ -7,6 +7,7 @@ import { BookOpen } from 'lucide-react';
 import Button from '../../components/shared/Button';
 import axios from "axios";
 import { showMessageCard } from './MessageCard';
+import { sriLankaLocations } from '../../utils/sriLankaLocations';
 
 const signupSchemaStep1 = z.object({
   firstName: z.string().min(2, 'First Name must be at least 2 characters'),
@@ -49,10 +50,11 @@ const bookstoreSchemaStep3 = z.object({
 });
 
 const organizationSchemaStep3 = z.object({
+  organizationName: z.string().min(2, 'Organization Name is required'),
   organizationType: z.string().min(1, 'Organization Type is required'),
   registrationNo: z.string().min(1, 'Registration No is required'),
   registrationCopy: z.any().refine((file) => file && file[0] && ['image/jpeg', 'image/png', 'application/pdf'].includes(file[0].type), 'Please upload a valid image or PDF'),
-  runningYears: z.string().min(1, 'Running Years is required'),
+  runningYears: z.string().min(1, 'Running Years is required').regex(/^\d+$/, 'Must be a valid number'),
 });
 
 const deliveryAgentSchemaStep3 = z.object({
@@ -88,10 +90,35 @@ const SignupPage = () => {
     return signupSchemaStep1;
   };
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm({
     resolver: zodResolver(getSchemaForStep()),
   });
   const [error, setError] = useState('');
+
+  // Auto-fill city, state, zipCode when address is selected from dropdown
+  const handleAddressChange = (e) => {
+    const selectedAddress = e.target.value.toLowerCase().trim();
+
+    // Check if the selected address exists in our Sri Lankan locations database
+    if (sriLankaLocations[selectedAddress]) {
+      const locationData = sriLankaLocations[selectedAddress];
+
+      // Auto-fill city (capitalize first letter of each word)
+      const cityName = selectedAddress
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      setValue('city', cityName);
+
+      // Auto-fill state/province
+      setValue('state', locationData.province || '');
+
+      // Auto-fill postal code if available
+      if (locationData.postalCode) {
+        setValue('zipCode', locationData.postalCode);
+      }
+    }
+  };
 
   const onSubmitStep1 = (data) => {
     setFormData({ ...formData, ...data });
@@ -276,65 +303,50 @@ const SignupPage = () => {
       // Create FormData and append JSON + file
       const formDataToSend = new FormData();
 
-      // Append file
-      formDataToSend.append('registrationCopyFile', registrationCopyFile);
+      // Append file (backend expects 'registrationCopy')
+      formDataToSend.append('registrationCopy', registrationCopyFile);
 
-      // Create JSON and append as Blob
-      const orgData = {
-        type: allData.organizationType,
-        reg_no: allData.registrationNo,
+      // Create JSON matching OrganizationNewDTO
+      const organizationData = {
+        regNo: allData.registrationNo,
         fname: allData.firstName,
         lname: allData.lastName,
         email: allData.email,
         password: allData.password,
+        type: allData.organizationType,
         phone: parseInt(allData.phone.slice(0, 10), 10),
         years: parseInt(allData.runningYears, 10),
         address: allData.address,
         city: allData.city,
         state: allData.state,
-        zip: allData.zipCode
+        zip: allData.zipCode,
+        organizationName: allData.organizationName
       };
 
-      const jsonBlob = new Blob([JSON.stringify(orgData)], {
+      const jsonBlob = new Blob([JSON.stringify(organizationData)], {
         type: 'application/json'
       });
 
-      formDataToSend.append('orgData', jsonBlob);
+      // Backend expects 'userData' as the JSON part
+      formDataToSend.append('userData', jsonBlob);
 
       try {
         setIsLoading(true); // Start loading animation
-        const response = await axios.post('http://localhost:9090/api/registerOrg', formDataToSend, {
+        await axios.post('http://localhost:9090/api/registerOrganization', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
 
-        const result = response.data;
+        // Always show success message for organization registrations
+        showMessageCard(
+          'Registration Received!',
+          'We received your request. Our team will get back to you soon!',
+          'success'
+        );
 
-        if (result.message === 'success&pending') {
-          // Show card for pending verification
-          showMessageCard(
-            'Your account request has been received!',
-            'We are currently verifying your information. Please check your email for updates.',
-            'info'
-          );
-        } else if (result.message === 'success&active') {
-          // Show card for successful account creation
-          showMessageCard(
-            'Account Created Successfully!',
-            'You can now log in to your account.',
-            'success'
-          );
-          setTimeout(() => navigate('/login'), 2000);
-        } else {
-          // Any other response, treat as error
-          showMessageCard(
-            'Error',
-            'Something went wrong: ' + result.message,
-            'error'
-          );
-          setError(result.message);
-        }
+        setTimeout(() => navigate('/login'), 3000);
+
       } catch (error) {
         console.error('Error:', error);
         const errMsg =
@@ -358,8 +370,53 @@ const SignupPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden" style={{ fontFamily: "'Open Sans', system-ui, sans-serif" }}>
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50"></div>
+        <div
+          className="absolute top-10 left-10 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite' }}
+        ></div>
+        <div
+          className="absolute top-0 right-10 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite 1.5s' }}
+        ></div>
+        <div
+          className="absolute bottom-10 left-1/4 w-80 h-80 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite 3s' }}
+        ></div>
+        <div
+          className="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"
+          style={{ animation: 'blob 9s infinite 4.5s' }}
+        ></div>
+        <div
+          className="absolute top-1/2 left-1/2 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"
+          style={{ animation: 'blob 9s infinite 6s' }}
+        ></div>
+      </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          25% {
+            transform: translate(20px, -30px) scale(1.05);
+          }
+          50% {
+            transform: translate(-15px, 15px) scale(0.95);
+          }
+          75% {
+            transform: translate(25px, 20px) scale(1.02);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+      `}</style>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center">
           <div className="flex items-center text-3xl font-bold" style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}>
             <BookOpen className="mr-2" style={{ color: '#ffd639' }} size={32} />
@@ -552,15 +609,27 @@ const SignupPage = () => {
                       id="address"
                       type="text"
                       {...register('address')}
+                      onChange={handleAddressChange}
+                      list="sri-lanka-locations"
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none"
                       style={{ borderColor: '#D1D5DB' }}
                       onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                       onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                      placeholder="123 Main Street"
+                      placeholder="Start typing... (e.g., Colombo, Kandy, Galle)"
                     />
+                    <datalist id="sri-lanka-locations">
+                      {Object.keys(sriLankaLocations).map((location) => (
+                        <option key={location} value={location}>
+                          {location} - {sriLankaLocations[location].district}, {sriLankaLocations[location].province}
+                        </option>
+                      ))}
+                    </datalist>
                     {errors.address && (
                       <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
                     )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      💡 Tip: Select from dropdown to auto-fill City, State, and Zip Code
+                    </p>
                   </div>
                 </div>
 
@@ -578,7 +647,7 @@ const SignupPage = () => {
                         style={{ borderColor: '#D1D5DB' }}
                         onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                         onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                        placeholder="New York"
+                        placeholder="Colombo"
                       />
                       {errors.city && (
                         <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
@@ -598,7 +667,7 @@ const SignupPage = () => {
                         style={{ borderColor: '#D1D5DB' }}
                         onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                         onBlur={(e) => (e.target.style.boxShadow = 'none')}
-                        placeholder="NY"
+                        placeholder="Western Province"
                       />
                       {errors.state && (
                         <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>
@@ -993,8 +1062,29 @@ const SignupPage = () => {
             {step === 3 && selectedRole === 'organization' && (
               <>
                 <div>
+                  <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700">
+                    Organization Name ✱
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="organizationName"
+                      type="text"
+                      {...register('organizationName')}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                      style={{ borderColor: '#D1D5DB' }}
+                      onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
+                      onBlur={(e) => (e.target.style.boxShadow = 'none')}
+                      placeholder="ABC Charity Foundation"
+                    />
+                    {errors.organizationName && (
+                      <p className="mt-1 text-sm text-red-600">{errors.organizationName.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
                   <label htmlFor="organizationType" className="block text-sm font-medium text-gray-700">
-                    Organization Type
+                    Organization Type ✱
                   </label>
                   <div className="mt-1">
                     <select
@@ -1020,7 +1110,7 @@ const SignupPage = () => {
 
                 <div>
                   <label htmlFor="registrationNo" className="block text-sm font-medium text-gray-700">
-                    Registration No
+                    Registration No ✱
                   </label>
                   <div className="mt-1">
                     <input
@@ -1041,7 +1131,7 @@ const SignupPage = () => {
 
                 <div>
                   <label htmlFor="registrationCopy" className="block text-sm font-medium text-gray-700">
-                    Registration Copy
+                    Registration Copy ✱
                   </label>
                   <div className="mt-1">
                     <input
@@ -1062,7 +1152,7 @@ const SignupPage = () => {
 
                 <div>
                   <label htmlFor="runningYears" className="block text-sm font-medium text-gray-700">
-                    Running Years
+                    Running Years ✱
                   </label>
                   <div className="mt-1">
                     <input
@@ -1074,6 +1164,7 @@ const SignupPage = () => {
                       onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px rgba(255, 214, 57, 0.5)')}
                       onBlur={(e) => (e.target.style.boxShadow = 'none')}
                       placeholder="5"
+                      min="0"
                     />
                     {errors.runningYears && (
                       <p className="mt-1 text-sm text-red-600">{errors.runningYears.message}</p>
