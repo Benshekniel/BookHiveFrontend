@@ -8,10 +8,10 @@ import { toast } from "react-hot-toast";
 
 import { BookSchema, BookFormFields } from "../Schemas/BookSchema";
 import LoadingSpinner from "../CommonStuff/LoadingSpinner";
+import { useAuth } from "../../AuthContext";
 
 const EditBook = ({ bookId }: { bookId: number }) => {
-  // const {user} = useAuth();
-  const user = { userId: 603 }; // hard-coded userId until login completed
+  const {user} = useAuth();
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);

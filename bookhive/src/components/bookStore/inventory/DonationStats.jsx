@@ -2,13 +2,12 @@ import axios from 'axios';
 import { Package, Heart, Award, HandHeart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-// import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../AuthContext';
 
 import LoadingSpinner from '../CommonStuff/LoadingSpinner';
 
 const DonationStats = () => {
-  // const { user } = useAuth();
-  const user = { userId: 603 };
+  const { user } = useAuth();
 
   const fetchDonationStats = async () => {
     if (!user?.userId) return [];

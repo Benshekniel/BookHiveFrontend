@@ -16,6 +16,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   const pathLabels = {
     '/admin': 'Dashboard',
     '/admin/moderator': 'Moderators',
+    '/admin/organizations': 'Organizations',
     '/admin/content': 'Contents',
     '/admin/analytics': 'Analytics',
     '/admin/notification': 'Notification',
@@ -26,6 +27,7 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/moderator/bookcircle': 'BookCircle',
     '/moderator/competitions': 'Competitions',
     '/moderator/users': 'Users',
+    '/moderator/bookstores': 'BookStores',
     '/moderator/hub': 'Hub',
     '/moderator/compliance': 'Compliance',
     '/moderator/support': 'Support',
@@ -59,6 +61,12 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
     '/hubmanager/support': 'Support',
     '/hubmanager/settings': 'Hub Settings',
     '/organization': 'Dashboard',
+    '/organization/request': 'Book Request',
+    '/organization/received': 'Donations Received',
+    '/organization/messages': 'Messages',
+    '/organization/notifications': 'Notifications',
+    '/organization/feedback': 'Feedback & Reviews',
+    '/organization/settings': 'Profile Settings',
     '/organization/reports': 'Reports',
     '/dashboard': 'Dashboard',
     '/user': 'Dashboard',
@@ -165,7 +173,6 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
   // If no user, show nothing (the useEffect will handle redirection)
   if (!user) {
     return null;
-    return null;
   }
 
 
@@ -189,14 +196,10 @@ const Header = ({ children, isMobileOpen, setIsMobileOpen, collapsed, setCollaps
       };
     } else if (path.startsWith('/bookstore')) {
       return {
-        // name:  'Rohan',
-        // email: '',
-        // role: '',
-        // image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
         name: user.name || 'Rohan',
         email: user.email,
         role: user.role,
-        image: user.profileImage || 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
+        image: user.profileImage || 'https://www.southernliving.com/thmb/DiILPN4-PmulZZ1zFbP7xANxbr8=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/15-WilliamChrisantandSonsOldFloridaBookShop-photobyWilliamChrisant-7077d9a8033a4ac692689380e2dad7bc.jpg',
       };
     } else if (path.startsWith('/manager')) {
       return {

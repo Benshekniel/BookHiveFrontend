@@ -1080,6 +1080,93 @@ export const donationApi = {
   getRejectedDonations: moderatorApi.getRejectedDonations
 };
 
+// BookStore API Service
+export const bookStoreApi = {
+  // Get pending or unapproved bookstores
+  getPendingBookStores: async (useCache = true) => {
+    const cacheKey = 'bookstores_pending';
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+    try {
+      const bookstores = await apiClient.get('/moderator/bookstores/pending');
+      setCache(cacheKey, bookstores);
+      return bookstores;
+    } catch (error) {
+      console.error('Failed to fetch pending bookstores:', error);
+      throw error;
+    }
+  },
+
+  // Get approved bookstores
+  getApprovedBookStores: async (useCache = true) => {
+    const cacheKey = 'bookstores_approved';
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+    try {
+      const bookstores = await apiClient.get('/moderator/bookstores/approved');
+      setCache(cacheKey, bookstores);
+      return bookstores;
+    } catch (error) {
+      console.error('Failed to fetch approved bookstores:', error);
+      throw error;
+    }
+  },
+
+  // Get rejected bookstores
+  getRejectedBookStores: async (useCache = true) => {
+    const cacheKey = 'bookstores_rejected';
+    if (useCache && isValidCache(cacheKey)) {
+      return getCache(cacheKey);
+    }
+    try {
+      const bookstores = await apiClient.get('/moderator/bookstores/rejected');
+      setCache(cacheKey, bookstores);
+      return bookstores;
+    } catch (error) {
+      console.error('Failed to fetch rejected bookstores:', error);
+      throw error;
+    }
+  },
+
+  // Approve bookstore
+  approveBookStore: async (userId) => {
+    try {
+      const response = await apiClient.post(`/moderator/bookstores/setApprove?userId=${userId}`);
+      clearCache('bookstores'); // Clear all bookstore caches
+      return response;
+    } catch (error) {
+      console.error(`Failed to approve bookstore with userId ${userId}:`, error);
+      throw error;
+    }
+  },
+
+  // Reject bookstore
+  rejectBookStore: async (userId) => {
+    try {
+      const response = await apiClient.post(`/moderator/bookstores/setReject?userId=${userId}`);
+      clearCache('bookstores'); // Clear all bookstore caches
+      return response;
+    } catch (error) {
+      console.error(`Failed to reject bookstore with userId ${userId}:`, error);
+      throw error;
+    }
+  },
+
+  // Ban bookstore
+  banBookStore: async (userId) => {
+    try {
+      const response = await apiClient.post(`/moderator/bookstores/setBan?userId=${userId}`);
+      clearCache('bookstores'); // Clear all bookstore caches
+      return response;
+    } catch (error) {
+      console.error(`Failed to ban bookstore with userId ${userId}:`, error);
+      throw error;
+    }
+  }
+};
+
 // Combined service for easy import
 export const moderatorService = {
   hubs: hubApi,
@@ -1088,6 +1175,7 @@ export const moderatorService = {
   moderator: moderatorApi,
   donations: donationApi,
   regulations: regulationApi,
+  bookstores: bookStoreApi,
 
   // Utility functions
   clearAllCache: () => clearCache(),
