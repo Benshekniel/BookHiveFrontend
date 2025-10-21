@@ -4,6 +4,7 @@ import axios from "axios";
 import PropTypes from "prop-types";
 import { SubmissionEditor } from "./CompetitionSubmission";
 import CompetitionSubmission from "./CompetitionSubmission";
+import { useAuth } from "../../components/AuthContext";
 
 // Inline NewButton Component
 const NewButton = ({ variant = "primary", size = "md", children, icon, disabled, onClick, ...props }) => {
@@ -94,23 +95,22 @@ const MyCompetitions = () => {
   const [deleteError, setDeleteError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
   const baseUrl = "http://localhost:9090";
-  const userEmail = "user@gmail.com"; // Replace with authenticated user's email
+  const userEmail = user?.email || ""; // Replace with authenticated user's email
 
   // Fetch user participating competitions from API
   useEffect(() => {
     const fetchParticipatedCompetitions = async () => {
       setIsLoading(true);
-      setError(null);
       try {
         const response = await axios.get(`${baseUrl}/api/myCompetitions?email=${userEmail}`);
         if (response.status === 200) {
           setParticipatedCompetitions(response.data || []);
-        } else {
-          setError("No competitions found for this user.");
         }
       } catch (err) {
-        setError("Failed to fetch participated competitions: " + (err.response?.data?.message || err.message));
+        console.error("Failed to fetch participated competitions:", err);
+        setParticipatedCompetitions([]);
       } finally {
         setIsLoading(false);
       }
@@ -122,7 +122,6 @@ const MyCompetitions = () => {
   useEffect(() => {
     const fetchUserSubmissions = async () => {
       setIsLoading(true);
-      setError(null);
       try {
         const response = await axios.get(`${baseUrl}/api/submissions/${userEmail}`);
         if (response.status === 200) {
@@ -140,11 +139,10 @@ const MyCompetitions = () => {
             totalEntries: sub.totalEntries || null,
           }));
           setUserSubmissions(fetchedSubmissions);
-        } else {
-          setError("No submissions found for this user.");
         }
       } catch (err) {
-        setError("Failed to fetch submissions: " + (err.response?.data?.message || err.message));
+        console.error("Failed to fetch submissions:", err);
+        setUserSubmissions([]);
       } finally {
         setIsLoading(false);
       }
@@ -321,11 +319,6 @@ const MyCompetitions = () => {
           <span className="ml-2 text-gray-600">Loading...</span>
         </div>
       )}
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
 
       {ongoingCompetitionSubmissions.length > 0 && (
         <div className="mt-6 space-y-6">
@@ -452,102 +445,11 @@ const MyCompetitions = () => {
         </div>
       )}
 
-      {endedCompetitionSubmissions.length > 0 && (
-        <div className="mt-6 space-y-6">
-          <h3 className="text-xl font-bold text-gray-900">Your Submissions for Ended Competitions</h3>
-          {endedCompetitionSubmissions.map((submission) => {
-            const competition = participatedCompetitions.find((c) => c.competition_id === submission.competitionId);
-            const isWinner = submission.ranking === 1;
-            const isTopThree = submission.ranking && submission.ranking <= 3;
-            return (
-              <div
-                key={submission.id}
-                className={`bg-white rounded-xl shadow-sm border-2 hover:shadow-md transition-all duration-300 ${
-                  isWinner ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50' :
-                  isTopThree ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50' :
-                  'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-grow">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-bold text-gray-900 text-xl">{submission.title}</h3>
-                        {isWinner && (
-                          <div className="flex items-center bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                            <Crown size={16} className="mr-1" />
-                            Winner
-                          </div>
-                        )}
-                        {isTopThree && !isWinner && (
-                          <div className="flex items-center bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                            <Award size={16} className="mr-1" />
-                            Top {submission.ranking}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-gray-600 mb-2">{competition?.title || "Unknown Competition"}</p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span className="flex items-center">
-                          <Calendar size={14} className="mr-1" />
-                          {submission.submittedAt ? `Submitted: ${formatDate(submission.submittedAt)}` : 'Not submitted yet'}
-                        </span>
-                        <span className="flex items-center">
-                          <FileText size={14} className="mr-1" />
-                          {submission.wordCount} words
-                        </span>
-                        {submission.votes > 0 && (
-                          <span className="flex items-center">
-                            <Star size={14} className="mr-1" />
-                            {submission.votes} votes
-                          </span>
-                        )}
-                        {submission.ranking && (
-                          <span className="flex items-center">
-                            <TrendingUp size={14} className="mr-1" />
-                            Rank {submission.ranking} of {submission.totalEntries}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(submission.status)}`}>
-                        {submission.status}
-                      </span>
-                    </div>
-                  </div>
-                  {submission.feedback && (
-                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-900 mb-2">Judge Feedback</h4>
-                      <p className="text-blue-800">{submission.feedback}</p>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <NewButton
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedSubmission(submission);
-                          setShowContentModal(true);
-                        }}
-                        icon={<Eye size={16} />}
-                      >
-                        View
-                      </NewButton>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
-      {ongoingCompetitionSubmissions.length === 0 && endedCompetitionSubmissions.length === 0 && !isLoading && !error && (
+      {ongoingCompetitionSubmissions.length === 0 && !isLoading && (
         <div className="mt-6 text-center py-12">
           <Trophy className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No submissions yet</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No ongoing submissions yet</h3>
           <p className="text-gray-500">Submit to a competition to see your entries here!</p>
         </div>
       )}

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import NewCompetitions from "./NewCompetitions";
 import MyCompetitions from "./MyCompetitions";
-import { Trophy, Star, X, Crown } from "lucide-react";
+import { Trophy, Star, X, Crown, Award, Calendar, FileText, TrendingUp, Eye } from "lucide-react";
 import PropTypes from "prop-types";
+import { useAuth } from "../../components/AuthContext";
 
 // Inline NewButton Component
 const NewButton = ({ variant = "primary", size = "md", children, icon, disabled, onClick, ...props }) => {
@@ -47,34 +48,33 @@ NewButton.propTypes = {
   onClick: PropTypes.func,
 };
 
-const mockData = {
-  currentUser: {
-    id: 1,
-    name: "Samantha Perera",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-  },
-  mockSubmissions: [
-    { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest...", votes: 72 },
-    { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", content: "Echoes of a forgotten past resonate through an abandoned village...", votes: 60 },
-    { id: 3, userId: 1, name: "Samantha Perera", title: "The Journey Home", content: "A journey back to roots uncovers a family legacy...", votes: 85 },
-  ],
-  mockLeaderboard: [
-    { userId: 1, name: "Samantha Perera", votes: 85, submissionTitle: "The Journey Home" },
-    { userId: 2, name: "John Doe", votes: 72, submissionTitle: "Lost Horizons" },
-    { userId: 3, name: "Jane Smith", votes: 60, submissionTitle: "Silent Echoes" },
-  ],
-};
+// Mock data for voting tab (will be replaced with localStorage)
+const getMockSubmissions = (currentUser) => [
+  { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest...", votes: 72 },
+  { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", content: "Echoes of a forgotten past resonate through an abandoned village...", votes: 60 },
+  { id: 3, userId: currentUser?.userId || 1, name: currentUser?.name || "User", title: "The Journey Home", content: "A journey back to roots uncovers a family legacy...", votes: 85 },
+];
+
+const getMockLeaderboard = (currentUser) => [
+  { userId: currentUser?.userId || 1, name: currentUser?.name || "User", votes: 85, submissionTitle: "The Journey Home" },
+  { userId: 2, name: "John Doe", votes: 72, submissionTitle: "Lost Horizons" },
+  { userId: 3, name: "Jane Smith", votes: 60, submissionTitle: "Silent Echoes" },
+];
 
 const Competitions = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("newCompetitions"); // Changed default to newCompetitions
   const [competitions, setCompetitions] = useState([]);
   const [userParticipatedCompetitions, setUserParticipatedCompetitions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [selectedCompetition, setSelectedCompetition] = useState(null);
   const [votes, setVotes] = useState({});
+  const [userSubmissions, setUserSubmissions] = useState([]);
+  const [participatedCompetitions, setParticipatedCompetitions] = useState([]);
+  const [showContentModal, setShowContentModal] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
   const baseUrl = "http://localhost:9090";
-  const userEmail = "user@example.com"; // Replace with authenticated user's email
+  const userEmail = user?.email || ""; // Use authenticated user's email from AuthContext
 
   const formatDateForDisplay = (dateStr) => {
     if (!dateStr) return "Not set";
@@ -104,8 +104,8 @@ const Competitions = () => {
         },
         rules: comp.rules ? JSON.parse(comp.rules) : [],
         judgesCriteria: comp.judgingcriteria ? JSON.parse(comp.judgingcriteria) : [],
-        submissions: comp.competitionid === "b7e1d4d1" ? mockData.mockSubmissions : [],
-        leaderboard: comp.competitionid === "b7e1d4d1" ? mockData.mockLeaderboard : [],
+        submissions: comp.competitionid === "b7e1d4d1" ? getMockSubmissions(user) : [],
+        leaderboard: comp.competitionid === "b7e1d4d1" ? getMockLeaderboard(user) : [],
         startDatetime: comp.startdatetime,
         endDatetime: comp.enddatetime,
         votingEndDatetime: comp.votingenddatetime,
@@ -114,8 +114,7 @@ const Competitions = () => {
       }));
       setCompetitions(fetchedCompetitions);
     } catch (err) {
-      const errorMessage = "Failed to fetch competitions: " + (err.response?.data?.message || err.message);
-      setError(errorMessage);
+      console.error("Failed to fetch competitions:", err);
     } finally {
       setIsLoading(false);
     }
@@ -126,13 +125,97 @@ const Competitions = () => {
       const response = await axios.get(`${baseUrl}/api/participating/${userEmail}`);
       setUserParticipatedCompetitions(response.data || []);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch user competitions");
+      console.error("Failed to fetch user competitions:", err);
+      setUserParticipatedCompetitions([]);
+    }
+  };
+
+  // Fetch user submissions from API
+  const fetchUserSubmissions = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/submissions/${userEmail}`);
+      if (response.status === 200) {
+        const fetchedSubmissions = response.data.map((sub) => ({
+          id: sub.submissionId,
+          competitionId: sub.competitionId,
+          title: sub.title || "Untitled Submission",
+          content: sub.content || "",
+          status: sub.status || "Draft",
+          submittedAt: sub.submittedAt || null,
+          wordCount: calculateWordCount(sub.content),
+          votes: sub.voteCount || 0,
+          feedback: sub.feedback || null,
+          ranking: sub.ranking || null,
+          totalEntries: sub.totalEntries || null,
+        }));
+        setUserSubmissions(fetchedSubmissions);
+      }
+    } catch (err) {
+      console.error("Failed to fetch submissions:", err);
+    }
+  };
+
+  // Fetch participated competitions for matching with submissions
+  const fetchParticipatedCompetitions = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/myCompetitions?email=${userEmail}`);
+      if (response.status === 200) {
+        setParticipatedCompetitions(response.data || []);
+      }
+    } catch (err) {
+      // API endpoint doesn't exist, derive participated competitions from userSubmissions
+      console.log("myCompetitions endpoint not available, using alternative approach");
+
+      // Map submissions to get unique competition IDs and create participated competitions structure
+      if (userSubmissions.length > 0) {
+        const uniqueCompetitionIds = [...new Set(userSubmissions.map(sub => sub.competitionId))];
+        const derivedCompetitions = uniqueCompetitionIds.map(compId => {
+          const competition = competitions.find(c => c.id === compId);
+          return {
+            competition_id: compId,
+            title: competition?.title || "Unknown Competition",
+            voting_end_date_time: competition?.votingEndDatetime || new Date().toISOString()
+          };
+        });
+        setParticipatedCompetitions(derivedCompetitions);
+      } else {
+        setParticipatedCompetitions([]);
+      }
+    }
+  };
+
+  // Calculate word count from HTML content
+  const calculateWordCount = (content) => {
+    const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return text.split(' ').filter(word => word.length > 0).length;
+  };
+
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Get status color helper
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Submitted':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'Draft':
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'Under Review':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
   useEffect(() => {
     fetchCompetitions();
     fetchUserParticipatedCompetitions();
+    fetchUserSubmissions();
+    fetchParticipatedCompetitions();
   }, []);
 
   const handleJoinSuccess = (id) => {
@@ -156,17 +239,62 @@ const Competitions = () => {
     setSelectedCompetition(competition);
   };
 
+  // Load votes from localStorage on component mount
+  useEffect(() => {
+    const storedVotes = localStorage.getItem('competitionVotes');
+    if (storedVotes) {
+      try {
+        setVotes(JSON.parse(storedVotes));
+      } catch (err) {
+        console.error('Error parsing stored votes:', err);
+      }
+    }
+  }, []);
+
+  // Save votes to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(votes).length > 0) {
+      localStorage.setItem('competitionVotes', JSON.stringify(votes));
+    }
+  }, [votes]);
+
   const handleVote = (competitionId, submissionId) => {
+    if (!user) {
+      alert('Please login to vote');
+      return;
+    }
+
     const key = `${competitionId}-${submissionId}`;
-    setVotes((prev) => ({
-      ...prev,
-      [key]: (prev[key] || 0) === 0 ? 1 : 0,
-    }));
+    const userKey = `${user.userId}-${key}`;
+
+    setVotes((prev) => {
+      const newVotes = { ...prev };
+
+      // Check if user has already voted for this submission
+      if (newVotes[userKey]) {
+        // Remove vote
+        delete newVotes[userKey];
+      } else {
+        // Add vote
+        newVotes[userKey] = true;
+      }
+
+      return newVotes;
+    });
   };
 
   const getCurrentVotes = (competitionId, submissionId, originalVotes) => {
     const key = `${competitionId}-${submissionId}`;
-    return originalVotes + (votes[key] || 0);
+    // Count all votes for this submission from any user
+    const voteCount = Object.keys(votes).filter(voteKey => voteKey.endsWith(`-${key}`)).length;
+    return originalVotes + voteCount;
+  };
+
+  const hasUserVoted = (competitionId, submissionId) => {
+    if (!user) return false;
+    const key = `${competitionId}-${submissionId}`;
+    const userKey = `${user.userId}-${key}`;
+    return !!votes[userKey];
   };
 
   const getLeaderboard = (competition) => {
@@ -181,14 +309,18 @@ const Competitions = () => {
       .sort((a, b) => b.votes - a.votes);
   };
 
+  // Filter submissions for ended competitions
+  const currentDate = new Date();
+  const endedCompetitionSubmissions = userSubmissions.filter((submission) => {
+    const competition = participatedCompetitions.find((c) => c.competition_id === submission.competitionId);
+    if (!competition) return false;
+    const votingEndDate = new Date(competition.voting_end_date_time);
+    return votingEndDate < currentDate;
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
         {isLoading && (
           <div className="flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -230,18 +362,109 @@ const Competitions = () => {
               <h2 className="text-2xl font-bold mb-2">Your Submissions for Ended Competitions</h2>
               <p className="text-green-100">View your submissions and results from past competitions</p>
             </div>
-            <div className="text-center py-16">
-              <Trophy className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No ended competition submissions yet</h3>
-              <p className="text-gray-500 mb-6">Your submissions from ended competitions will appear here</p>
-              <NewButton
-                variant="primary"
-                onClick={() => setActiveTab("newCompetitions")}
-                icon={<Trophy size={16} />}
-              >
-                Browse Competitions
-              </NewButton>
-            </div>
+            {endedCompetitionSubmissions.length > 0 ? (
+              <div className="space-y-6">
+                {endedCompetitionSubmissions.map((submission) => {
+                  const competition = participatedCompetitions.find((c) => c.competition_id === submission.competitionId);
+                  const isWinner = submission.ranking === 1;
+                  const isTopThree = submission.ranking && submission.ranking <= 3;
+                  return (
+                    <div
+                      key={submission.id}
+                      className={`bg-white rounded-xl shadow-sm border-2 hover:shadow-md transition-all duration-300 ${
+                        isWinner ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50' :
+                        isTopThree ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50' :
+                        'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-grow">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="font-bold text-gray-900 text-xl">{submission.title}</h3>
+                              {isWinner && (
+                                <div className="flex items-center bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                  <Crown size={16} className="mr-1" />
+                                  Winner
+                                </div>
+                              )}
+                              {isTopThree && !isWinner && (
+                                <div className="flex items-center bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                  <Award size={16} className="mr-1" />
+                                  Top {submission.ranking}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-gray-600 mb-2">{competition?.title || "Unknown Competition"}</p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <span className="flex items-center">
+                                <Calendar size={14} className="mr-1" />
+                                {submission.submittedAt ? `Submitted: ${formatDate(submission.submittedAt)}` : 'Not submitted yet'}
+                              </span>
+                              <span className="flex items-center">
+                                <FileText size={14} className="mr-1" />
+                                {submission.wordCount} words
+                              </span>
+                              {submission.votes > 0 && (
+                                <span className="flex items-center">
+                                  <Star size={14} className="mr-1" />
+                                  {submission.votes} votes
+                                </span>
+                              )}
+                              {submission.ranking && (
+                                <span className="flex items-center">
+                                  <TrendingUp size={14} className="mr-1" />
+                                  Rank {submission.ranking} of {submission.totalEntries}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(submission.status)}`}>
+                              {submission.status}
+                            </span>
+                          </div>
+                        </div>
+                        {submission.feedback && (
+                          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="font-semibold text-blue-900 mb-2">Judge Feedback</h4>
+                            <p className="text-blue-800">{submission.feedback}</p>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-3">
+                            <NewButton
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSubmission(submission);
+                                setShowContentModal(true);
+                              }}
+                              icon={<Eye size={16} />}
+                            >
+                              View
+                            </NewButton>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <Trophy className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No ended competition submissions yet</h3>
+                <p className="text-gray-500 mb-6">Your submissions from ended competitions will appear here</p>
+                <NewButton
+                  variant="primary"
+                  onClick={() => setActiveTab("newCompetitions")}
+                  icon={<Trophy size={16} />}
+                >
+                  Browse Competitions
+                </NewButton>
+              </div>
+            )}
           </section>
         )}
 
@@ -268,27 +491,41 @@ const Competitions = () => {
                       <div className="space-y-4 mb-6">
                         <h4 className="font-semibold text-gray-900 text-lg mb-2">Competitor Submissions</h4>
                         {competition.submissions
-                          .filter((s) => s.userId !== mockData.currentUser.id)
+                          .filter((s) => s.userId !== user?.userId)
                           .map((submission) => {
                             const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
+                            const userHasVoted = hasUserVoted(competition.id, submission.id);
                             return (
                               <div key={submission.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition">
                                 <h5 className="font-medium text-gray-900">{submission.title} by {submission.name}</h5>
                                 <p className="text-gray-600 text-sm mb-2 line-clamp-2">{submission.content.substring(0, 50)}...</p>
-                                <div className="flex items-center text-sm text-gray-600 mb-2">
-                                  <Star size={14} className="mr-1 text-yellow-500" />
-                                  {currentVotes} votes
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center text-sm text-gray-600 mb-2">
+                                    <Star size={14} className={`mr-1 ${userHasVoted ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
+                                    {currentVotes} votes
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <NewButton
+                                      variant={userHasVoted ? "success" : "outline"}
+                                      size="sm"
+                                      onClick={() => handleVote(competition.id, submission.id)}
+                                      icon={<Star size={16} className={userHasVoted ? 'fill-white' : ''} />}
+                                    >
+                                      {userHasVoted ? "Voted" : "Vote"}
+                                    </NewButton>
+                                    <NewButton
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedCompetition({ ...submission, competitionId: competition.id });
+                                        setActiveTab("viewSubmission");
+                                      }}
+                                      icon={<Eye size={16} />}
+                                    >
+                                      View
+                                    </NewButton>
+                                  </div>
                                 </div>
-                                <NewButton
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedCompetition({ ...submission, competitionId: competition.id });
-                                    setActiveTab("viewSubmission");
-                                  }}
-                                >
-                                  View Content
-                                </NewButton>
                               </div>
                             );
                           })}
@@ -299,7 +536,7 @@ const Competitions = () => {
                         <h4 className="font-semibold text-gray-900 text-lg mb-4">Leaderboard</h4>
                         <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-4 rounded-lg shadow-inner">
                           {getLeaderboard(competition).map((entry, index) => {
-                            const isCurrentUser = entry.userId === mockData.currentUser.id;
+                            const isCurrentUser = entry.userId === user?.userId;
                             return (
                               <div
                                 key={entry.userId}
@@ -324,11 +561,11 @@ const Competitions = () => {
                         </div>
                       </div>
                     )}
-                    {competition.submissions && competition.submissions.some(s => s.userId === mockData.currentUser.id) && (
+                    {competition.submissions && competition.submissions.some(s => s.userId === user?.userId) && (
                       <div className="mt-6">
                         <h4 className="font-semibold text-gray-900 text-lg mb-4">Your Submission</h4>
                         {competition.submissions
-                          .filter(s => s.userId === mockData.currentUser.id)
+                          .filter(s => s.userId === user?.userId)
                           .map((submission) => {
                             const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
                             return (
@@ -363,7 +600,7 @@ const Competitions = () => {
         {activeTab === "myCompetitions" && (
           <MyCompetitions
             competitions={competitions}
-            userSubmissions={mockData.userSubmissions}
+            userSubmissions={userSubmissions}
             userParticipatedCompetitions={userParticipatedCompetitions}
           />
         )}
@@ -406,7 +643,7 @@ const Competitions = () => {
                   >
                     Close
                   </NewButton>
-                  {selectedCompetition.userId && selectedCompetition.userId !== mockData.currentUser.id && (
+                  {selectedCompetition.userId && selectedCompetition.userId !== user?.userId && (
                     <NewButton
                       variant="primary"
                       onClick={() => handleVote(selectedCompetition.competitionId, selectedCompetition.id)}
@@ -417,6 +654,43 @@ const Competitions = () => {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content Modal for viewing submission details */}
+        {showContentModal && selectedSubmission && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedSubmission.title}</h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {selectedSubmission.wordCount} words • Submitted {formatDate(selectedSubmission.submittedAt)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowContentModal(false);
+                    setSelectedSubmission(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 transition"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-6">
+                <div
+                  className="prose max-w-none text-gray-700"
+                  dangerouslySetInnerHTML={{ __html: selectedSubmission.content }}
+                />
+              </div>
+              {selectedSubmission.feedback && (
+                <div className="p-6 border-t border-gray-200 bg-blue-50">
+                  <h3 className="font-semibold text-blue-900 mb-2">Judge Feedback</h3>
+                  <p className="text-blue-800">{selectedSubmission.feedback}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1079,7 +1353,7 @@ export default Competitions;
 //                         <div className="space-y-4 mb-6">
 //                           <h4 className="font-semibold text-gray-900 text-lg mb-2">Competitor Submissions</h4>
 //                           {competition.submissions
-//                             .filter((s) => s.userId !== mockData.currentUser.id)
+//                             .filter((s) => s.userId !== user?.userId)
 //                             .map((submission) => {
 //                               const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
 //                               return (
@@ -1110,7 +1384,7 @@ export default Competitions;
 //                           <h4 className="font-semibold text-gray-900 text-lg mb-4">Leaderboard</h4>
 //                           <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-4 rounded-lg shadow-inner">
 //                             {getLeaderboard(competition).map((entry, index) => {
-//                               const isCurrentUser = entry.userId === mockData.currentUser.id;
+//                               const isCurrentUser = entry.userId === user?.userId;
 //                               return (
 //                                 <div
 //                                   key={entry.userId}
@@ -1137,11 +1411,11 @@ export default Competitions;
 //                           </div>
 //                         </div>
 //                       )}
-//                       {competition.submissions && competition.submissions.some(s => s.userId === mockData.currentUser.id) && (
+//                       {competition.submissions && competition.submissions.some(s => s.userId === user?.userId) && (
 //                         <div className="mt-6">
 //                           <h4 className="font-semibold text-gray-900 text-lg mb-4">Your Submission</h4>
 //                           {competition.submissions
-//                             .filter(s => s.userId === mockData.currentUser.id)
+//                             .filter(s => s.userId === user?.userId)
 //                             .map((submission) => {
 //                               const currentVotes = getCurrentVotes(competition.id, submission.id, submission.votes);
 //                               return (
