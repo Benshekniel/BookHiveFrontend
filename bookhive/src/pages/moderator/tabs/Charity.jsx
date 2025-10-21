@@ -458,14 +458,14 @@ const Charity = () => {
               </div>
 
               {/* Right side button */}
-              <div className="py-4">
+              {/* <div className="py-4">
                 <button 
                 onClick={() => setShowCreateEvent(true)}
                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                   <Plus className="w-4 h-4" />
                   <span>Create Event</span>
                 </button>
-              </div>
+              </div> */}
             </nav>
           </div>
         {showCreateEvent && (
