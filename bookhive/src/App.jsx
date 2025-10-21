@@ -45,7 +45,7 @@ const AppContent = () => {
       case 'organization':
         return '/organization';
       case 'user':
-        return '/dashboard';
+        return '/user';
       default:
         return '/';
     }

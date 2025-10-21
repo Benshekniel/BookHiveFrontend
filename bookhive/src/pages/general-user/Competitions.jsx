@@ -53,47 +53,6 @@ const mockData = {
     name: "Samantha Perera",
     avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
   },
-  userSubmissions: [
-    {
-      id: 1,
-      title: "The Journey Home",
-      competitionId: "b7e1d4d1",
-      status: "Under Review",
-      submittedAt: "2024-01-20",
-      wordCount: 2450,
-      votes: 85,
-      content: "A journey back to roots uncovers a family legacy hidden beneath the ruins of an old estate...",
-      feedback: "Excellent character development and vivid descriptions. The narrative flow is compelling.",
-      ranking: 1,
-      totalEntries: 45,
-    },
-    {
-      id: 2,
-      title: "Future Horizons",
-      competitionId: "34394c1e",
-      status: "Submitted",
-      submittedAt: "2024-02-15",
-      wordCount: 1150,
-      votes: 0,
-      content: "The future of writing lies not in replacing human creativity with artificial intelligence...",
-      feedback: null,
-      ranking: null,
-      totalEntries: 28,
-    },
-    {
-      id: 3,
-      title: "Whispers of the Past",
-      competitionId: "b7e1d4d1",
-      status: "Draft",
-      submittedAt: null,
-      wordCount: 890,
-      votes: 0,
-      content: "In the quiet corners of the old library, where dust motes danced in shafts of golden sunlight...",
-      feedback: null,
-      ranking: null,
-      totalEntries: null,
-    },
-  ],
   mockSubmissions: [
     { id: 1, userId: 2, name: "John Doe", title: "Lost Horizons", content: "A tale of a lost traveler finding solace in an ancient forest...", votes: 72 },
     { id: 2, userId: 3, name: "Jane Smith", title: "Silent Echoes", content: "Echoes of a forgotten past resonate through an abandoned village...", votes: 60 },
@@ -239,18 +198,6 @@ const Competitions = () => {
         <div className="mb-6">
           <div className="flex space-x-4 border-b border-gray-200">
             <button
-              className={`pb-2 px-4 ${activeTab === "yourSubmissions" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setActiveTab("yourSubmissions")}
-            >
-              Your Submissions
-            </button>
-            <button
-              className={`pb-2 px-4 ${activeTab === "voting" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setActiveTab("voting")}
-            >
-              Voting
-            </button>
-            <button
               className={`pb-2 px-4 ${activeTab === "newCompetitions" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
               onClick={() => setActiveTab("newCompetitions")}
             >
@@ -262,38 +209,39 @@ const Competitions = () => {
             >
               My Competitions
             </button>
+            <button
+              className={`pb-2 px-4 ${activeTab === "voting" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setActiveTab("voting")}
+            >
+              Voting
+            </button>
+            <button
+              className={`pb-2 px-4 ${activeTab === "yourSubmissions" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setActiveTab("yourSubmissions")}
+            >
+              Your Submissions
+            </button>
           </div>
         </div>
 
         {activeTab === "yourSubmissions" && (
           <section>
             <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl p-6 text-white mb-6">
-              <h2 className="text-2xl font-bold mb-2">Your Writing Submissions</h2>
-              <p className="text-green-100">Manage your submitted entries and track your progress</p>
+              <h2 className="text-2xl font-bold mb-2">Your Submissions for Ended Competitions</h2>
+              <p className="text-green-100">View your submissions and results from past competitions</p>
             </div>
-            {mockData.userSubmissions.length > 0 ? (
-              <div className="space-y-6">
-                {mockData.userSubmissions.map((submission) => (
-                  <div key={submission.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="font-bold text-gray-900 text-xl">{submission.title}</h3>
-                    <p className="text-gray-600">{submission.content.substring(0, 100)}...</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <Trophy className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No submissions yet</h3>
-                <p className="text-gray-500 mb-6">Ready to showcase your writing skills? Submit your first entry!</p>
-                <NewButton
-                  variant="primary"
-                  onClick={() => setActiveTab("newCompetitions")}
-                  icon={<Trophy size={16} />}
-                >
-                  Browse Competitions
-                </NewButton>
-              </div>
-            )}
+            <div className="text-center py-16">
+              <Trophy className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No ended competition submissions yet</h3>
+              <p className="text-gray-500 mb-6">Your submissions from ended competitions will appear here</p>
+              <NewButton
+                variant="primary"
+                onClick={() => setActiveTab("newCompetitions")}
+                icon={<Trophy size={16} />}
+              >
+                Browse Competitions
+              </NewButton>
+            </div>
           </section>
         )}
 

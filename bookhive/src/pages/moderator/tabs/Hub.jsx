@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MapPin, Truck, Package, Clock, Users, TrendingUp, Filter, Map, RefreshCw, AlertCircle, Navigation, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { deliveryApi } from '../../../services/moderatorService';
 
 const Hub = () => {
   const [activeTab, setActiveTab] = useState('hubs');
@@ -21,6 +22,12 @@ const Hub = () => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [deliveriesLoading, setDeliveriesLoading] = useState(false);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
+
+  // Cache refs to prevent re-loading
+  const deliveriesLoadedRef = useRef(false);
+  const performanceLoadedRef = useRef(false);
 
   // Pagination states for hubs
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,11 +46,11 @@ const Hub = () => {
     }
   }, [mapLoaded, hubs]);
 
-  // Load data based on active tab
+  // Load data based on active tab - with caching to prevent unnecessary reloads
   useEffect(() => {
-    if (activeTab === 'schedules') {
+    if (activeTab === 'schedules' && !deliveriesLoadedRef.current) {
       loadDeliverySchedules();
-    } else if (activeTab === 'performance') {
+    } else if (activeTab === 'performance' && !performanceLoadedRef.current) {
       loadPerformanceData();
     }
   }, [activeTab]);
@@ -288,16 +295,33 @@ const Hub = () => {
 
   const loadDeliverySchedules = async () => {
     try {
-      // For now, show a placeholder until delivery API is implemented
-      console.log('Delivery schedules will be loaded when delivery API is ready');
-      setDeliveries([]);
+      setDeliveriesLoading(true);
+      console.log('Loading delivery schedules from API...');
+
+      // Fetch all deliveries from backend
+      const allDeliveries = await deliveryApi.getAllDeliveries(false); // Don't use cache for fresh data
+
+      // Filter for PICKED_UP status deliveries
+      const pickedUpDeliveries = allDeliveries.filter(
+        delivery => delivery.status === 'PICKED_UP'
+      );
+
+      console.log(`Loaded ${pickedUpDeliveries.length} PICKED_UP deliveries out of ${allDeliveries.length} total`);
+      setDeliveries(pickedUpDeliveries);
+      deliveriesLoadedRef.current = true;
     } catch (err) {
       console.error('Error loading delivery schedules:', err);
+      setDeliveries([]);
+    } finally {
+      setDeliveriesLoading(false);
     }
   };
 
   const loadPerformanceData = async () => {
     try {
+      setPerformanceLoading(true);
+      console.log('Loading performance data...');
+
       // Generate mock performance data based on real hubs
       const allHubPerformance = hubs.map((hub) => ({
         hubId: hub.hubId,
@@ -308,10 +332,13 @@ const Hub = () => {
         avgDeliveryTime: Math.floor(Math.random() * 10) + 2,
         efficiency: ['excellent', 'good', 'needs_improvement'][Math.floor(Math.random() * 3)]
       }));
-      
+
       setHubPerformance(allHubPerformance);
+      performanceLoadedRef.current = true;
     } catch (err) {
       console.error('Error loading performance data:', err);
+    } finally {
+      setPerformanceLoading(false);
     }
   };
 
@@ -328,6 +355,11 @@ const Hub = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+
+    // Reset cache flags to force reload
+    deliveriesLoadedRef.current = false;
+    performanceLoadedRef.current = false;
+
     await loadAllData();
     if (activeTab === 'schedules') {
       await loadDeliverySchedules();
@@ -701,73 +733,113 @@ const Hub = () => {
 
           {activeTab === 'schedules' && (
             <div className="space-y-4">
-              {deliveries.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No delivery schedules found.</p>
+              {deliveriesLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <p className="ml-4 text-gray-600">Loading delivery schedules...</p>
+                </div>
+              ) : deliveries.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Picked Up Deliveries</h3>
+                  <p className="text-gray-500">There are no deliveries with PICKED_UP status at the moment.</p>
                 </div>
               ) : (
-                deliveries.slice(0, 10).map((delivery) => (
-                  <div key={delivery.deliveryId} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {delivery.itemDescription || `Delivery #${delivery.deliveryId}`}
-                          </h3>
-                          <span className="text-gray-600 text-sm">#{delivery.trackingNumber}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
-                            {delivery.status?.replace('_', ' ') || 'Unknown'}
-                          </span>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-3">
-                          From: {delivery.senderName || 'N/A'} • To: {delivery.recipientName || 'N/A'} • 
-                          Agent: {delivery.agentName || 'Not assigned'} • 
-                          Hub: {delivery.hubName || 'N/A'}
-                        </p>
-
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span>Created: {formatTime(delivery.createdAt)}</span>
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Showing {deliveries.length} deliveries</strong> with PICKED_UP status
+                    </p>
+                  </div>
+                  {deliveries.map((delivery) => (
+                    <div key={delivery.deliveryId} className="p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {delivery.bookTitle || `Delivery #${delivery.deliveryId}`}
+                            </h3>
+                            <span className="text-gray-600 text-sm font-mono">#{delivery.trackingNumber}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
+                              {delivery.status?.replace('_', ' ') || 'Unknown'}
+                            </span>
                           </div>
-                          {delivery.estimatedDelivery && (
-                            <>
-                              <span>•</span>
-                              <span>ETA: {formatTime(delivery.estimatedDelivery)}</span>
-                            </>
-                          )}
+
+                          <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
+                            <div>
+                              <span className="text-gray-600 font-medium">From:</span>
+                              <p className="text-gray-900">{delivery.pickupAddress || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 font-medium">To:</span>
+                              <p className="text-gray-900">{delivery.deliveryAddress || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 font-medium">Customer:</span>
+                              <p className="text-gray-900">{delivery.customerName || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 font-medium">Agent:</span>
+                              <p className="text-gray-900">{delivery.agentName || 'Not assigned'}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 font-medium">Hub:</span>
+                              <p className="text-gray-900">{delivery.hubName || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 font-medium">Weight:</span>
+                              <p className="text-gray-900">{delivery.weight || 'N/A'}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              <span>Picked Up: {formatTime(delivery.pickupTime)}</span>
+                            </div>
+                            {delivery.deliveryTime && (
+                              <>
+                                <span>•</span>
+                                <span>Expected: {formatTime(delivery.deliveryTime)}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex space-x-2 ml-4">
-                        <button 
-                          onClick={() => {
-                            console.log('Track delivery:', delivery.deliveryId);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                        >
-                          Track
-                        </button>
-                        <button 
-                          onClick={() => {
-                            console.log('Contact agent for delivery:', delivery.deliveryId);
-                          }}
-                          className="text-gray-600 hover:text-gray-900 text-sm font-medium"
-                        >
-                          Contact Agent
-                        </button>
+
+                        <div className="flex flex-col space-y-2 ml-4">
+                          <button
+                            onClick={() => {
+                              console.log('Track delivery:', delivery.deliveryId);
+                            }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+                          >
+                            Track
+                          </button>
+                          <button
+                            onClick={() => {
+                              console.log('Contact agent:', delivery.agentEmail);
+                            }}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
+                          >
+                            Contact Agent
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </>
               )}
             </div>
           )}
 
           {activeTab === 'performance' && (
             <div className="space-y-6">
-              {hubPerformance.length === 0 ? (
+              {performanceLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <p className="ml-4 text-gray-600">Loading performance data...</p>
+                </div>
+              ) : hubPerformance.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No performance data available.</p>
                   <button
