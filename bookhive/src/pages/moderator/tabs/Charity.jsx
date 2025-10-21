@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Heart, Plus, Eye, CheckCircle, Clock, BookOpen, TrendingUp, BarChart3, ThumbsUp, XCircle, X } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
 import CharityCreate from "../subPages/charityCreate";
 import { donationApi } from '../../../services/moderatorService';
 
@@ -157,14 +157,61 @@ const Charity = () => {
     });
   };
 
-  const monthlyDonations = [
-    { month: 'Jan', books: 450, beneficiaries: 180 },
-    { month: 'Feb', books: 380, beneficiaries: 150 },
-    { month: 'Mar', books: 520, beneficiaries: 210 },
-    { month: 'Apr', books: 340, beneficiaries: 140 },
-    { month: 'May', books: 480, beneficiaries: 190 },
-    { month: 'Jun', books: 420, beneficiaries: 170 }
-  ];
+  // Process approved donations data by month (using quantityCurrent)
+  const getMonthlyApprovedData = () => {
+    const monthMap = {};
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // Initialize all months with 0
+    monthNames.forEach(month => {
+      monthMap[month] = 0;
+    });
+
+    // Aggregate approved donations by month using createdAt date
+    approvedDonations.forEach(donation => {
+      if (donation.createdAt) {
+        const date = new Date(donation.createdAt);
+        const monthName = monthNames[date.getMonth()];
+        monthMap[monthName] += (donation.quantityCurrent || 0);
+      }
+    });
+
+    // Convert to array format for chart
+    return monthNames.map(month => ({
+      month,
+      books: monthMap[month]
+    }));
+  };
+
+  // Process all requests data by month (using quantity)
+  const getMonthlyRequestedData = () => {
+    const monthMap = {};
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // Initialize all months with 0
+    monthNames.forEach(month => {
+      monthMap[month] = 0;
+    });
+
+    // Aggregate all requests (pending + approved + rejected) by month
+    const allRequests = [...donationRequests, ...approvedDonations, ...rejectedDonations];
+    allRequests.forEach(request => {
+      if (request.createdAt) {
+        const date = new Date(request.createdAt);
+        const monthName = monthNames[date.getMonth()];
+        monthMap[monthName] += (request.quantity || 0);
+      }
+    });
+
+    // Convert to array format for chart
+    return monthNames.map(month => ({
+      month,
+      requested: monthMap[month]
+    }));
+  };
+
+  const monthlyDonations = getMonthlyApprovedData();
+  const monthlyRequested = getMonthlyRequestedData();
 
   const getStatusColor = (status) => {
     const statusLower = status?.toLowerCase();
@@ -197,16 +244,35 @@ const Charity = () => {
     }
   };
 
-  // Add more months: July and after
-  const extendedMonthlyDonations = [
-    ...monthlyDonations,
-    { month: 'Jul', books: 390, beneficiaries: 160 },
-    { month: 'Aug', books: 510, beneficiaries: 200 },
-    { month: 'Sep', books: 470, beneficiaries: 185 },
-    { month: 'Oct', books: 430, beneficiaries: 175 },
-    { month: 'Nov', books: 495, beneficiaries: 195 },
-    { month: 'Dec', books: 520, beneficiaries: 210 }
-  ];
+  // Custom Tooltip Component for Bar Chart
+  const CustomBarTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+          <p className="font-semibold text-gray-900 mb-2">{label}</p>
+          <p className="text-sm text-blue-600">
+            <span className="font-medium">Books Donated:</span> {payload[0].value.toLocaleString()}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom Tooltip Component for Line Chart
+  const CustomLineTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+          <p className="font-semibold text-gray-900 mb-2">{label}</p>
+          <p className="text-sm text-green-600">
+            <span className="font-medium">Books Requested:</span> {payload[0].value.toLocaleString()}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-6 p-2 bg-gray-50 min-h-screen">
@@ -277,7 +343,7 @@ const Charity = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Books Donated Chart */}
+        {/* Books Donated Chart - Bar Chart with Real Data */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Monthly Book Donations</h3>
@@ -285,34 +351,69 @@ const Charity = () => {
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={extendedMonthlyDonations} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="books" fill="#3b82f6" name="Books Donated" radius={[4, 4, 0, 0]} />
+              <BarChart data={monthlyDonations} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                />
+                <YAxis
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                />
+                <Tooltip content={<CustomBarTooltip />} />
+                <Legend
+                  wrapperStyle={{ paddingTop: '10px' }}
+                  iconType="square"
+                />
+                <Bar
+                  dataKey="books"
+                  fill="#3b82f6"
+                  name="Books Donated (Current Qty)"
+                  radius={[8, 8, 0, 0]}
+                  animationDuration={1000}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Beneficiaries Reached Chart */}
+        {/* Books Requested Chart - Line Chart with Real Data */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Beneficiaries Reached</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Monthly Book Requests</h3>
             <TrendingUp className="w-5 h-5 text-green-500" />
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={extendedMonthlyDonations} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="beneficiaries" fill="#22c55e" name="Beneficiaries" radius={[4, 4, 0, 0]} />
-              </BarChart>
+              <LineChart data={monthlyRequested} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                />
+                <YAxis
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                />
+                <Tooltip content={<CustomLineTooltip />} />
+                <Legend
+                  wrapperStyle={{ paddingTop: '10px' }}
+                  iconType="line"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="requested"
+                  stroke="#22c55e"
+                  strokeWidth={3}
+                  name="Books Requested by Organizations"
+                  dot={{ fill: '#22c55e', r: 5 }}
+                  activeDot={{ r: 7, fill: '#16a34a' }}
+                  animationDuration={1000}
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
